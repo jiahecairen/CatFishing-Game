@@ -21,3 +21,19 @@ notes: <可选备注>
 END-EXAMPLE-ONLY
 
 ## 批准记录（仅人类可在下方追加；当前无有效批准记录）
+
+BEGIN-APPROVAL ID=<票号> PHASE=B
+APPROVED
+by: <Rain>
+date: <2026-11-10>
+scope: <SPIKE-001 的 Phase B>
+notes: <first time to test>
+END-EXAMPLE-ONLY
+
+BEGIN-APPROVAL ID=SPIKE-001 PHASE=B
+APPROVED
+by: rain
+date: 2026-11-10
+scope: tests/spike/overlay/**
+notes: 人工批准 SPIKE-001 的已审查计划，仅允许修改所列范围。
+END-APPROVAL
