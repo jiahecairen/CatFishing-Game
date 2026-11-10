@@ -1,0 +1,63 @@
+{
+  "display_server": "headless",
+  "drag_threshold_px": 6.0,
+  "events": [
+    [
+      258,
+      "2026-11-10 20:39:45",
+      "position_restored_from_default"
+    ],
+    [
+      258,
+      "2026-11-10 20:39:45",
+      "variant:off"
+    ],
+    [
+      259,
+      "2026-11-10 20:39:45",
+      "ready"
+    ],
+    [
+      280,
+      "2026-11-10 20:39:45",
+      "position_saved"
+    ]
+  ],
+  "fps_last_window": 0.0,
+  "fps_samples": [],
+  "headless": true,
+  "hidden": false,
+  "max_fps": 30,
+  "ship_clicks": 0,
+  "ts_utc": "2026-11-10 20:39:45",
+  "variant": "off",
+  "variant_api": {
+    "always_on_top": true,
+    "borderless": true,
+    "mouse_passthrough": true,
+    "mouse_passthrough_mode": false,
+    "mouse_passthrough_polygon": true,
+    "transparent": true,
+    "unfocusable": true
+  },
+  "variant_log": [
+    {
+      "applied": true,
+      "at_utc": "2026-11-10 20:39:45",
+      "effective_mouse_passthrough": false,
+      "effective_mouse_passthrough_mode": null,
+      "human_observation": "",
+      "note": "",
+      "supported": true,
+      "variant": "off"
+    }
+  ],
+  "window_position": [
+    120,
+    120
+  ],
+  "window_size": [
+    64,
+    64
+  ]
+}

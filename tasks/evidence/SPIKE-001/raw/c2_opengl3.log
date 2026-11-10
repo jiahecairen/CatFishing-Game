@@ -1,0 +1,24 @@
+ERROR: Could not create directory: '/Users/rain/Library/Application Support/Godot/app_userdata/Fishing Overlay Spike'.
+   at: make_dir_recursive (core/io/dir_access.cpp:179)
+ERROR: Error attempting to create data dir: /Users/rain/Library/Application Support/Godot/app_userdata/Fishing Overlay Spike.
+   at: ensure_user_data_dir (core/os/os.cpp:442)
+ERROR: Could not create directory: 'user://logs'.
+   at: make_dir_recursive (core/io/dir_access.cpp:179)
+ERROR: Failed to open log file for writing: user://logs/godot.log
+   at: rotate_file (core/io/logger.cpp:169)
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: Could not create directory: 'user://'.
+   at: make_dir_recursive (core/io/dir_access.cpp:179)
+   GDScript backtrace (most recent call first):
+       [0] _write_json (res://scripts/overlay_window.gd:295)
+       [1] _save_position (res://scripts/overlay_window.gd:186)
+       [2] _write_final_reports (res://scripts/overlay_window.gd:245)
+       [3] _notification (res://scripts/overlay_window.gd:100)
+WARNING: SPIKE-001: cannot write user://spike_window.json (err=7)
+     at: push_warning (core/variant/variant_utility.cpp:1033)
+     GDScript backtrace (most recent call first):
+         [0] _write_json (res://scripts/overlay_window.gd:298)
+         [1] _save_position (res://scripts/overlay_window.gd:186)
+         [2] _write_final_reports (res://scripts/overlay_window.gd:245)
+         [3] _notification (res://scripts/overlay_window.gd:100)

@@ -1,0 +1,20 @@
+; SPIKE-001 独立探针工程（人工批准落点：tests/spike/overlay/ 独立工程，根目录不建入口）。
+; 仅窗口能力探针：透明/无边框/穿透/拖动/30FPS。无经济、无 FSM、无业务存档。
+; 工程名刻意避开 app_userdata 下既有目录（Moon / Moon Star Collector / Snake Game / [unnamed project]）。
+
+config_version=5
+
+[application]
+
+config/name="Fishing Overlay Spike"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.7")
+
+[display]
+
+window/size/viewport_width=220
+window/size/viewport_height=160
+window/size/resizable=false
+window/size/borderless=true
+window/size/always_on_top=true
+window/size/transparent=true

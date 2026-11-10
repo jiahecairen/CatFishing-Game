@@ -99,3 +99,13 @@ Risks & unresolved decisions: macOS 26.6 + Godot 4.7.2 + Metal 的透明/穿透�
 Owner approval where required: 已批准自动对比 Metal/Compatibility 与穿透变体；
   任何需求级降级（放弃透明或穿透）仍须单独报批。
 ```
+
+```text
+ID: SPIKE-001
+Status: In Review（AUTO-001 自动通过测试/范围/批准检查，待人工验收）
+Owner: AUTO-001 scheduler + headless Qwen Flash (serial)
+Executed commands + exit codes: test_cmd=/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing/tests/spike/overlay -> 0; attempt=1
+Test result & evidence: tasks/evidence/SPIKE-001/ (会话归档+日志+diff)
+Risks & unresolved decisions: 见 tasks/evidence/SPIKE-001/phaseA.out 与 report.md
+Recorded by AUTO-001 at 2026-11-10T20:39:45+00:00
+```

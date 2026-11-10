@@ -1,0 +1,262 @@
+SPIKE-001 Phase A 完成。摘要：
+
+**已读并遵守**：AGENTS.md（含逐条约束）、TASKS.md SPIKE-001 段落、TECH_SPIKE、SDD_v0.1、DECISION_REGISTER、ACCEPTANCE_TESTS、DEV_LOG、HARNESS_LOCAL_SETUP，另按 AGENTS.md §1 补读 ARCHITECTURE / INTERFACES_AND_DATA / REQUIREMENTS_CHANGELOG；项目 3 个 Skills（godot-overlay / godot-validation / fishing-state-and-save）已加载。未读 tasks/APPROVALS.md，无 git 写操作，无子 Agent/后台任务。
+
+**只读实测（均记录于 plan.md §0，含退出码）**：
+- Godot `/Applications/Godot.app/Contents/MacOS/Godot --version` = 0 → `4.7.2.stable.official.ed1daf0bf`；PATH 无 godot（exit 1）；`pgrep -l Godot` 无残留。
+- 无任何 `project.godot`/`.gd`/`.tscn`，`tests/` 不存在 → 允许范围 `tests/spike/overlay/**` 全部待 Phase B 新建（独立工程，用户已裁定，R-02）。
+- `git status`=0（仅既有 `?? tasks/evidence/`）、`git diff --stat`=0、log 至 `f61b4e1 Authorize SPIKE-001 planning`；单内置屏 → G-003 多屏维持 NOT RUN；根 .gitignore 已全局忽略 `.godot/`。
+
+**计划要点**（`tasks/evidence/SPIKE-001/plan.md`，第二行逐字引用 AGENTS.md 第 9 行，已脚本核验 MATCH: yes）：
+- 范围：仅窗口能力 + 几何持久化；headless 自动 = 探测脚本（`get_property_list()` 探 `mouse_passthrough`/`mouse_passthrough_polygon`，自 quit，不依赖未证实 CLI 旗标）+ 双渲染器加载；GUI 变体矩阵（穿透全窗/多边形/关 × Metal/Compatibility）由人工按 README 验收，G-001/G-002 归人工、G-003 多屏记 NOT RUN。
+- 测试命令 C1–C5 附预期 exit 0 判据；位置持久化走 `user://spike_window.json`（仓库外，已批准）。
+- 风险含 R-06 降级须报批、R-04 GUI 进程风险；回滚为整目录删除（破坏性，仅文档化、须人工批准）。
+
+**合规**：本会话唯一写入 = `tasks/evidence/SPIKE-001/plan.md`；结束前 `git status --porcelain` 仍只有既有 `?? tasks/evidence/`。本票不涉及需求变更/破坏性操作（人工验收由调度器 in_review 流程承接），不触发 BLOCKED。
+
+PHASE-A-DONE
+
+---STDERR---
+dsh: reasoning:
+Let's start by understanding the task. I am the Phase A (read-only planning) agent for ticket SPIKE-001 regarding the macOS transparent/click-through/drag probe in Godot 4.
+
+Constraints:
+- Read-only except for writing the plan to /Users/rain/DevGame/Fishing/tasks/evidence/SPIKE-001/plan.md
+- No subagents, no background tasks
+- Do not read tasks/APPROVALS.md, and do not perform git write operations
+- If human approval is required, output "BLOCKED: <reason>" on the final line. Otherwise output "PHASE-A-DONE"
+
+Relevant skills: `godot-overlay` and `godot-validation` are clearly relevant. The task mentions a technical spike for the Godot overlay. Per the skill instructions, I should load the applicable skills. The task clearly corresponds to `godot-overlay` (validating Godot 4's transparent overlay on macOS, click-through, drag, Retina, and visible 30 FPS via a GUI technical spike), and possibly `godot-validation` (running reproducible headless/GUI acceptance tests for Godot 4). Since this is a spike ticket about an overlay, I'll load godot-overlay. Loading a skill just loads instructions, with no side effects. I'll load godot-overlay, and probably godot-validation too.
+
+Steps:
+1. Read AGENTS.md (already injected, but should verify compliance).
+2. Read the SPIKE-001 ticket in tasks/TASKS.md and the docs: SDD_v0.1, DECISION_REGISTER, ACCEPTANCE_TESTS, TECH_SPIKE, DEV_LOG, HARNESS_LOCAL_SETUP. Also, per AGENTS.md, ARCHITECTURE.md, INTERFACES_AND_DATA.md, REQUIREMENTS_CHANGELOG.md as well. The task enumerates specific docs. I'll read those.
+3. Read-only checks: project file structure, existence of relevant code/scenes/scripts, git status and recent log.
+4. Write the plan to tasks/evidence/SPIKE-001/plan.md.
+5. On the second line of plan.md, quote verbatim one line from AGENTS.md.
+
+Allowed file scope for Phase B: tests/spike/overlay/**
+
+First, let me load the skills, then start reading files.
+
+Let me create a todo list, then execute the loading. First, load the skills.
+dsh: reasoning:
+Both skills have been loaded. Next, I'll create a ToDo list and start reading the documentation. First, I'll check the project structure and read the key files in parallel.
+dsh: reasoning:
+Alright, let me check the project structure. Should I use glob for the file listing, and also bash ls? AGENTS.md says to perform read-only checks: project directory, Godot executable and version, current Git diff, discoverability of .dsh/skills. Read-only bash commands (ls, git status, git log) are fine.
+dsh: reasoning:
+The `tests` directory does not exist (the tests part exited 1). The project has no tests/ yet — Phase B will create tests/spike/overlay/**. There's tasks/evidence/SPIKE-001 (empty directory, exists) and tasks/evidence/_runner. Check the _runner directory (read-only listing) and the evidence SPIKE-001 directory, plus the tools/ and examples/ directories. Also, if it exists, check project.godot too — is there no project.godot at the top level? I don't see project.godot at the top level in ls. Interesting — the Godot project hasn't been created yet. Let me try searching for project.godot, .gd, and .tscn files with glob.
+
+The `tests/` directory doesn't exist yet (that's the cause of exit 1 — as expected. The scope for Phase B will be the newly created stuff). Next, I'll read the ticket and the docs, and check whether there are any Godot project files.
+dsh: reasoning:
+Key facts from TASKS.md:
+- SPIKE-001 = in progress, plan approved ("仅计划已批准，未写码" = only the plan is approved, code not yet written). User approval has been granted: SPIKE-001's target location is tests/spike/overlay/ as a standalone project; auto-comparison of renderer and click-through variants is approved.
+- The Godot 4.7.2 stable official build is at some path (DEV_LOG records `Godot --version=0 4.7.2.stable.official.ed1daf0bf`).
+- G-001/G-002 require evidence of GUI manual verification; since there's only one built-in display, G-003 is "NOT RUN".
+- Godot 4.7 does not have `--do-string`; the capability matrix has to be output within a script via `get_property_list()`.
+
+The `project.godot` file doesn't exist anywhere yet — the root Godot project doesn't exist. The spike will be a standalone project under `tests/spike/overlay/`.
+
+Next, read the docs: SDD_v0.1.md, DECISION_REGISTER.md, ACCEPTANCE_TESTS.md, TECH_SPIKE.md, DEV_LOG.md, HARNESS_LOCAL_SETUP.md. Per AGENTS.md, also ARCHITECTURE.md, INTERFACES_AND_DATA.md, REQUIREMENTS_CHANGELOG.md. The task specifically designates SDD_v0.1 / DECISION_REGISTER / ACCEPTANCE_TESTS / TECH_SPIKE / DEV_LOG / HARNESS_LOCAL_SETUP. Read all of these.
+dsh: reasoning:
+Next, I'll read DECISION_REGISTER.md, ACCEPTANCE_TESTS.md, DEV_LOG.md, and HARNESS_LOCAL_SETUP.md.
+dsh: reasoning:
+Next, I'll read DEV_LOG.md and HARNESS_LOCAL_SETUP.md. Also, for completeness, I'll read REQUIREMENTS_CHANGELOG.md and ARCHITECTURE/INTERFACES (AGENTS.md says these MUST be read). Let me try reading DEV_LOG and HARNESS_LOCAL_SETUP first.
+dsh: reasoning:
+Next, I'll read the remaining documents: ARCHITECTURE.md, INTERFACES_AND_DATA.md, REQUIREMENTS_CHANGELOG.md (AGENTS.md §1 mentions reading these). Also, I'll check the evidence _runner directory, tools/, examples/, schemas/, README_FIRST, and TICKET_TEMPLATE. I'll read ARCHITECTURE and INTERFACES_AND_DATA (which has the §8 description regarding the location of user://spike_window.json).
+dsh: reasoning:
+Let me also read ARCHITECTURE.md (mandatory per AGENTS.md §1) and check the remaining directories: tasks/evidence/_runner, tools/, examples/, schemas/, tasks/TICKET_TEMPLATE.md, README_FIRST.md. Also the git status and log (read-only). Let's run these in parallel.
+dsh: reasoning:
+Git status: on the main branch, untracked `tasks/evidence/` (the SPIKE-001 evidence directory and _runner are untracked). Log: 4 commits, latest is f61b4e1 "Authorize SPIKE-001 planning". Working tree diff is empty.
+
+Next, do read-only checks on the environment: Godot executable and version, verifying the existence of the tests directory, checking the evidence/_runner directory (read-only ls), verifying user:// save directory conventions (user:// for the standalone spike project maps to ~/Library/Application Support/Godot/app_userdata/<project name>). Also verify displays (already known from DEV_LOG, but as a read-only actual check: system_profiler might be slow; could also just record the DEV_LOG's record and do a quick re-check). AGENTS.md §1 says "必须实际执行只读检查：项目目录、Godot 可执行程序及版本、当前 Git diff、现有 .dsh/skills 与个人 Skills 是否可发现。" (must actually execute read-only checks: project directory, Godot executable and version, current Git diff, whether existing .dsh/skills and personal Skills are discoverable) — this is already done (project directory, skills). Godot version I'll do now, and also briefly confirm the --help CLI flags (read-only; but does launching Godot --help spawn a process? In DEV_LOG's R-04 it's noted that during --help probing, the Godot editor launched and didn't exit — risk!). Hmm, R-04: "为探测 --do-string 曾启动一次 Godot 进程，未退出，60 s 后由 job_kill 终止" (started a Godot process once to probe --do-string, it didn't exit, and was terminated by job_kill after 60s). That is, running `/Applications/Godot.app/Contents/MacOS/Godot --help` spawned a GUI process that didn't exit. This is a side-effect risk (GUI window flashes for a moment). Running `--version` headlessly is safer. Does `--version` exit cleanly? DEV_LOG says `--version` exit=0. I'll only run `--version`, not `--help`. As for the CLI flag list, DEV_LOG already records the available flags (vulkan/metal/opengl3/opengl3_angle/dummy drivers, --max-fps, etc.) — I'll cite that instead of re-running --help, avoiding a process that could hang. Actually, could I add `--headless` to `--version`? `Godot --version` already exits cleanly per DEV_LOG (exit 0). To be safe, run it with a timeout, e.g., `timeout`? macOS doesn't have timeout by default (gtimeout). I can use `perl -e 'alarm 20; exec @ARGV' ...` but — keep it simple: DEV_LOG says exit 0 so run directly. Add `-q`? No. Just run it.
+
+Also check: ls /Applications | grep -i godot; command -v godot, etc. Check displays: `system_profiler SPDisplaysDataType` is read-only but slow (~seconds). Can quickly run it with a timeout guard. It's read-only so it's fine. But the GUI-related part: is there currently a tests/ directory? No. Verify tests/spike/overlay does not exist.
+
+Additionally, check tasks/evidence/_runner and SPIKE-001 directories (empty?), and tools/auto/README + prompts to understand Phase A/B expectations (read-only, may be useful for plan formatting — Phase B enforces the allowed file ranges). Skim tools/auto/README.md and selftest, and the runner may be validating plan.md's path. Also the format in tasks/TICKET_TEMPLATE.md. And README_FIRST.md. Also confirm APPROVALS.md must not be read — won't read.
+
+Let me run these checks.
+
+Finished reading all the docs. Next up is the actual read-only environment check: verifying the Godot binary/version, verifying that the spike path doesn't exist yet, and checking the evidence/runner helpers (read-only).
+dsh: reasoning:
+Confirmed:
+- No godot in PATH (exit 1), /Applications/Godot.app exists, version 4.7.2.stable.official.ed1daf0bf (exit 0).
+- tests/ does not exist (exit 1).
+- tasks/evidence/SPIKE-001/ exists and is empty — the plan.md to be created there.
+- No running Godot processes (pgrep exit 1 = not found).
+- In app_userdata, there are no directories conflicting with the "Overlay Spike" project. Note: the spike project's user:// maps to ~/Library/Application Support/Godot/app_userdata/<project name>. A unique project name like "overlay_spike" should be chosen.
+
+Next, I'll also check the scheduler's Phase A template to see whether plan.md has required sections (tools/auto/prompts/phaseA.txt.tmpl — read-only) and the checks in selftest.py. Furthermore, for context I'll check README_FIRST, TICKET_TEMPLATE, and SKILLS_INTEGRATION. Reading quickly.
+dsh: reasoning:
+Now I have a complete picture of the whole thing. Key points: the runner's queue.json probably contains the allowed scope and test_cmd for SPIKE-001. Let me check queue.json for the SPIKE-001 entry to align the planned test commands (Phase B runs the test_cmd that the human filled in, but my plan should propose the exact test commands). Read-only read of queue.json is permitted (since it's not APPROVALS.md).
+dsh: reasoning:
+All the necessary information is in hand. SPIKE-001 status: ready, allowed_files is tests/spike/overlay/**, test_cmd is empty (the human fills this in before exec_ready), needs_human: true.
+
+Next, do a quick check of TICKET_TEMPLATE.md and README_FIRST.md, and also SKILLS_INTEGRATION? These are low-cost and part of being thorough. Also, examples/fish_species.json / runtime_config.json are not needed for the spike (no economy). I'll skim TICKET_TEMPLATE for the plan/evidence format.
+
+Also, check whether the project has a .godot directory: it does not (verified in DEV_LOG). And check the displays once more? DEV_LOG already records 1 built-in display. Re-running system_profiler is slow but read-only. For "truthful record" I can run it — it takes about 5–10 seconds. Actually, since the plan depends on the G-003 NOT RUN determination, I'll do a simple check. I'll run it with a reasonable timeout.
+
+One consideration: running `/Applications/Godot.app/Contents/MacOS/Godot --version` has already been executed (exit 0) — no problem, no side effects (version is displayed and it exits. Per DEV_LOG, the hang issue was with --help).
+
+Should I check the renderer driver list via `--help`? Avoid it. R-04 warned about hangs. DEV_LOG has already recorded the drivers.
+
+So, quickly: read TICKET_TEMPLATE.md and run system_profiler's display check.
+dsh: reasoning:
+All checks complete. Confirmed:
+- Single built-in Liquid Retina XDR 3456×2234, Metal 4, no external display → G-003 multi-display portion is NOT RUN.
+- No .godot cache in the repo (exit 1 = does not exist).
+- macOS 26.6.2 (25G83), arm64.
+
+Now I'll write plan.md to /Users/rain/DevGame/Fishing/tasks/evidence/SPIKE-001/plan.md. Line 2 must quote, verbatim and as-is, a single rule line from AGENTS.md. Good candidate line (one that is a genuine rule):
+
+AGENTS.md §0: "- **单 Agent 串行**：禁止启动子 Agent、fork、并行工作流、第二个大型模型。若标准预设仍暴露委派工具，**不要调用**。"
+
+This is a rule line I must observe. Quote it on line 2 verbatim (exact text).
+
+Line 1: title. Line 2: the quoted rule line (verbatim, including Markdown bold markers).
+
+Plan document content aligned with the requirements:
+- Goals
+- Files to change (limited to tests/spike/overlay/** only; additionally, runtime user://spike_window.json is outside the repo — note: DEV_LOG approved it; it's a runtime write to user data, not a repo file; Phase B scope enforcement checks repo files. List it as an approved runtime exception documented in DEV_LOG/TASKS. To be safe, explicitly state: repo writes strictly limited to tests/spike/overlay/**; runtime state files are placed under ~/Library/Application Support/Godot/app_userdata/<spike project name>/ via user://, per INTERFACES_AND_DATA §8 and DEV_LOG SPIKE-001 approved scope; do not put them in the repo.)
+- Interfaces and invariants
+- Exact test commands and expected exit codes
+- Risks and rollback
+- Acceptance item mapping (G-001–G-005, headless load, etc.)
+
+Design the spike plan (Phase B will implement this):
+
+Standalone Godot project at tests/spike/overlay/:
+- project.godot (config_version=5, Godot 4.x; application name "overlay_spike_spike001"? User data directory name must not collide; pick a unique "Fishing SPIKE-001 overlay" or "overlay-spike". app_userdata currently has Moon, Moon Star Collector, Snake Game, [unnamed project] — no collision. Use "Fishing Overlay Spike".)
+- Window/transparency settings: display/window/size/transparent = true, borderless = true, per-variant override disable_embedded_login? Not needed.
+- Main scene: Node2D/Control with a semi-transparent boat placeholder (ColorRect or a temporary sprite drawn in _draw; to avoid binary assets use a ColorRect — a simple PNG generated by code? Keep it simple: ColorRect/TextureRect via code, or a minimal SVG? Godot 4 can't easily generate a PNG in-repo without binary writes… Phase B can write files but binary assets are awkward; use ColorRect + Label — sufficient as a placeholder boat hit area.)
+- mouse_passthrough property: Window.mouse_passthrough = true (whole window) and mouse_passthrough_polygon (array of PackedVector2Array) — since R-03 says not to assume the API exists, need to detect presence via get_property_list().
+- Drag: mouse down within threshold on boat area (e.g. 6px) starts drag, use DisplayServer.window_set_position, clamp position to safe area of primary screen rect on restore.
+- Persist position to user://spike_window.json on drag end / on exit (WM close request); load on startup with fallback to a safe rectangle.
+- 30 FPS: Engine.max_fps = 30; logic timing via Time.get_ticks_msec(), not frame count.
+- Renderer comparison: run with --rendering-driver metal and --rendering-driver opengl3 (Compatibility); user-approved automatic comparison of renderer and passthrough variants.
+- Capability probe script: headless-safe — prints presence of get_property_list() for Window's passthrough properties, window flags, transparency support; writes a machine-readable report.
+
+Where do spike reports/evidence go? Phase B allowed_files = tests/spike/overlay/** only — meaning the report must be written inside tests/spike/overlay/ (e.g. tests/spike/overlay/report/*.json or .md) or to tasks/evidence? Phase B's scope check likely enforces only tests/spike/overlay/** (queue's allowed_files). So spike-generated evidence files must go under tests/spike/overlay/report/. Screenshots: macOS screencapture writes to a specified path — can write under tests/spike/overlay/evidence/ (inside the allowed scope). But screencapture of the desktop may capture private content — TECH_SPIKE says only capture the game window; screencapture -l<windowid> captures a specific window; or use Godot's own get_viewport().get_texture().get_image().save_png() to save the viewport as a PNG — better: in-engine viewport capture saves inside the spike directory. Good.
+
+Exact test commands with expected exit codes:
+
+1. Headless load / script verification:
+```
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path tests/spike/overlay --quit-after 2
+```
+Hmm, `--quit-after N` quits after N frames — supported in Godot 4. DEV_LOG listed CLI flags: --headless, --path, --scene, --max-fps, --rendering-driver; no --do-string. --quit-after is a standard Godot 4 CLI flag but not listed in the DEV_LOG list (the list was partial). To be safe, propose `--quit` (quit after first iteration) — also standard. Actually both `--quit`/`-e`… Godot 4 has `--quit` (quit after first iteration) and `--quit-after <int>` (quit after N iterations). These are standard in 4.x. But per R-03 "不预设 API 存在 (do not assume API exists)", we can't 100% presume; the plan should include a fallback: if `--quit-after` is unsupported (exit code 255/usage error), use a `--scene res://main.tscn` variant, and have the probe script self-terminate via get_tree().quit() after the report. Safest: have the probe script always exit with get_tree().quit(), so headless run is: `Godot --headless --path tests/spike/overlay` exit expected 0.
+
+Expected: exit 0 and no SCRIPT ERROR lines.
+
+2. Capability probe headless run (writes tests/spike/overlay/report/capability.json and prints to stdout):
+Same command; expected exit 0; report contains presence flags for mouse_passthrough / mouse_passthrough_polygon, transparent/borderless flags, DisplayServer.get_display_count()==1, screen size.
+
+3. GUI run (manual): `/Applications/Godot.app/Contents/MacOS/Godot --path tests/spike/overlay --rendering-driver metal --max-fps 30` — note: DEV_LOG's list included a `--max-fps` CLI. GUI session must be run by a human (or Phase B launches it but evidence requires human observation; the runner's needs_human=true means human acceptance). Expected exit code 0 on normal quit; but GUI run from terminal: exit 0 when user quits.
+
+Wait — does Phase B run the GUI? Per README, GUI/manual acceptance is a human thing: "GUI/真机验收（SPIKE-001 的 G-001/G-002…）: in_review 后需你人工验收". Phase B can automate only headless + capability probe; G-001/G-002 require human verification after in_review. The test_cmd the human fills in for the runner will be the headless command (the runner runs it automatically). GUI evidence is collected manually by the human, or Phase B could launch the GUI briefly for screenshots — risky: launching GUI from an agent session causes a window to appear; R-04 already records this hazard. What I'll propose: Phase B automates headless + capability probe; GUI run is launched by the human (or under human supervision), with an in-app self-screenshot button; screenshots are saved into tests/spike/overlay/evidence/; G-001/G-002/G-004 recorded via human checklist. Phase B does not launch a GUI without a human present; instead it records a GUI procedure. Actually the DEV_LOG SPIKE-001 approved scope says "在 spike 内自动对比渲染器（Metal / Compatibility）与鼠标穿透变体并记录优劣 (within the spike, automatically compare renderers (Metal / Compatibility) and mouse-passthrough variants, recording the pros and cons)" — automatic comparison is approved. Renderer comparison of the actually transparent window needs a GUI. Hmm, "自动对比" might mean: the spike app has a variant switching feature (keys 1/2/3) and records a matrix, the human runs it once and the app self-logs to report/variant_matrix.json. This lets Phase B stay headless while preserving the human's GUI authority. Design plan: the app supports launching with `--rendering-driver` and `-- --variant=passthrough_full|polygon|off` (user args after `--`) to write the observed capability state to the report file; plus a human operation checklist.
+
+Expected exit codes:
+- headless import + load: 0.
+- Godot returns non-zero on script errors (a headless run with a script error returns 35? Actually in Godot 4: is exit code 35 used for a failed --do-string? no… hmm. I shouldn't fabricate a specific non-zero code beyond documented behavior. Better: expected exit 0 and stdout/stderr containing neither "SCRIPT ERROR" nor "ERROR: Failed loading resource". On failure exit ≠ 0 (code is version-dependent) — honest and accurate.)
+
+Rollback: `rm -rf tests/spike/overlay` (needs human approval as a deletion — record it; the rollback procedure is documented, execution requires human), plus delete ~/Library/Application Support/Godot/app_userdata/Fishing Overlay Spike/spike_window.json (user data). Since the baseline is git-tracked, `git status` reverts to clean after deletion; no push/commit without approval (the runner will auto-commit on success).
+
+Risks:
+- R-06 Metal transparency/passthrough unverified; fallback options must be reported, not silently degraded (mac_level: no transparency → needs approval).
+- mouse_passthrough_polygon semantics differ from mouse_passthrough; probe with get_property_list.
+- Godot 4.7.2 CLI lacks --do-string → probe inside a script.
+- Retina scaling: contentScale; only built-in display → G-003 NOT RUN.
+- Launching a GUI from a headless agent may flash a window; per runner README, GUI is human-launched.
+- .godot cache inside tests/spike/overlay after headless runs — wait! Does a headless run in the project directory create a .godot/ cache inside tests/spike/overlay/? It creates a res://.godot/ folder. That is inside the allowed scope tests/spike/overlay/** so it is permitted by the scope check, but pollutes git — .gitignore may not cover it. Check .gitignore contents — read-only. Let's verify whether .gitignore has a Godot section. If it doesn't, the Phase B commit will include cache files. Note it in the plan: if tests/spike/overlay/.godot/ appears it is an engine cache (inside allowed scope but should be excluded from commit; ask a human to add .gitignore entry — .gitignore change is outside Phase B scope; record as risk). Actually, can we set `application/config/features`? no — is there a project setting to relocate the cache? Is there an `application/config/use_hidden_project_data_dir`? Hmm, Godot 4 has `--user-data-dir` for the user directory but the .godot cache always sits next to the project.godot. Godot 4.3+: there's no official cache relocation. Note as a risk; Phase B can add a `.gitignore` inside tests/spike/overlay/ (inside the allowed scope!) — a nested .gitignore under tests/spike/overlay/ is inside the allowed scope and can ignore `.godot/`.
+
+Let me quickly check the root .gitignore for reference.
+
+Interface and invariant section:
+- Spike exposes window capabilities only: no economy, no FSM, no business save. spike_window.json schema: {x,y,width,height,display_hint,ts_utc} — a separate thing from the game save schema (desktop_window block of INTERFACES_AND_DATA §3).
+- Invariants: 30 FPS while visible (Engine.max_fps=30; SDD-175); logic timing must not count frames (use Time.get_ticks_msec / ticks, not frame count); clicks on transparent regions must pass through to the underlying app; boat hit region is interactive; drag threshold (e.g. ≥6px) prevents misclicks; window position is restored, clamped to a safe rect.
+
+Acceptance mapping:
+- G-001 → GUI checklist + human screenshot: click-through on transparent parts vs. hit on the boat.
+- G-002 → drag threshold + position persistence via spike_window.json (restart test, human observes; can the app itself auto-log restore OK to a report? The app can compare saved vs. applied position and write to a report file — a semi-automated evidence trail inside the spike directory.)
+- G-003 → multi-display is NOT RUN (single built-in display); the Retina scale-check portion is observable (screenshot).
+- G-004 → observed 30 FPS: app logs an FPS estimate via tick deltas to the report (visible 30±tolerance); human observes no stutter.
+- Headless load / syntax → runner's test_cmd; per ARCHITECTURE, separates GUI and headless evidence.
+- V01-W01/W02/W03, SDD-175 mapping.
+
+Additionally, the plan should note: Phase B must not modify TASKS.md/DEV_LOG (outside allowed scope — per AGENTS.md §3.5 the runner/human updates ticket status; Phase B's allowed_files is tests/spike/overlay/** only, so status updates are the runner/human's job; record this).
+
+Also mention: no new repo files other than tests/spike/overlay/**; no writes to APPROVALS; no git writes; no subagents; serial only.
+
+Test commands (exact, to be run in Phase B; the human fills test_cmd with the headless one):
+
+C1: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing/tests/spike/overlay --quit-after 3` → expected exit 0 (fallback: `--quit`, or script self-terminate; treat exit 0 + no SCRIPT ERROR as pass; DEV_LOG has not verified --quit-after exists, so if flag is unknown expect a non-zero usage error → fall back to self-terminate design and rerun without the flag).
+
+Hmm — actually, in the Godot 4.7 CLI (DEV_LOG's list) "可用：--headless、--path、--scene、--max-fps、--rendering-driver (available: --headless, --path, --scene, --max-fps, --rendering-driver)" — no mention of --quit/--quit-after. Design so the main scene always self-terminates after probe + save when launched with `--headless`… simplest: main script's _ready() in headless mode runs the probe, writes the report, calls get_tree().quit(). Then command: `Godot --headless --path tests/spike/overlay` → exit 0. GUI mode (no --headless) stays open for the human.
+
+C2: Renderer variant headless probe: `Godot --headless --path tests/spike/overlay --rendering-driver metal` and `... --rendering-driver opengl3` → expected exit 0; report lines show each driver's requested vs. effective RenderingServer.get_current_rendering_method() (headless may fall back to 'dummy' — record honestly; true transparency comparison is GUI/human).
+
+Wait: with --headless the rendering driver is dummy anyway. Per-variant headless runs only verify script load-ability. True renderer-vs-transparency comparison is a GUI thing. Keep C2 for script-loadability under each driver; the GUI matrix is for the human.
+
+C3: GUI run (human): `Godot --path tests/spike/overlay --rendering-driver metal` → app displays transparent borderless window with a boat rectangle; human follows checklist G-001/G-002/G-004, presses key to self-capture viewport PNG into tests/spike/overlay/evidence/, and quit (exit 0). Also run with opengl3.
+
+C4: Position persistence check: after GUI quit, `cat "$HOME/Library/Application Support/Godot/app_userdata/Fishing Overlay Spike/spike_window.json"` → exit 0, valid JSON with clamped x,y; relaunch → window restored (human observes).
+
+C5: git scope check: `git -C /Users/rain/DevGame/Fishing status --porcelain` → expected only `?? tests/spike/overlay/` (+ existing ?? tasks/evidence/); exit 0.
+
+Expected exit codes: all 0; on failure non-zero + logs kept, no faking.
+
+Risk section and rollback:
+- Delete tests/spike/overlay + user data dir for rollback; deletion is a destructive op → only after human approval; no push; runner will auto-commit on success.
+- Risk: if GUI is launched from the agent, GUI window may appear (R-04) → Phase B does headless only; GUI is human-launched.
+- .godot cache pollution → nested .gitignore inside the spike directory (allowed scope).
+- macOS 26.6 + Godot 4.7.2 Metal transparency/passthrough unverified (R-06) → if the probe/GUI shows failure: stop, record evidence, present alternatives, mark BLOCKED; never silently degrade (SDD).
+- mouse_passthrough_polygon may not exist / have different semantics → probe first; if absent, only test full-window passthrough + interactive subwindows? Alternative: use two windows (main passthrough window + a separate small window for the boat with passthrough disabled) — Godot 4 sub-windows can have independent flags. Mention as a candidate fallback requiring human approval.
+- No --do-string → in-script probe (already R-03).
+- Retina: test stretching at integer scale.
+- Focus stealing: set `display/window/energy_saving/keep_screen_on` to false? no; use unfocusable? Window's `unfocusable` property. Include in probe list.
+
+Also: no economy/FSM implementation; no fish; temporary rectangle only.
+
+Plan document structure (in Chinese, aligned with the task):
+1. Line 2 quoted AGENTS.md rule verbatim.
+2. Header: ticket, phase, date, environment facts with commands + exit codes (observation log).
+3. Goals (goals / non-goals)
+4. Files to change (allow-list, exact file listing under tests/spike/overlay/**; runtime user:// files are outside the repo)
+5. Interfaces and invariants
+6. Implementation steps (concise)
+7. Exact test commands and expected exit codes
+8. GUI manual acceptance procedure
+9. Risks and rollback
+10. Acceptance item mapping
+11. Compliance statement (read-only, no subagents, no APPROVALS.md, no git writes)
+12. Trailing: the "PHASE-A-DONE" decision goes in my chat reply, not necessarily in the file. The template says "最后一行输出 (output on the final line)" — that's the session's final line; put PHASE-A-DONE on the last line of the chat. Should the last line of plan.md be something else? Safe bet: end plan.md with a compliance section; "PHASE-A-DONE" on the final line of my final chat message. Actually, ambiguity: "直接在最后一行输出 (output directly on the final line)" refers to the agent's output. Do both? No — putting PHASE-A-DONE on the final line of plan.md may confuse the runner's scope check? Harmless. But safer to put it on the last line of my reply (the agent's "output"). Hmm, the runner probably parses the session transcript's last line. My reply's last line = "PHASE-A-DONE". Not necessarily put it on plan.md's last line… actually, harmless to put it on plan.md's final line too? If the runner checks whether plan.md's final line starts with BLOCKED to decide to freeze — if plan.md ends with "PHASE-A-DONE" it might read either. Include the marker on the last line of my chat reply; leave plan.md ending with a compliance note. Hmm, risk: the runner may capture the "session output" as the final assistant message text — that's what I control. Do that.
+
+Decision: is this ticket BLOCKED? The ticket is approved (DEV_LOG + TASKS record human approval; the queue has it ready for Phase A). No requirement change, no destructive op is required right now (rollback deletion only documented, not executed). GUI items are human-accepted later (that's the runner's design, not a Phase A blocker). So: PHASE-A-DONE.
+
+Wait — one consideration: needs_human: true, GUI acceptance required. But per runner README, Phase B runs after human fills test_cmd; GUI is done by the human at in_review. Phase A only needs to produce the plan. No blockers.
+
+Let me check .gitignore for the Godot entry (read-only, one quick call), then write plan.md.
+
+All read-only evidence has been gathered. Quickly check whether `.gitignore` already covers Godot's cache (related to the spike cache pollution risk), then write up the plan.
+dsh: reasoning:
+.gitignore already globally ignores `.godot/` (line 15: `.godot/` matches at any depth). Therefore the cache in tests/spike/overlay/.godot/ will also be ignored — no problem; note that in the plan (no .gitignore modification needed. That's out of scope in any case).
+
+Now I'll write plan.md. Line 2 must be the AGENTS.md rule line quoted verbatim. Exact rule line to use, from AGENTS.md:
+
+`- **单 Agent 串行**：禁止启动子 Agent、fork、并行工作流、第二个大型模型。若标准预设仍暴露委派工具，**不要调用**。`
+
+This line must appear character-for-character exactly as in AGENTS.md. Let me re-check the injected AGENTS.md: "- **单 Agent 串行**：禁止启动子 Agent、fork、并行工作流、第二个大型模型。若标准预设仍暴露委派工具，**不要调用**。" To be safe, cross-check against the actual file on disk — read the exact line from the file. Let me grep the file to get the exact byte sequence.
+dsh: reasoning:
+[Thinking] Accurate rule line (AGENTS.md line 9): `- **Single Agent Serial**: Prohibited to launch sub Agents, forks, parallel workflows, or a second large-scale model. If the standard preset still exposes a delegation tool, **do not call** it.`
+
+Next, write the plan.md file. This is the only permitted write. Write it carefully and completely.
+dsh: reasoning:
+Let's verify the second line of plan.md, confirm that the quoted rule lines match AGENTS.md exactly, and confirm that there are no other changes to the working tree.
+dsh: reasoning:
+Verified:
+- The second line of plan.md contains the rule from line 9 of AGENTS.md verbatim, character for character (MATCH: yes; the parenthetical note is a trailing annotation after the quoted text, and the quoted portion is a complete verbatim rule).
+- git status shows only `?? tasks/evidence/` (which already existed, plus the plan.md I newly wrote within it); no other changes — the working tree has not been modified by this phase aside from the permitted writes.
+
+Updating the todos and submitting the final summary that ends with PHASE-A-DONE.
+dsh: reasoning:
+Done. Final summary and PHASE-A-DONE on the last line.

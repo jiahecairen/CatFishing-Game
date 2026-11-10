@@ -1,0 +1,36 @@
+{
+  "display_count": -1,
+  "display_server": "headless",
+  "engine_version": "4.7.2-stable (official)",
+  "headless": true,
+  "main_display_safe_area": null,
+  "project_display_settings": {
+    "display/window/size/always_on_top": true,
+    "display/window/size/borderless": true,
+    "display/window/size/transparent": true,
+    "display/window/size/viewport_height": 160,
+    "display/window/size/viewport_width": 220
+  },
+  "property_values": {
+    "always_on_top": false,
+    "borderless": false,
+    "mouse_passthrough": false,
+    "mouse_passthrough_polygon": [],
+    "transparent": false,
+    "unfocusable": false,
+    "visible": true
+  },
+  "renderer_note": "headless 下此值可能为 dummy；Metal/Compatibility 实证必须来自 GUI 人工运行",
+  "rendering_method": "forward_plus",
+  "ts_utc": "2026-11-10 20:36:40",
+  "window_properties": {
+    "always_on_top": true,
+    "borderless": true,
+    "mouse_passthrough": true,
+    "mouse_passthrough_mode": false,
+    "mouse_passthrough_polygon": true,
+    "transparent": true,
+    "unfocusable": true,
+    "visible": true
+  }
+}
