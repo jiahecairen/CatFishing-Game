@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-10T22:32:17+00:00",
+  "updated": "2026-11-10T23:17:54+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -197,7 +197,7 @@
     {
       "id": "SPIKE-001-FIX-002",
       "title": "修复 macOS 窗口拖动不跟手问题",
-      "status": "ready",
+      "status": "awaiting_approval",
       "deps": [
         "AUDIT-001"
       ],
