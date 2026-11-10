@@ -197,7 +197,7 @@
     {
       "id": "SPIKE-001-FIX-002",
       "title": "修复 macOS 窗口拖动不跟手问题",
-      "status": "awaiting_approval",
+      "status": "exec_ready",
       "deps": [
         "AUDIT-001"
       ],
