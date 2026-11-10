@@ -29,3 +29,11 @@ date: 2026-11-10
 scope: tests/spike/overlay/**
 notes: 人工批准 SPIKE-001 的已审查计划，仅允许修改所列范围。
 END-APPROVAL
+
+BEGIN-APPROVAL ID=SPIKE-001-FIX-001 PHASE=B
+APPROVED
+by: rain
+date: 2026-11-10
+scope: tests/spike/overlay/**
+notes: 人工批准 SPIKE-001-FIX-001 的已审查计划，仅允许修改所列范围。
+END-APPROVAL
