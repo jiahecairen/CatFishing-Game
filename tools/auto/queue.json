@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-10T21:15:41+00:00",
+  "updated": "2026-11-10T21:17:39+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -182,7 +182,7 @@
     {
       "id": "SPIKE-001-FIX-001",
       "title": "修复鼠标穿透和窗口拖动抖动",
-      "status": "blocked",
+      "status": "ready",
       "deps": [
         "AUDIT-001"
       ],
@@ -193,12 +193,11 @@
       "needs_human": true,
       "brief": "见 tasks/TASKS.md 同名工单：Godot 4 透明无边框最小窗口 + 穿透/拖动 + 30FPS；允许 tests/spike/overlay/** 独立工程；GUI 项需人工验收。",
       "retries": 0,
-      "blocked_reason": "Phase A 前工作树已越界: [(' M', 'tools/auto/queue.json', '超出 allowed_files')]",
-      "blocked_at": "2026-11-10T21:15:41+00:00"
+      "blocked_reason": "Phase A 前工作树已越界: [(' M', 'tools/auto/queue.json', '超出 allowed_files')]"
     }
   ],
-  "frozen": {
-    "reason": "SPIKE-001-FIX-001: Phase A 前工作树已越界: [(' M', 'tools/auto/queue.json', '超出 allowed_files')]",
-    "at": "2026-11-10T21:15:41+00:00"
+  "unfrozen": {
+    "by_human_command": "2026-11-10T21:17:39+00:00",
+    "reason": "Human committed the new repair ticket; working tree reviewed"
   }
 }
