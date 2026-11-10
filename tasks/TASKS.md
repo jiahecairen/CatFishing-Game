@@ -1,6 +1,6 @@
 # v0.1 原子开发工单 / Backlog
 
-**状态：Planned / 全部未执行。** 必须由 Harness 读取本机真实工程和用户批准后更新状态。**严格串行**，只有一个本地 Flash。若前置测试失败，不得将依赖工单标记完成。
+**状态：AUDIT-001 = Review（只读审计已完成，待用户放行）；SPIKE-001 = In Progress（仅计划已批准，未写码）；其余工单 = Planned / 未执行。** 状态由 Harness 依据本机真实工程与用户批准更新，见文末「工单状态记录」与 `docs/DEV_LOG.md`。**严格串行**，只有一个本地 Flash。若前置测试失败，不得将依赖工单标记完成。
 
 | ID | 标题 | 前置 | 主要交付 | 最小验收 |
 |---|---|---|---|---|
@@ -61,4 +61,41 @@ Test result & evidence:
 Git diff / commit (if approved):
 Risks & unresolved decisions:
 Owner approval where required:
+```
+
+## 工单状态记录（Harness 实际执行，2026-11-10）
+
+```text
+ID: AUDIT-001
+Status: Review
+Owner: Local Flash + DeepSeek Harness (serial)
+Scope / Dependencies / Allowed files: 只读；无依赖；本票零改动。事后经用户额外批准的写入仅 3 处：
+  .gitignore（新建）、docs/DEV_LOG.md（新建）、tasks/TASKS.md（本状态段 + 首行状态更新）。
+Interface & invariants: 无代码接口；仅核对 schemas/ 与 examples/ 一致性（人工比对一致）。
+Executed commands + exit codes: 见 docs/DEV_LOG.md 表格（Godot --version=0 4.7.2.stable.official.ed1daf0bf；
+  审计时 git status=128 无仓库；curl 127.0.0.1:9931/health=0 {"status":"ok"}；ps=1 被沙箱拒绝）。
+Test result & evidence: 无任何自动化测试被执行（本票不需要）；工作树审计前后均 25 个文件，无 .godot/ 缓存。
+  版本控制基线 commit 4d8ed4d，工作树干净，未配置远端、未推送。
+Git diff / commit (if approved): 4d8ed4d（baseline 文档包原样入库）+ 本次票证据 commit。
+Risks & unresolved decisions: R-01~R-11 全部记录在 docs/DEV_LOG.md；OPEN-001 待用户在 FSM-001 前裁定；
+  OPEN-005 部分关闭（服务端 262144 已证实；65536 输出与长上下文稳定性未实测）。
+Owner approval where required: 已批准 = git init + baseline + .gitignore；SPIKE-001 落点改为
+  tests/spike/overlay/ 独立工程；本机回环只读健康检查；spike 内自动对比渲染器与穿透变体。
+```
+
+```text
+ID: SPIKE-001
+Status: In Progress
+Owner: Local Flash + DeepSeek Harness (serial)
+Scope / Dependencies / Allowed files: 依赖 AUDIT-001（Review）+ 人工批准（已给）。
+  允许新建 tests/spike/overlay/**（含其自身 project.godot，独立工程，根目录不建入口）；
+  运行时写 user://spike_window.json。禁止改动既有文档/示例/schema。
+Interface & invariants: 仅窗口能力 + 窗口几何持久化；不实现经济、存档业务、FSM 结算逻辑。
+  不变量：可见 30 FPS（SDD-175）；逻辑计时禁止依赖帧计数；透明区点击必须落到下方 App。
+Executed commands + exit codes: 尚未执行（未写码）。
+Test result & evidence: 尚无。G-001/G-002 需 GUI 人工证据；G-003 因本机仅单块内置屏记 NOT RUN。
+Risks & unresolved decisions: macOS 26.6 + Godot 4.7.2 + Metal 的透明/穿透能力未验证（R-06）；
+  Godot 4.7 无 --do-string，能力矩阵须在脚本内用 get_property_list() 打印。
+Owner approval where required: 已批准自动对比 Metal/Compatibility 与穿透变体；
+  任何需求级降级（放弃透明或穿透）仍须单独报批。
 ```
