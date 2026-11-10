@@ -5,7 +5,7 @@
   "tickets": [
     {"id": "AUDIT-001", "title": "只读项目/环境/Skills 审计（人工已完成）", "status": "done",
      "deps": [], "allowed_files": [], "test_cmd": "", "needs_human": false, "brief": ""},
-    {"id": "SPIKE-001", "title": "macOS 透明/穿透/拖动探针", "status": "held",
+    {"id": "SPIKE-001", "title": "macOS 透明/穿透/拖动探针", "status": "ready",
      "deps": ["AUDIT-001"], "allowed_files": ["tests/spike/overlay/**"],
      "test_cmd": "", "needs_human": true,
      "brief": "见 tasks/TASKS.md 同名工单：Godot 4 透明无边框最小窗口 + 穿透/拖动 + 30FPS；允许 tests/spike/overlay/** 独立工程；GUI 项需人工验收。"},
