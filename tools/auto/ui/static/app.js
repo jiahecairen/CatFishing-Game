@@ -1,0 +1,31 @@
+'use strict';
+let state = { items:[], selected:null, csrf:null, running:false };
+const el = id => document.getElementById(id);
+const fmt = {held:'未放行',ready:'待规划',awaiting_approval:'待审批',exec_ready:'已批准待编码',in_review:'待验收',done:'已完成',blocked:'已阻塞',Blocked:'已阻塞'};
+const t = value => document.createTextNode(String(value ?? ''));
+function text(id,value){el(id).textContent = value;}
+function node(tag, cls, content){ const e=document.createElement(tag); if(cls)e.className=cls; if(content!==undefined)e.append(t(content)); return e; }
+function notice(message,type='info') {const n=el('notification'); n.hidden=false;n.className='notice '+(type==='info'?'':type);n.textContent=message; n.scrollIntoView({block:'nearest'});}
+async function get(url){const r=await fetch(url,{cache:'no-store'});const v=await r.json();if(!r.ok)throw Error(v.error||r.status);return v;}
+async function post(url,obj={}){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':state.csrf},body:JSON.stringify(obj)});const v=await r.json();if(!r.ok||!v.ok)throw Error(v.error||r.status);return v.result;}
+function renderList(){const box=el('tickets');box.replaceChildren();for(const item of state.items){let b=node('button','ticket'+(state.selected===item.id?' selected':''));b.type='button';let title=node('div','ticket-title',item.title);b.append(title);let sub=node('div','ticket-sub');sub.append(node('span','small muted',item.id));sub.append(node('span','tag '+item.status,fmt[item.status]||item.status));b.append(sub);b.addEventListener('click',()=>{state.selected=item.id;renderList();renderDetail();});box.append(b);}if(!state.items.length)box.append(node('p','muted','暂无工单，或者队列格式不兼容'));}
+function addSection(root,title,value,asCode=true){const sec=node('div','section');sec.append(node('h3','',title));sec.append(node('div',asCode?'codebox':'desc',value));root.append(sec);}
+async function readEvidence(id,name){try{return (await get(`/api/evidence?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`)).text;}catch(e){return '读取失败：'+e.message;}}
+async function renderDetail(){const id=state.selected;const item=state.items.find(x=>x.id===id);const root=el('details');root.replaceChildren();if(!item){root.append(node('p','muted','请选择一张工单'));return;}
+root.append(node('div','detail-title',item.title));root.append(node('div','desc',item.id+' · '+(fmt[item.status]||item.status)));const chips=node('div','chips');chips.append(node('code','',item.status));chips.append(node('code','',item.plan_available?'已生成 plan.md':'暂无 plan.md'));root.append(chips);
+addSection(root,'允许修改范围',item.allowed_files?.length?item.allowed_files.join('\n'):'（未识别明确范围，禁止审批）');
+addSection(root,'现有测试命令',item.test_cmd||'（未设置；批准时需要填写）');
+const section=node('div','section');section.append(node('h3','','实施计划 plan.md'));const plan=node('pre','codebox','正在读取…');section.append(plan);root.append(section);
+const btns=node('div','buttons');btns.style.marginTop='16px';const open=node('button','button secondary','查看报告');open.onclick=async()=>{const result=await readEvidence(id,'report.md');plan.textContent=result;};btns.append(open);
+const approve=node('button','button primary','✓ 人工批准编码');approve.disabled = item.status!=='awaiting_approval' || !item.plan_available || !(item.allowed_files||[]).length;approve.onclick=()=>{text('approval-scope',`工单：${id}\n允许文件：\n${item.allowed_files.join('\n')}\n\n请确认计划和测试命令后再批准。`);el('test-command').value=item.test_cmd||'';el('who').value='rain';el('notes').value=`人工批准 ${id} 的已审查计划，仅允许修改所列范围。`;el('confirm-id').value='';el('approval').showModal();};btns.append(approve);root.append(btns);
+plan.textContent=await readEvidence(id,'plan.md');}
+async function refresh(){try{const v=await get('/api/status');if(!v.ok)throw Error(v.error);state.items=v.items;state.csrf=v.csrf;state.running=v.running;text('project',v.project);text('service-label',v.running?'Runner 正在运行':'本地面板已连接');text('running',v.running?'已有 Runner 正在运行':'');el('dot').style.background='#46c98d';text('count-total',v.items.length);text('count-pending',v.items.filter(i=>i.status==='awaiting_approval').length);text('count-ready',v.items.filter(i=>['ready','exec_ready'].includes(i.status)).length);text('count-review',v.items.filter(i=>i.status==='in_review').length);if(!v.items.some(x=>x.id===state.selected))state.selected=v.items[0]?.id||null;renderList();renderDetail();}catch(e){el('dot').style.background='#f47179';text('service-label','读取失败');notice('无法读取本地队列：'+e.message,'error');}}
+el('refresh').onclick=refresh;
+el('cancel').onclick=()=>el('approval').close();
+el('approve-final').onclick=async()=>{const id=state.selected;const body={id,confirm:el('confirm-id').value,by:el('who').value,notes:el('notes').value,test_cmd:el('test-command').value};if(body.confirm!==id){notice('工单确认 ID 不匹配，未批准。','error');return;}if(!window.confirm(`确认批准 ${id} Phase B 并提交人工审批记录到 Git？\n\n这一步只授权，不会自动执行代码。`))return;try{el('approve-final').disabled=true;const r=await post('/api/approve',body);el('approval').close();notice(`人工批准已记录。${r.check}。${r.commit}`,'success');await refresh();}catch(e){notice('审批未成功：'+e.message,'error');}finally{el('approve-final').disabled=false;}};
+el('run').onclick=async()=>{if(!window.confirm('启动 AUTO-001 Runner 执行已授权工单？\n这会调用本地 Qwen Flash，允许 Runner 在审批范围内修改代码与运行测试。'))return;try{const v=await post('/api/start');notice(`Runner 已启动，PID ${v.pid}。日志路径：${v.log}`,'success');await refresh();}catch(e){notice('启动失败：'+e.message,'error');}};
+el('pause').onclick=async()=>{if(!window.confirm('暂停后续工单调度？注意当前正在运行的工单通常不会立即停止。'))return;try{const v=await post('/api/pause');notice('暂停命令结果：'+v.output);await refresh();}catch(e){notice('暂停失败：'+e.message,'error');}};
+el('resume').onclick=async()=>{if(!window.confirm('恢复调度器继续选择下一张已授权工单？'))return;try{const v=await post('/api/resume');notice('恢复命令结果：'+v.output);await refresh();}catch(e){notice('恢复失败：'+e.message,'error');}};
+el('runner-status').onclick=async()=>{try{const v=await get('/api/runner-status');notice(`Runner 状态 (exit ${v.returncode})\n${v.output}`);}catch(e){notice(e.message,'error');}};
+el('logs').onclick=async()=>{try{const v=await get('/api/logs');notice('最近运行日志：\n'+v.text);}catch(e){notice(e.message,'error');}};
+refresh();
