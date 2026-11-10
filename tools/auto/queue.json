@@ -193,6 +193,21 @@
       "needs_human": true,
       "brief": "见 tasks/TASKS.md 同名工单：Godot 4 透明无边框最小窗口 + 穿透/拖动 + 30FPS；允许 tests/spike/overlay/** 独立工程；GUI 项需人工验收。",
       "retries": 1
+    },
+    {
+      "id": "SPIKE-001-FIX-002",
+      "title": "修复 macOS 窗口拖动不跟手问题",
+      "status": "ready",
+      "deps": [
+        "AUDIT-001"
+      ],
+      "allowed_files": [
+        "tests/spike/overlay/**"
+      ],
+      "test_cmd": "/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing/tests/spike/overlay",
+      "needs_human": true,
+      "brief": "在 SPIKE-001-FIX-001 已完成的代码基础上优化窗口拖动，不得重做项目。\n\n现有 full、polygon、off 三种鼠标穿透模式已经通过 GUI 验收，必须保持不变。\n\n当前问题：鼠标拖动橙色小船时已经不抖动，但仍有明显延迟和不跟手的感觉。\n\nPhase A 制定计划，人工批准后 Phase B 实现：\n1. 保留现有屏幕坐标手动拖动方案 A。\n2. 新增 DisplayServer.window_start_drag() 原生拖动方案 B。\n3. 提供 A/B 切换快捷键，便于 GUI 人工比较。\n4. 保留 6px 点击与拖动阈值；如原生拖动不能兼容，必须明确报告。\n5. 保留窗口位置保存及重启恢复。\n6. 正式模式维持 30 FPS。\n7. 可进行临时 60 FPS 性能对照，正式配置必须恢复 30 FPS。\n8. 运行 Godot Headless 测试，记录结果。\n9. GUI 流畅性必须由用户实际测试，不得自动宣布通过。\n\n仅允许修改 tests/spike/overlay/**。\n不得修改正式游戏、AUTO-001 调度器或审批账本。",
+      "retries": 0
     }
   ],
   "unfrozen": {
