@@ -1,0 +1,29 @@
+# AUTO-001 验证用 overlay：让 headless profile 走本机 llama.cpp :9931 的 Qwen Flash。
+# 不修改任何 profile 目录内文件；仅作为 `dsh headless --patch <本文件>` 的一次性叠加层。
+# provider/model id 必须与 `curl http://127.0.0.1:9931/v1/models` 真实返回一致。
+- id: llm-pi-ai
+  name: "@deepseek-ai/dsh-llm-pi-ai"
+  config:
+    providers:
+      local-qwen2:
+        displayName: Qwen3.8 Flash Next (headless AUTO-001)
+        apiKeyEnv: LOCAL_QWEN2_API_KEY
+        api: openai-completions
+        baseURL: http://127.0.0.1:9931/v1
+        models:
+          - id: ggml-org/Qwen3.8-Flash-Next-GGUF:IQ4_NL
+            name: ggml-org/Qwen3.8-Flash-Next-GGUF:IQ4_NL
+            contextWindow: 256000
+            maxTokens: 65536
+            input:
+              - text
+            reasoningEfforts:
+              off: null
+              low: low
+              medium: medium
+              high: high
+- id: agent-default-model
+  name: "@deepseek-ai/dsh-agent-default-model"
+  config:
+    provider: local-qwen2
+    model: ggml-org/Qwen3.8-Flash-Next-GGUF:IQ4_NL
