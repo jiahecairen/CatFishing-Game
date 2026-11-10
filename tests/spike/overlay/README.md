@@ -23,14 +23,19 @@
 ```
 
 窗口：220×160 无边框置顶小窗；橙色矩形 = 临时“船”占位（不透明命中区）；其余区域全透明；顶部 Label 显示变体/FPS/位置。
+**启动默认 = 变体 2（polygon 生产语义）**：透明区鼠标穿透 + 船体可点击/可拖动（SPIKE-001-FIX-001 修正 A）。
+
+穿透语义（Godot `Window.mouse_passthrough_polygon` 实测语义，以 G-001c 人工判定为准）：
+**多边形内部接收鼠标事件，多边形外部穿透**；`mouse_passthrough=true` 时多边形设置无效。
+polygon 变体的多边形 = Ship 实际可交互矩形（运行时从 Ship 节点全局矩形取值），**不使用**“全窗减船体”的反向凹多边形。
 
 ### 键位
 
 | 键 | 动作 |
 |---|---|
-| 1 | 变体 full：整窗鼠标穿透（对照组，船体也不应响应） |
-| 2 | 变体 polygon：`mouse_passthrough_polygon` 顶部条穿透、船体保留可交互（API 缺失时自动记 unsupported） |
-| 3 | 关闭穿透（对照，全窗可拦截） |
+| 1 | 变体 full：`mouse_passthrough=true` + 多边形清空 → 整窗鼠标穿透（对照组，船体也不应响应） |
+| 2 | 变体 polygon（**启动默认**）：`mouse_passthrough=false` + 多边形=船体矩形 → 船体接收事件、其余透明区穿透（API 缺失时自动记 unsupported 并退回整窗拦截） |
+| 3 | 变体 off：`mouse_passthrough=false` + 多边形清空 → 关闭穿透（对照，全窗可拦截） |
 | 9 | 引擎内自截图游戏窗口 → `evidence/spike_<utc>.png`（不截桌面） |
 | Q / Esc | 退出（退出前写 `report/observed_state.json` 并保存窗口位置） |
 
@@ -38,11 +43,12 @@
 
 | # | 步骤 | 判定标准 | 结果（人工填） |
 |---|---|---|---|
-| G-001a | 变体 3 下点透明区 | 窗口拦截点击（Label 不变，下方 App 收不到） | |
-| G-001b | 变体 1 下点透明区与船体 | 两者都落到下方 App（整窗穿透成立） | |
-| G-001c | 变体 2 下点顶部条 vs 船体 | 顶条落下方 App；船体被船体区响应（区分两 API 语义；如实记录实际语义） | |
+| G-001a | 变体 3（off）下点透明区 | 窗口拦截点击（Label 不变，下方 App 收不到） | |
+| G-001b | 变体 1（full）下点透明区与船体 | 两者都落到下方 App（整窗穿透成立，对照组） | |
+| G-001c | 默认（polygon）下点透明区 vs 船体 | 透明区点击落到下方 App；船体响应（clicks+1）＝**穿透修复判定**；并如实记录本机实测语义（多边形内接收/外穿透） | |
+| G-001d | 默认（polygon）按住船体连续拖动 ≥200px（含快速甩动与急停） | 窗口平滑跟手、无往复抖动、松手即停不漂移＝**抖动修复判定**；客观核对 `observed_state.json` 的 `last_drag_samples`（[t_ms, dx, dy] 轨迹，无往复折返） | |
 | G-002a | 船体小幅点按（位移 <6px） | 计为点击（clicks+1），窗口不动 = 拖动阈值不误判 | |
-| G-002b | 船体拖动 ≥6px 后松手，退出重启 | 窗口回原位；`cat "$HOME/Library/Application Support/Godot/app_userdata/Fishing Overlay Spike/spike_window.json"` 的 x/y 在安全区 | |
+| G-002b | 船体拖动 ≥6px 后松手，退出重启 | 窗口回原位；`cat "$HOME/Library/Application Support/Godot/app_userdata/Fishing Overlay Spike/spike_window.json"` 的 x/y 在安全区（松手即停、重启恢复） | |
 | G-002c | 拖到屏幕边缘再重启 | 启动 clamp 回安全区，不丢失窗口 | |
 | G-003a | 观察 Retina 屏上占位矩形 | 边缘锐利无错位、无整块不透明矩形盖住桌面 | |
 | G-003b | 多屏切换 | **本机单内置屏 → NOT RUN（R-05），保持记录** | |
@@ -60,3 +66,9 @@
 - 穿透语义最终以真机 GUI 观察为准（macOS 26.6 + Godot 4.7.2 + Metal 未验证，R-06）；
   探针只记录事实，**任何需求级降级（放弃透明或穿透）必须另行报批**。
 - headless 的 `rendering_method=dummy` 属如实记录，不得写成 Metal 实证。
+- SPIKE-001-FIX-001：拖动位移一律用 `DisplayServer.mouse_get_position()` 屏幕绝对坐标差计算
+  （按下瞬间冻结基准），**不用** `event.global_position`（随窗口移动自我反馈 → 抖动），
+  **不用** `Input.capture_mouse`（非 Godot 4 API）。若 GUI 实测仍抖动或鼠标移出船体后事件丢失，
+  备选方案为 `DisplayServer.window_start_drag()` 原生拖动（capability.json 已探测其存在性；启用前须人工批准）。
+- 拖动轨迹样本见 `observed_state.json` 的 `last_drag_samples`（上限 400 点/次拖动），仅供人工 G-001d 客观核对，
+  抖动是否消除仍以 GUI 人工判定为准。

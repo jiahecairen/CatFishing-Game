@@ -109,3 +109,13 @@ Test result & evidence: tasks/evidence/SPIKE-001/ (会话归档+日志+diff)
 Risks & unresolved decisions: 见 tasks/evidence/SPIKE-001/phaseA.out 与 report.md
 Recorded by AUTO-001 at 2026-11-10T20:39:45+00:00
 ```
+
+```text
+ID: SPIKE-001-FIX-001
+Status: In Review（AUTO-001 自动通过测试/范围/批准检查，待人工验收）
+Owner: AUTO-001 scheduler + headless Qwen Flash (serial)
+Executed commands + exit codes: test_cmd=/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing/tests/spike/overlay -> 0; attempt=1
+Test result & evidence: tasks/evidence/SPIKE-001-FIX-001/ (会话归档+日志+diff)
+Risks & unresolved decisions: 见 tasks/evidence/SPIKE-001-FIX-001/phaseA.out 与 report.md
+Recorded by AUTO-001 at 2026-11-10T22:32:17+00:00
+```

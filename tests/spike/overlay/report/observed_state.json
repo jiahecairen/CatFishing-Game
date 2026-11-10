@@ -3,23 +3,23 @@
   "drag_threshold_px": 6.0,
   "events": [
     [
-      258,
-      "2026-11-10 20:39:45",
-      "position_restored_from_default"
+      294,
+      "2026-11-10 22:32:16",
+      "position_restored_from_saved"
     ],
     [
-      258,
-      "2026-11-10 20:39:45",
-      "variant:off"
+      294,
+      "2026-11-10 22:32:16",
+      "variant:polygon"
     ],
     [
-      259,
-      "2026-11-10 20:39:45",
+      294,
+      "2026-11-10 22:32:16",
       "ready"
     ],
     [
-      280,
-      "2026-11-10 20:39:45",
+      313,
+      "2026-11-10 22:32:16",
       "position_saved"
     ]
   ],
@@ -27,13 +27,17 @@
   "fps_samples": [],
   "headless": true,
   "hidden": false,
+  "last_drag_sample_count": 0,
+  "last_drag_samples": [],
   "max_fps": 30,
+  "mouse_get_position_supported": true,
   "ship_clicks": 0,
-  "ts_utc": "2026-11-10 20:39:45",
-  "variant": "off",
+  "ts_utc": "2026-11-10 22:32:16",
+  "variant": "polygon",
   "variant_api": {
     "always_on_top": true,
     "borderless": true,
+    "displayserver_mouse_get_position": true,
     "mouse_passthrough": true,
     "mouse_passthrough_mode": false,
     "mouse_passthrough_polygon": true,
@@ -43,18 +47,36 @@
   "variant_log": [
     {
       "applied": true,
-      "at_utc": "2026-11-10 20:39:45",
+      "at_utc": "2026-11-10 22:32:16",
       "effective_mouse_passthrough": false,
-      "effective_mouse_passthrough_mode": null,
+      "effective_mouse_passthrough_polygon": [
+        [
+          60.0,
+          50.0
+        ],
+        [
+          160.0,
+          50.0
+        ],
+        [
+          160.0,
+          110.0
+        ],
+        [
+          60.0,
+          110.0
+        ]
+      ],
+      "effective_mouse_passthrough_polygon_point_count": 4,
       "human_observation": "",
       "note": "",
       "supported": true,
-      "variant": "off"
+      "variant": "polygon"
     }
   ],
   "window_position": [
-    120,
-    120
+    734,
+    1118
   ],
   "window_size": [
     64,

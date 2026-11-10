@@ -1,0 +1,649 @@
+SPIKE-001-FIX-001 Phase B 执行完毕。摘要：
+
+**实现（严格按 plan.md §9 人工审核修正，全部限于 `tests/spike/overlay/**`）**
+- **修正 A（穿透）** `overlay_window.gd::_set_variant()`：三变体语义解耦——`full`=bool true+空多边形；`polygon`=bool false+**Ship 实际可交互全局矩形**（多边形内接收事件、外穿透，非反向凹多边形）；`off`=bool false+空多边形；启动默认改为 polygon 生产态；删除本构建不存在的 `mouse_passthrough_mode` 调用；`_variant_log` 记录生效 bool 与多边形顶点供 GUI 回填。
+- **修正 B（抖动）** `_on_ship_gui_input()`：按下瞬间冻结 `DisplayServer.mouse_get_position()` 屏幕坐标与 `Window.position` 各一次，6px 阈值后位移=当前屏幕坐标−按下屏幕坐标，一次性取整；不再使用 `event.global_position` 位移；无 capture_mouse（探测缺失→记 unsupported 事件）；新增 `last_drag_samples` 轨迹样本。
+- `capability_probe.gd`：ClassDB 探测 `mouse_get_position`/`window_start_drag`/`get_display_safe_area` 写入 capability.json。
+- `README.md`：键位/启动默认、修正 A 语义、G-001d 抖动矩阵行、坐标源与 window_start_drag 备选项。
+
+**真实测试结果**（全部实际执行）
+- T0 版本=0（4.7.2.stable）；T1a/T1b `--check-only`=0/0；**T2 调度器 test_cmd=0**；T3 metal/opengl3=0/0；T4 `pgrep -l Godot`=1（无残留）；T5 `git status`/`diff --stat`=0/0（已跟踪改动仅 `tests/spike/overlay/**` 6 文件，+192/−68）；T6 三份 JSON `json.tool`=0/0/0。
+- 产物读回：`variant=polygon` 默认生效、`effective_mouse_passthrough=false`、多边形=[[60,50],[160,50],[160,110],[60,110]]、`mouse_get_position=true`、`max_fps=30`。`user://` err=12 为代理沙箱预期噪音，已如实记录。
+
+**报告**：`tasks/evidence/SPIKE-001-FIX-001/report.md` 已写（改动清单、命令与退出码、输出摘要、验收条目、遗留风险）。
+
+**遗留**：穿透/抖动/位置恢复的 GUI 六项人工验证（修正 C）待人工执行，工单只到 in_review；若 GUI 仍抖动或移出船体丢事件，window_start_drag 备选项启用前须人工批准。未读/未写 APPROVALS.md，无 git 写操作，无子 Agent/后台任务。
+
+PHASE-B-DONE
+
+---STDERR---
+dsh: reasoning:
+Let's start by loading the relevant skills and reading the plan file. This task relates to the godot-overlay and godot-validation skills. Let me try loading those.
+
+Also, I need to read plan.md inside the evidence directory. Let's do the reads in parallel.
+dsh: reasoning:
+I need to investigate this further. Let me check the details.
+
+First, let's read the current code files: overlay_window.gd, capability_probe.gd, main.tscn, project.godot, README.md. I'll also check the git status.
+dsh: reasoning:
+Alright, let's read main.tscn and README.md to understand the Ship node's layout (for the polygon = the Ship's actual interactive area).
+dsh: reasoning:
+Now I understand the setup. First let me check git status and the HEAD baseline (the plan says to record `git rev-parse HEAD` before Phase B — read-only git commands are allowed; what's forbidden is only commit/merge/push/stash/reset/clean).
+
+OK, so I'll implement the changes according to §9 of plan.md (human review corrections, these take precedence over §1/§2/§5/§6):
+
+**Correction A: polygon mouse passthrough (passthrough)**
+- full: `mouse_passthrough = true`, `mouse_passthrough_polygon = empty array`
+- polygon: `mouse_passthrough = false`, `mouse_passthrough_polygon = Ship's actual interactive region` (ship's rectangle: in window coords 60,50 → 160,110; the Ship ColorRect's offset is left=60, top=50, right=160, bottom=110). Interactive region = ship rect in window content coords.
+- off: `mouse_passthrough = false`, `mouse_passthrough_polygon = empty array`
+- Inverted concave polygon is forbidden.
+
+The plan also says `_variant_log` should record the effective values of `effective_mouse_passthrough` and `effective_mouse_passthrough_polygon` (point count / vertices) for the human to fill in the GUI matrix.
+
+Also the startup default: the plan §1-A correction direction says `polygon` (production semantics) should be the startup default. §9 doesn't contradict that — Correction A only corrects semantics, and startup default = polygon is the production state is in §1-A and §2, no conflict. Original §1-A said: `polygon` (production semantics, **startup default**). And §5 says the default (production) state. So `_set_variant("polygon")` at startup.
+
+Wait — but what about the mouse_passthrough_mode branch? This build doesn't have `mouse_passthrough_mode` (per plan §0: `mouse_passthrough_mode=false (doesn't exist)`). Correction A specifies exact implementation via mouse_passthrough bool + polygon. Keep the probing approach, but Correction A says "must implement as follows: full: mouse_passthrough=true ...". Implement per Correction A: set `mouse_passthrough` (bool) and `mouse_passthrough_polygon` per variant. Since `mouse_passthrough_mode` doesn't exist in this build, should I remove the mode branch or keep it defensively? Correction A says "mouse_passthrough=true 时，多边形设置无效 (when mouse_passthrough=true, polygon settings are ineffective)" — implement per Correction A semantics. The simplest, most-compliant way: if `mouse_passthrough` exists, set it; if polygon exists, set polygon per variant. Keep mode probing only for the capability report (it's harmless), but per Correction A the applied behavior should use bool + polygon. I think it's cleaner to remove the mode branch from `_set_variant` (it doesn't exist in this build to begin with) and keep the API existence probe in `_variant_api` for the record. Actually §3's invariant says "本构建无 mouse_passthrough_mode，不得调用 (this build has no mouse_passthrough_mode, must not be called)" — since it doesn't exist, calling it is impossible. Keep the `_variant_api` probe for the record, and only set if it exists (defensively) — but Correction A is explicit about the mapping. Hmm, if mode existed in a future build, setting mode=LOCAL_ONLY for polygon would be consistent. But to strictly follow Correction A: set bool + polygon. Remove use of mode from _set_variant (remove the branch), keep existence probe for capability record. Actually, keeping a branch that sets mouse_passthrough_mode if it exists wouldn't contradict, but... for "must implement as follows" the simplest and safest is to implement exactly as written. Remove mode-setting from _set_variant, keep existence probe for the record.
+
+**polygon's interactive region**: Ship's actual interactive region. The Ship ColorRect has offsets: left=60, top=50, right=160, bottom=110. In window content coords that's rect (60,50)-(160,110). But the plan says "Ship's actual interactive region" — better to compute it from the Ship node's global rect at runtime: `ship.get_global_rect()` — Node2D's global rect → `get_global_rect()` returns a Rect2 in the canvas's global coords, which for the root canvas layer equals the window content coords. Compute from the node: var r := $Ship.get_global_rect(); poly = [(r.position.x, r.position.y), (r.end.x, r.position.y), (r.end.x, r.end.y), (r.position.x, r.end.y)].
+
+Should the Status label also be interactive? Per the README the Label has mouse_filter=2 (ignore), so the top bar is not interactive — good, only the Ship is interactive. polygon = ship rect only. This matches "Ship 可点击拖动，其余透明区域穿透 (Ship can be clicked/dragged, remaining transparent region passes through)" (Correction C: 2. polygon: Ship can be clicked/dragged, remaining transparent region passes through). Good — polygon = ship rect only.
+
+**Correction B: drag jitter**
+- On mouse press: record `DisplayServer.mouse_get_position()` (screen coords) and `Window.position` (window's starting position).
+- When mouse moves 6px or more, enter drag state.
+- Drag delta = current screen coords − screen coords at press time.
+- Don't use `event.global_position` for the window move delta.
+- `Input.capture_mouse(true)` is forbidden (not a valid Godot 4 API — in Godot 4 the API is `Input.set_mouse_mode(CREATE_TRAP/...)`, and the plan's earlier fallback referenced a nonexistent capture_mouse, so Correction B forbids it).
+- If drag still jitters, or mouse events are lost after moving outside the Ship region, may test native drag via `DisplayServer.window_start_drag()`. Hmm — "可以测试 (may test)" — permissive, not mandatory. Note: in Godot 4, `DisplayServer.window_start_drag()` is `window_start_drag()` taking a `Control` as argument (`func window_start_drag(control: Control) -> Error`). It's for initiating native drag-and-drop of a Control (OS file-drag style), not for moving the window! Actually in Godot 4.x, `DisplayServer.window_start_drag(Control)` initiates a drag-and-drop action. On macOS it may not be implemented. That's risky. The plan says "可以测试...原生窗口拖动方式 (may test ...native window drag method)" — optional. Given the uncertainty, implement the main approach (mouse_get_position delta) and guard the optional path: probe for `DisplayServer.window_start_drag` existence, and record it as a fallback candidate if main approach fails in GUI, but don't wire it as default. Actually, to keep scope contained: implement main approach with a ClassDB probe for mouse_get_position; if it doesn't exist, log unsupported and record the failure (no capture_mouse since forbidden; then drag via global_position? no — the plan says don't use global_position for the delta). If mouse_get_position doesn't exist, what's the fallback? The plan's fallback (capture_mouse) is now forbidden. Correction B says "如果拖动仍然抖动或鼠标事件在移出 Ship 区域后丢失，可以测试 DisplayServer.window_start_drag() (if drag still jitters or mouse events are lost after moving outside the Ship region, may test DisplayServer.window_start_drag())". In this build, per the plan §0's capability record, mouse_get_position is standard in Godot 4 (`DisplayServer.mouse_get_position()` static, exists since 4.0). Add the probe to capability_probe.gd (plan §2 optionally mentions adding a probe for `DisplayServer.mouse_get_position`).
+
+Design of the drag logic in `_on_ship_gui_input`:
+- Press: `_drag_pending = true`, `_dragging = false`, `_drag_start_cursor = DisplayServer.mouse_get_position()` (Vector2i), `_drag_start_win = _win.position`, `_drag_samples = []`.
+- Motion while `_drag_pending`: `var cur := DisplayServer.mouse_get_position()`; `var d := Vector2(cur - _drag_start_cursor)` (Vector2i to Vector2). If not `_dragging` and `d.length() >= DRAG_THRESHOLD_PX`: `_dragging = true`, log drag_start. If `_dragging`: `_win.position = _drag_start_win + Vector2i(round(d.x), round(d.y))`... wait "一次性取整 (one-shot rounding)" — round once: `_win.position = _drag_start_win + Vector2i(d.round())`? Vector2i from Vector2's round. Careful: `_drag_start_win + Vector2i(d.round())` — Vector2i constructor from Vector2 truncates; use `Vector2i(int(round(d.x)), int(round(d.y)))`, or `(Vector2(_drag_start_win) + d).round()` — better: `var target := (Vector2(_drag_start_win) + d).round()` then `_win.position = Vector2i(target)`. Hmm, Vector2i(Vector2) construction truncates; round first then convert: `Vector2i(target)` from rounded Vector2 is fine (integer-valued).
+
+- Important detail: when the window moves, does `DisplayServer.mouse_get_position()` change relative to the window? It returns absolute screen coords — unaffected by window movement. Good — no feedback loop.
+
+- Drag samples: for human verification of G-001d, record samples (t, dx, dy). Plan §1-B: "事件日志记录拖动轨迹样本供抖动判定 (event log records drag trajectory samples for jitter determination)". Append to `_drag_samples`: on each motion event during drag [ticks, dx, dy]; cap array size; on drag end (release) add a `drag_end` event with summary (max reverse-direction delta / sample count) to `_events`, and keep `_drag_samples` in observed_state? Full samples can get big (cap 2000 events). Per event, add a compact drag sample list with a cap (e.g., keep the last N=300 per drag), and on drag_end write a summary to `_events` + `_drag_samples` to state. Simpler: store the most recent drag's trajectory (with a cap) in `_drag_samples`, and include it in the observed_state report as `last_drag_samples`. Also compute a simple jitter metric: sign reversals of dx/dy during monotonic movement — leave that for human analysis; just log samples. Also record total sample count for the drag.
+
+Also: if mouse moves outside the Ship region while dragging — with a passthrough polygon, does the Control still receive mouse motion events? During drag, the window moves with the cursor, so the cursor stays roughly over the ship (since the delta is cursor - start and the window follows, the cursor stays at the same position relative to the window — it stays within the ship's interactive region unless the ship's interactive region is smaller than the cursor's offset). Good property: using absolute cursor + start window position, the cursor stays at the same window-relative position, so the ship keeps the cursor over itself. Nice — the polygon stays interactive.
+
+However, if the window gets clamped at screen edges, the cursor may drift outside the window → lose mouse events; Godot's Control keeps capturing on press (gui_input is captured until release — Godot's Control mouse capture: once a Control receives a press, it captures the mouse and keeps receiving motion until release, even outside the control? But if the cursor leaves the window entirely with the passthrough polygon, OS-level passthrough outside the polygon may stop delivery). That's the "mouse events lost after moving outside the Ship region" risk mentioned in Correction B; the human's GUI check will catch it; document it as residual risk with the window_start_drag fallback as an option. Don't implement window_start_drag (per Correction B "may test" — only "if drag still jitters or mouse events are lost after moving outside the Ship region" — we can't know that headlessly; keep it as a documented fallback and maybe probe for its existence in capability_probe for the record. Let's also probe for `window_start_drag`'s existence — harmless, useful for evidence. Hmm, keep minimal but useful: probe `DisplayServer.mouse_get_position` (required by plan §2's capability_probe optional change) and record it. `window_start_drag` also as a fallback candidate; record existence only, don't call it.
+
+Wait, should I actually call `DisplayServer.window_start_drag($Ship)` on drag start? On macOS it may return FAILED or be unimplemented; calling it could break drag. Correction B says "可以测试 (may test)" if problems appear. Don't call in code, record existence in capability probe.
+
+Also for startup default: `_set_variant("polygon")` instead of `("off")`.
+
+But wait — headless startup: currently `_set_variant("off")` at startup and the variant log records variant:off. Change startup default to polygon (production). Headless T2 still exits 0. Setting the polygon property in headless: does the window's size default to 220×160 in headless? In headless the window is a dummy; `$Ship.get_global_rect()` still works from node offsets. Fine.
+
+Also `_set_variant` should log the effective polygon (point count and vertices) per §1-A: `_variant_log` records `effective_mouse_passthrough`, `effective_mouse_passthrough_polygon` (point count/vertices). Add those.
+
+Also update `_update_status` label text: "[2]=穿透多边形 ([2]=passthrough polygon)" description — update the key legend: startup default=polygon production state. Keep keys 1/2/3 the same.
+
+Changes to overlay_window.gd:
+
+1. Remove PASSTHROUGH_DISABLED/LOCAL_ONLY constants and mode-setting branch (mode doesn't exist; Correction A defines exact implementation). Keep `_variant_api` probe including `mouse_passthrough_mode` for the capability record.
+
+2. `_set_variant(variant)`:
+```gdscript
+func _set_variant(variant: String) -> void:
+	var supported := true
+	var note := ""
+	var enable := (variant == "full")
+	var poly := PackedVector2Array()
+	if variant == "polygon":
+		enable = false
+		if not _variant_api.get("mouse_passthrough_polygon", false):
+			supported = false
+			note = "mouse_passthrough_polygon 属性不存在 → 变体记 unsupported，退回整窗拦截 (mouse_passthrough_polygon property doesn't exist → log variant as unsupported, fall back to full-window interception)"
+		else:
+			# 修正 A：polygon 内接收鼠标事件、外穿透 → 多边形 = Ship 实际可交互矩形（非反向凹多边形）。
+			# (Correction A: inside polygon receives mouse events, outside passes through → polygon = Ship's actual interactive rectangle (not inverted concave polygon).)
+			var r: Rect2 = $Ship.get_global_rect()
+			poly = PackedVector2Array([
+				r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y),
+			])
+	var applied := false
+	if _variant_api.get("mouse_passthrough", false):
+		_win.set("mouse_passthrough", enable)
+		applied = true
+	if _variant_api.get("mouse_passthrough_polygon", false):
+		_win.set("mouse_passthrough_polygon", poly)
+	_variant = variant
+	_variant_log.append({...})
+```
+
+Wait: for the unsupported "polygon" variant case: Correction A says polygon = false + ship polygon; if the property doesn't exist, fall back to full-window interception (off semantics) with a note — matches the original behavior ("退回关闭穿透 (fall back to disabling passthrough)").
+
+Full variant: mouse_passthrough=true, polygon=empty. Off: false + empty.
+
+Log entry:
+```
+"effective_mouse_passthrough": _win.get("mouse_passthrough") if _variant_api.get(...) else null,
+"effective_mouse_passthrough_polygon_points": ...,
+"effective_mouse_passthrough_polygon": [[x,y],...] or null,
+```
+Point count and vertices.
+
+3. Drag:
+```gdscript
+var _drag_start_cursor := Vector2i.ZERO  # 按下瞬间的屏幕绝对坐标（不随窗口移动） (screen absolute coords at press moment (don't follow window movement))
+var _drag_samples: Array = []
+var _drag_sample_count := 0
+const DRAG_SAMPLE_CAP := 400
+
+func _on_ship_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_drag_pending = true
+			_dragging = false
+			_drag_start_cursor = DisplayServer.mouse_get_position()
+			_drag_start_win = _win.position
+			_drag_samples = []
+			_drag_sample_count = 0
+		else:
+			if _drag_pending and not _dragging:
+				_ship_clicks += 1
+				_log_event("ship_click")
+			if _drag_pending and _dragging:
+				_log_event("drag_end:samples=%d" % _drag_sample_count)
+				_write_reports()
+			if _drag_pending:
+				_save_position()
+			_drag_pending = false
+			_dragging = false
+			_update_status()
+	elif event is InputEventMouseMotion and _drag_pending:
+		# 修正 B：位移 = 当前屏幕坐标 - 按下时屏幕坐标；禁止 event.global_position（窗口一动即被污染）。
+		# (Correction B: delta = current screen coords - screen coords at press time; forbid event.global_position (polluted as soon as window moves).)
+		var cur := DisplayServer.mouse_get_position()
+		var d := Vector2(cur - _drag_start_cursor)
+		if not _dragging and d.length() >= DRAG_THRESHOLD_PX:
+			_dragging = true
+			_log_event("drag_start")
+			_update_status()
+		if _dragging:
+			# 一次性取整，避免每事件 ±1px 抖振；坐标源不随窗口移动 → 无自我反馈抖动。
+			# (round once, avoid ±1px jitter per event; coord source doesn't follow window movement → no self-feedback jitter.)
+			var target := (Vector2(_drag_start_win) + d).round()
+			_win.position = Vector2i(int(target.x), int(target.y))
+			_drag_sample_count += 1
+			if _drag_samples.size() < DRAG_SAMPLE_CAP:
+				_drag_samples.append([Time.get_ticks_msec(), d.x, d.y])
+```
+
+Hmm, wait — `Vector2(cur - _drag_start_cursor)` where cur, start are Vector2i: cur - start is Vector2i; Vector2(Vector2i) constructor exists in Godot 4: `Vector2(from: Vector2i)`. Yes.
+
+Also `DisplayServer.mouse_get_position()` is a static method on DisplayServer singleton: `DisplayServer.mouse_get_position()` returns Vector2i. Probe with ClassDB.class_has_method("DisplayServer", "mouse_get_position") in _ready, store in `_variant_api` or a separate `_capabilities` dict. If it doesn't exist: Correction B forbids capture_mouse fallback. Then what? Record unsupported and disable drag (keep click count), log events. Per plan §3: "API 缺失处理延续『探测→unsupported→如实记录』 (API missing handling continues 'probe→unsupported→record as-is')". So:
+
+```gdscript
+var _mouse_get_position_supported := false
+...
+_mouse_get_position_supported = ClassDB.class_has_method("DisplayServer", "mouse_get_position")
+```
+In motion handler: `if not _mouse_get_position_supported: ...` — log once and skip drag (window stays; still count clicks). Add event "drag_unsupported_mouse_get_position".
+
+Add to _write_reports state:
+```
+"mouse_get_position_supported": _mouse_get_position_supported,
+"last_drag_samples": _drag_samples,
+"last_drag_sample_count": _drag_sample_count,
+```
+Note: _drag_samples keeps the last completed drag (reset on press, only write reports on drag end / other events, so it survives to the final report). Final report on exit: if user quits mid-drag, _drag_samples is from the in-progress drag — fine.
+
+Wait, `_write_final_reports` calls `_save_position()` then `_write_reports()` — good.
+
+4. Startup default: `_set_variant("polygon")`.
+
+Also `_ready()`'s `_variant_api` keeps the mode probe for record. Fine.
+
+5. Update `_update_status` label: "[1]=整窗穿透 [2]=船体多边形(默认) [3]=全拦截 [9]=截图 [Q]=退出 ([1]=full-window passthrough [2]=ship polygon (default) [3]=full interception [9]=screenshot [Q]=quit)".
+
+capability_probe.gd: add `display_server_methods` probe:
+```
+"display_server_methods": {
+	"mouse_get_position": ClassDB.class_has_method("DisplayServer", "mouse_get_position"),
+	"window_start_drag": ClassDB.class_has_method("DisplayServer", "window_start_drag"),
+	"get_display_safe_area": ClassDB.class_has_method("DisplayServer", "get_display_safe_area"),
+	"get_display_count": ...,
+},
+```
+And if mouse_get_position exists, call it and record the value (headless returns (-2147484000, ...) sentinel value; harmless — record as-is; the headless sentinel is weird but that's the real value. Should I record it? It's an actual API value; fine, record — note in the report that headless returns sentinel. Actually simpler: only call in non-headless? Keep: if not headless and exists → record value. Keep minimal.)
+
+Also add a note about polygon semantics in the probe? Not needed.
+
+README.md updates (plan §2 + §5):
+- Key legend: 2 = polygon 生产语义：多边形内（船体矩形）接收鼠标，外部穿透；启动默认即 polygon (production semantics: inside polygon (ship rect) receives mouse, outside passes through; startup default is polygon).
+- Add row G-001d: 生产态按住船体连续拖动 ≥200px（含快速甩动与急停）→ 平滑跟手、无往复抖动、松手即停不漂移；observed_state.last_drag_samples 提供轨迹样本核对 (in production state, hold ship and drag continuously ≥200px (incl. fast flicks and abrupt stops) → smooth follows hand, no back-and-forth jitter, stops immediately on release without drift; observed_state.last_drag_samples provides trajectory samples for cross-check).
+- Update G-001c to describe corrected semantics: polygon 内接收事件、外穿透；人工判定列 (inside polygon receives events, outside passes through; human determination column).
+- Also add human verification items from Correction C's list (full/polygon/off, 200px drag, stop on release, position restore).
+- Note: startup default = production passthrough state.
+- Add note: 本票修正：不使用 mouse_passthrough_mode；禁止反向凹多边形；拖动坐标源=DisplayServer.mouse_get_position；禁用 Input.capture_mouse。(This ticket's corrections: don't use mouse_passthrough_mode; forbid inverted concave polygon; drag coord source = DisplayServer.mouse_get_position; disable Input.capture_mouse.)
+
+README changes minimal but keep accurate.
+
+Then run tests:
+- T0 version
+- T1 check-only on overlay_window.gd (also check capability_probe.gd — T1 in plan only mentions overlay_window.gd; run both, T1 as planned + extra for probe)
+- T2 headless run (with timeout, use `timeout`? macOS may not have `timeout` (coreutils gtimeout). Use `timeout` if available, else run in background + sleep + kill? Instruction forbids run_in_background jobs. Godot headless with scripts that self-quit should exit itself. Capability probe quits in headless. So run directly; risk of hang — plan says executor must cap with ≤180s timeout. Can implement timeout without background jobs: use `perl -e 'alarm ...'` trick, or if `timeout` is available use it. Check `command -v timeout gtimeout`. macOS 26 (Tahoe?) may ship `timeout` (coreutils) now? macOS Sequoia 15 didn't ship it. Newer macOS may. Check. Alternative: `bash -c 'cmd & pid=$!; ( sleep 180; kill $pid ) & watcher=$!; wait $pid; rc=$?; kill $watcher'` — that's background in the shell but not a harness "run_in_background" job; the harness forbids the run_in_background tool param. Shell-level job control is normal bash usage; the spirit of the instruction is "don't run async harness jobs to bypass serialization". Use a bash timeout wrapper: `( "$@" & )` style. Simplest: use `perl -e 'alarm 180; exec @ARGV' -- cmd...` — returns exit 142 on SIGALRM. Fine and synchronous.
+
+- T3 metal/opengl3 headless
+- T4 pgrep
+- T5 git status/diff --stat (read-only git is allowed)
+- T6 python json.tool on capability.json; also observed_state.json and variant_matrix.json.
+
+Also record git rev-parse HEAD baseline.
+
+One caveat: headless run writes report/*.json inside res://report/ — those are tracked? Plan §0 says report/{capability,observed_state,variant_matrix}.json 已存在 (already exist) as 已跟踪 (tracked)? "find tests -type f" said SPIKE-001 已交付 8 文件 (8 files already delivered) includes report json — and git status said 已跟踪文件零改动 (zero modifications to tracked files). So the report JSONs are tracked committed files. My runs will modify them → they'll show as tracked-file modifications under tests/spike/overlay/** — allowed (within allowed_files). Good.
+
+Also the evidence directory: /Users/rain/DevGame/Fishing/tasks/evidence/SPIKE-001-FIX-001 — can write report.md there. Also may save run logs. Plan mentions report.md content: 改动文件清单、执行命令与退出码、测试输出摘要、覆盖的验收条目、遗留风险 (list of changed files, run commands and exit codes, test output summary, covered acceptance items, residual risks).
+
+Workspace sandbox is workspace-write under /Users/rain/DevGame/Fishing — all allowed paths are within. Good.
+
+Check whether evidence directory has anything else. Also check tools/auto/queue.json for ticket detail? Plan already summarized; not needed. Just need to make sure I don't touch it.
+
+OK let me write the code changes. First a todo list, then baseline check (git rev-parse HEAD, status, ls evidence dir).
+
+Edits:
+
+1. overlay_window.gd:
+
+- Remove passthrough mode constants (replace with comment), keep DRAG etc. Add DRAG_SAMPLE_CAP constant.
+- Add vars `_drag_start_cursor`, `_drag_samples`, `_drag_sample_count`, `_mouse_pos_supported`.
+- `_ready`: after probe, add `_mouse_pos_supported := ClassDB.class_has_method(...)`; change `_set_variant("off")` → `_set_variant("polygon")`.
+- `_set_variant`: rewrite.
+- `_on_ship_gui_input`: rewrite.
+- `_write_reports`: add new fields.
+- `_update_status`: update key legend.
+
+Let me write the exact edits.
+
+Edit 1 — Constants block:
+```
+# Godot 4.3 Window.MousePassthroughMode: DISABLED=0, LOCAL_ONLY=1, LOCAL_AND_PARENT=2
+const PASSTHROUGH_DISABLED := 0
+const PASSTHROUGH_LOCAL_ONLY := 1
+```
+→
+```
+# SPIKE-001-FIX-001 修正 A：本构建（4.7.2）实测无 mouse_passthrough_mode 属性，
+# 变体一律用 mouse_passthrough(bool) + mouse_passthrough_polygon 表达，禁止调用 mode 枚举。
+# (Correction A: this build (4.7.2) measured to have no mouse_passthrough_mode property;
+# variants are expressed entirely via mouse_passthrough(bool) + mouse_passthrough_polygon, forbid calling the mode enum.)
+# 修正 A 语义（人工审核为准）：polygon 内接收鼠标事件，外穿透；mouse_passthrough=true 时 polygon 无效。
+# (Correction A semantics (human review takes precedence): inside polygon receives mouse events, outside passes through; when mouse_passthrough=true, polygon is ineffective.)
+const DRAG_SAMPLE_CAP := 400
+```
+
+Edit 2 — vars:
+```
+var _drag_pending := false
+var _dragging := false
+var _drag_start_mouse := Vector2.ZERO
+var _drag_start_win := Vector2i.ZERO
+```
+→
+```
+var _drag_pending := false
+var _dragging := false
+# 修正 B：拖动坐标源 = 屏幕绝对坐标（不随窗口移动），禁止用 event.global_position 计算位移。
+# (Correction B: drag coord source = screen absolute coords (don't follow window movement), forbid computing delta with event.global_position.)
+var _drag_start_cursor := Vector2i.ZERO
+var _drag_start_win := Vector2i.ZERO
+var _mouse_pos_supported := false
+var _drag_samples: Array = []
+var _drag_sample_count := 0
+```
+
+Edit 3 — probe in _ready:
+After the `_variant_api = {...}` block, add:
+```
+	# 修正 B：拖动所需 API 探测（探测→unsupported→如实记录，R-03）。
+	# (Correction B: probe for APIs needed by drag (probe→unsupported→record as-is, R-03).)
+	_mouse_pos_supported = ClassDB.class_has_method("DisplayServer", "mouse_get_position")
+```
+And `_set_variant("off")` → `_set_variant("polygon")` with comment `# 生产语义为启动默认（FIX-001 §1-A/§5）。 (Production semantics is the startup default (FIX-001 §1-A/§5).)`.
+
+Edit 4 — Full rewrite of _set_variant.
+
+Edit 5 — _on_ship_gui_input rewrite.
+
+Edit 6 — Add to _write_reports:
+```
+		"mouse_get_position_supported": _mouse_pos_supported,
+		"last_drag_samples": _drag_samples,
+		"last_drag_sample_count": _drag_sample_count,
+```
+Add after "drag_threshold_px".
+
+Also add a human_observation note in variant_log entries with effective polygon point list.
+
+Edit 7 — _update_status legend.
+
+Also note: `_set_variant` currently uses `$Ship` via `get_node`. In _ready, _set_variant is called after position restore; $Ship exists. Use `get_node_or_null("Ship") as Control` and its get_global_rect. Node2D.get_global_rect exists (CanvasItem). ColorRect is Control → Control.get_global_rect() exists.
+
+Let me write the full _set_variant:
+
+```gdscript
+func _set_variant(variant: String) -> void:
+	# SPIKE-001-FIX-001 修正 A（人工审核为准）：
+	# full    = mouse_passthrough=true  + polygon 置空（整窗穿透，对照组）
+	# polygon = mouse_passthrough=false + polygon = Ship 实际可交互矩形（生产语义，启动默认）
+	#           → 多边形内接收鼠标事件，多边形外（透明区）穿透；禁止反向凹多边形。
+	# off     = mouse_passthrough=false + polygon 置空（整窗拦截，对照组）
+	# (Correction A (human review takes precedence):
+	#  full    = mouse_passthrough=true  + clear polygon (full-window passthrough, control group)
+	#  polygon = mouse_passthrough=false + polygon = Ship's actual interactive rectangle (production semantics, startup default)
+	#            → inside polygon receives mouse events, outside (transparent area) passes through; forbid inverted concave polygon.
+	#  off     = mouse_passthrough=false + clear polygon (full-window interception, control group))
+	var supported := true
+	var note := ""
+	var enable := variant == "full"
+	var poly := PackedVector2Array()
+	if variant == "polygon":
+		if not _variant_api.get("mouse_passthrough_polygon", false):
+			supported = false
+			note = "mouse_passthrough_polygon 属性不存在 → 变体记 unsupported，退回整窗拦截 (mouse_passthrough_polygon property doesn't exist → log variant as unsupported, fall back to full-window interception)"
+		else:
+			var ship := get_node_or_null("Ship") as Control
+			if ship == null:
+				supported = false
+				note = "Ship 节点缺失 → 变体记 unsupported，退回整窗拦截 (Ship node missing → log variant as unsupported, fall back to full-window interception)"
+			else:
+				var r := ship.get_global_rect()
+				poly = PackedVector2Array([
+					r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y),
+				])
+	var applied := false
+	if _variant_api.get("mouse_passthrough", false):
+		_win.set("mouse_passthrough", enable)
+		applied = true
+	else:
+		note = (note + "; " if note != "" else "") + "mouse_passthrough 属性不存在 → 无法应用穿透变体"
+	if _variant_api.get("mouse_passthrough_polygon", false):
+		_win.set("mouse_passthrough_polygon", poly)
+	var poly_points: Array = []
+	for pt in poly:
+		poly_points.append([pt.x, pt.y])
+	_variant = variant
+	_variant_log.append({
+		"variant": variant,
+		"supported": supported,
+		"applied": applied,
+		"note": note,
+		"at_utc": Time.get_datetime_string_from_system(true, true),
+		"effective_mouse_passthrough": _win.get("mouse_passthrough") if _variant_api.get("mouse_passthrough", false) else null,
+		"effective_mouse_passthrough_polygon": poly_points,
+		"effective_mouse_passthrough_polygon_point_count": poly_points.size(),
+		"human_observation": "",
+	})
+	_log_event("variant:" + variant)
+	_update_status()
+	_write_reports()
+```
+
+Note: remove the mouse_passthrough_mode log key from variant_log? The old entry had "effective_mouse_passthrough_mode". Remove it; observed_state's variant_api still records existence. Fine.
+
+_on_ship_gui_input:
+
+```gdscript
+func _on_ship_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_drag_pending = true
+			_dragging = false
+			# 修正 B：按下瞬间冻结屏幕绝对坐标与窗口位置各一次，作为拖动基准。
+			# (Correction B: at press moment, freeze screen absolute coords and window position once each, as drag baseline.)
+			if _mouse_pos_supported:
+				_drag_start_cursor = DisplayServer.mouse_get_position()
+			_drag_start_win = _win.position
+			_drag_samples = []
+			_drag_sample_count = 0
+		else:
+			if _drag_pending and not _dragging:
+				# 位移未达阈值 → 判定为点击，不误判为拖动（G-002a）。
+				# (delta below threshold → judged as click, not misjudged as drag (G-002a).)
+				_ship_clicks += 1
+				_log_event("ship_click")
+			if _drag_pending and _dragging:
+				_log_event("drag_end:samples=%d" % _drag_sample_count)
+			if _drag_pending:
+				_save_position()
+				_write_reports()
+			_drag_pending = false
+			_dragging = false
+			_update_status()
+	elif event is InputEventMouseMotion and _drag_pending:
+		# 修正 B：位移 = 当前屏幕坐标 − 按下时屏幕坐标；禁止 event.global_position（随窗口移动自我反馈 → 抖动）。
+		# 禁止 Input.capture_mouse（非 Godot 4 API）。坐标源缺失时不拖动，只如实记录。
+		# (Correction B: delta = current screen coords − screen coords at press time; forbid event.global_position (follows window movement, self-feedback → jitter).
+		#  Forbid Input.capture_mouse (not a Godot 4 API). If coord source is missing, don't drag, just record as-is.)
+		if not _mouse_pos_supported:
+			_log_event("drag_unsupported_mouse_get_position")
+			_drag_pending = false
+			return
+		var cur := DisplayServer.mouse_get_position()
+		var d := Vector2(cur - _drag_start_cursor)
+		if not _dragging and d.length() >= DRAG_THRESHOLD_PX:
+			_dragging = true
+			_log_event("drag_start")
+			_update_status()
+		if _dragging:
+			# 一次性取整（避免每事件 ±1px 抖振）；屏幕坐标源不随窗口移动 → 无自我反馈环。
+			# (Round once (avoid ±1px jitter per event); screen coord source doesn't follow window movement → no self-feedback loop.)
+			var target := (Vector2(_drag_start_win) + d).round()
+			_win.position = Vector2i(int(target.x), int(target.y))
+			_drag_sample_count += 1
+			if _drag_samples.size() < DRAG_SAMPLE_CAP:
+				_drag_samples.append([Time.get_ticks_msec(), d.x, d.y])
+```
+
+Hmm: repeated logging of "drag_unsupported_mouse_get_position" could spam if multiple motion events happen while pending... but I set _drag_pending=false after logging so subsequent motion won't log (only next press). But release path: if _drag_pending is false, then release does nothing — good (click count is skipped; acceptable? Small loss: click not counted; but this is a record for an unsupported path; this build has mouse_get_position anyway. Actually should I count the click? If we disable pending on motion, release won't count as click. Minor, but let me keep click semantics: don't clear _drag_pending; use a separate flag to log unsupported once. Simpler: log only when !_dragging, set a _drag_unsupported_logged flag to not repeat... simpler still: log and mark `_drag_pending=false` — then release does nothing, no click count. In production click still works via press+release without motion. Edge case: click with tiny motion (still under 6px threshold) won't be counted if supported. To preserve G-002a in unsupported build: keep _drag_pending=true, log only once with a flag. Let me add a bool `_drag_unsupport_logged := false` — reset on press. That preserves click. Let me implement that.
+
+Also Vector2(cur - _drag_start_cursor): cur and _drag_start_cursor are Vector2i. `DisplayServer.mouse_get_position()` returns Vector2i in GDScript. Vector2(Vector2i) constructor exists in Godot 4.x: yes (Vector2(from: Vector2i)). And `Vector2(_drag_start_win)` likewise. And `Vector2i(int, int)` exists.
+
+`(Vector2(_drag_start_win) + d).round()` returns rounded Vector2 → Vector2i(int(target.x), int(target.y)) — fine.
+
+_update_status:
+
+```
+	label.text = "SPIKE-001 variant=%s %s fps=%.1f pos=(%d,%d) clicks=%d\n[1]=整窗穿透 [2]=船体多边形(默认) [3]=全拦截 [9]=截图 [Q]=退出" % [
+```
+
+capability_probe.gd — add display_server_methods section to report. Edit the report dict:
+
+```
+	"display_server_methods": {
+		"mouse_get_position": ClassDB.class_has_method("DisplayServer", "mouse_get_position"),
+		"get_display_safe_area": ClassDB.class_has_method("DisplayServer", "get_display_safe_area"),
+		"get_display_count": ClassDB.class_has_method("DisplayServer", "get_display_count"),
+		"window_start_drag": ClassDB.class_has_method("DisplayServer", "window_start_drag"),
+	},
+```
+And in `if not headless:` block record the mouse position value:
+```
+		if ClassDB.class_has_method("DisplayServer", "mouse_get_position"):
+			var mp: Vector2i = DisplayServer.mouse_get_position()
+			report["mouse_get_position_value"] = [mp.x, mp.y]
+```
+Hmm — headless mouse_get_position returns sentinel (-2147484000,-2147484000); record only in non-headless to avoid confusion? Or always record? Always record and note it. Keep: record always; add a note in a comment. Fine.
+
+README.md updates:
+- Key legend section: update key 2 and default note; startup default row; add G-001d row; update G-001c text; add note about FIX-001.
+
+Now let me also re-check main.tscn: Ship rect = (60,50)-(160,110) window content coords; get_global_rect returns exactly that. TransparentArea and Status have mouse_filter=2 (ignore) — interactive region is just Ship.
+
+Edge case: `get_global_rect()` on Control — Control has `get_global_rect() -> Rect2` (CanvasItem method). Yes.
+
+Now check git baseline and evidence directory. Then implement, then run tests.
+
+Order:
+1. Todo list.
+2. Baseline: git rev-parse HEAD, git status --porcelain, ls evidence dir. (Read-only)
+3. Edits.
+4. Tests T0–T6 with perl-alarm timeout wrapper.
+5. report.md in evidence dir.
+
+Let's go.
+dsh: reasoning:
+The user hasn't asked a question yet — the last turn was just system instructions and context setup. There's no actual task. I acknowledged the instructions.
+dsh: reasoning:
+Baseline: HEAD = 00ee38f (differs from e504324 in the plan — the scheduler committed something after that; status shows no modified tracked files, only untracked evidence directories). The working tree of tests/spike/overlay/** is clean. Good.
+
+Note: report/*.json shows up in ls but git status shows no changes — are these tracked and unchanged, or are they untracked but hidden? The porcelain output shows only the two evidence directories as untracked, so report/*.json should be tracked and committed. OK.
+
+Now let's implement the edits to overlay_window.gd.
+
+基线已确认：HEAD=`00ee38f`，工作树中已跟踪文件无变更，未跟踪文件仅限 `tasks/evidence/**` 中的两个目录。开始进行代码修改。
+
+**编辑 1 — overlay_window.gd 头部注释与常量（修复 A：禁止 mode 枚举）**：
+dsh: reasoning:
+I need to investigate this further. Let me check the details.
+dsh: reasoning:
+I need to investigate this further. Let me confirm the details. Let me try to get myself properly organized.
+
+I need to look into this further. Let me check the details.
+
+Wait, `_drag_start_cursor` — in Godot 4, `DisplayServer.mouse_get_position()` returns a Vector2i. Right, it returns a Vector2i. OK.
+
+Edit 3 — _ready: probe for mouse_get_position, and on startup default to setting the variant to "polygon" (production environment default per plan §1-A: polygon is the startup default. Fix C doesn't contradict this). Also, keep the `mouse_passthrough_mode` probe in _variant_api for recording purposes.
+dsh: reasoning:
+I need to investigate this further. Let me check the details.
+
+Let's try a search.
+dsh: reasoning:
+I need to investigate this further. Let me check the details.
+
+Let me try searching.
+dsh: reasoning:
+I need to investigate this further. Let me check the details.
+
+Let me search the message.
+
+The user hasn't actually asked a question yet — the last turn was just system setup and instructions. There's no substantive task. I should acknowledge briefly and wait for the actual request. Keep it minimal.
+dsh: reasoning:
+I need to investigate this further. Let me confirm the details of the check.
+
+Wait a sec — there's a subtle problem with the drag samples: `_drag_samples = []` gets reset on press, and `_drag_samples.append` gets executed during drag. However, if the user drags after clicking, the sample gets reset. No problem.
+
+There's one issue. On release, `_write_reports()` is being called after `_save_position()` — previously only `_save_position()` was being called. `_save_position` records "position_saved". `_write_reports` writes out state that includes the last drag sample. This is the desired behavior.
+
+Next, let's update the status of `_update_status` and update the label text.
+dsh: reasoning:
+Next, I'll edit capability_probe.gd: add a probe for the DisplayServer method. Insert it into the report dictionary, and additionally, for non-headless environments, add mouse position values as well. Alright, let's make the edits.
+dsh: reasoning:
+Now, in the non-headless branch, I'll record the actual mouse position value. Also, should I record the mouse position in headless mode too? In headless, mouse_get_position returns a sentinel value (-2147484000?). I'll record it only in non-headless mode and leave a comment. I'll edit the `if not headless:` block.
+dsh: reasoning:
+I need to investigate further. Let me check the details.
+
+Next, updating README.md:
+1. Key binding table: Key 2 — polygon semantics fix (receive events inside the polygon = hull, transparent regions on the outside pass through) + launch defaults to 2; Key 1 is full (bool=true + empty polygon); Key 3 is off.
+2. Manual acceptance matrix: update the row for G-001c with the corrected semantics + human-judged columns; add a row for G-001d; keep the other rows; add the FIX-001 note.
+3. Update the G-001c row.
+
+Editing the key binding table:
+dsh: reasoning:
+Furthermore, append to README §4 "Known Boundaries": the FIX-001 note on the drag coordinate source + window_start_drag as a fallback candidate + headless ≠ GUI. Read the end of the README to confirm the current state (previously edited; §4 known boundaries are unchanged). Add one bullet point.
+dsh: reasoning:
+Before running the tests, I'll re-read the entire overlay_window.gd and verify it for correctness.
+dsh: reasoning:
+Further investigation is needed. Let me check the details.
+
+The code looks good. One thing to confirm: `_set_variant("polygon")` is called inside `_ready` — `$Ship.get_global_rect()` — at the time of ready, is the Ship's Control's global rect correct? The Control's layout is complete at ready time (the size is set via the anchor offset from the scene). get_global_rect uses the current size/position — offsets are 60/50/160/110, the default anchor is 0, and size is set at load time. Should be fine.
+
+Note: `Vector2(cur - _drag_start_cursor)` — subtraction of Vector2i returns a Vector2i; a Vector2(Vector2i) constructor exists in Godot 4.
+
+Also `_has_prop(prop: StringName)` is called with a string literal — GDScript converts it implicitly (String→StringName implicit conversion is possible in Godot 4.x). It was already like that and was working before.
+
+`Vector2(r.end.x, r.position.y)` — r.end is Vector2 — no problem.
+
+`ship.get_global_rect()` returns a Rect2 — `r.position` is Vector2, `r.end` is Vector2. PackedVector2Array of Vector2. Good.
+
+The ternary operator in the note: `note = (note + "; " if note != "" else "") + "..."` — GDScript's ternary operator syntax `a if cond else b` — parentheses required — no problem.
+
+Now let's run the tests. First T0 version, T1 check-only (both scripts). Use a timeout wrapper. Check for the presence of `timeout`/`gtimeout`, and if absent, use a perl alarm.
+
+Let's run T0 and T1.
+
+代码检查完毕，没有发现逻辑问题。现在我将运行自动门禁检查，先确认超时工具可用，然后执行 T0 版本检查。
+dsh: reasoning:
+No `timeout`/`gtimeout`. Use a perl alarm wrapper with a 180-second timeout, as required by the plan. Perl: `perl -e 'alarm shift; exec @ARGV' 180 cmd...` — when the alarm fires, exec'd process gets SIGALRM → exits with 142.
+
+T1: Run --check-only against both scripts.
+dsh: reasoning:
+Further investigation is needed. Let me check the details.
+
+T1a and T1b both exited with exit code 0 (the log file error is a sandbox `user://` write restriction, and it's expected and already documented. It's not a SCRIPT ERROR, and the exit code is 0). No "SCRIPT ERROR" occurred.
+
+T2 — headless run of the scheduler test command.
+
+T1 双脚本退出码为 0，日志写失败仅因沙箱限制，非脚本问题。现在检查 T2 调度器的 headless 加载测试命令。
+dsh: reasoning:
+The test ran successfully with exit code 0 and no script errors—the warning about the sandbox lacking a `user://` directory is expected since the agent sandbox can't write there, but the probe's fallback logging handled it correctly. Now I'm checking whether the report JSON files were actually written to res://report/.
+
+The res:// directory is inside the workspace so it should be writable by the sandbox. Moving on to run the dual renderer tests for T3, then process the results with pgrep, check git status, and validate the JSON output.
+
+T2 通过，退出码为 0，无脚本错误，`user://` 写失败符合预期。现在检查 T3 的双渲染器。
+dsh: reasoning:
+Further investigation is needed. Let me check the details.
+
+T3a=0, T3b=0, T4=1 (no residuals, as expected).
+
+T5 git scope + T6 mechanical check of JSON.
+
+T3 和 T4 都通过了。现在我来检查 T5 的范围并检查 T6 的产物机制。
+dsh: reasoning:
+The reason the T6 label broke is because `$f` was empty inside the echo? `for f in ...; do ... echo "T6_$f_EXIT=$?"` — `$f_EXIT` gets interpreted as a variable named `f_EXIT` (empty). The exit code was still 0 — but this is ambiguous: `$?` after `> /dev/null` refers to the result of python3. The echo shows T6_=0, but that's the `$?` of… no wait, `"T6_$f_EXIT=$?"` — `$f_EXIT` is a separate (unset) variable, and `$?` correctly expands to python3's exit code. Because the echo's exit code hasn't been taken yet. No wait, inside a single echo, at the time of expansion `$?` refers to the immediately preceding command, i.e., the result of `python3 -m json.tool ... > /dev/null`. Right, the result is 0/0/0. But following the instruction that "an unset variable expands to an empty string, so guard variables in such paths with ${VAR:?}" — the label is broken but the value is genuine. To get unambiguous labeled results, let's cleanly re-run the JSON verification with proper variable naming, and also inspect the JSON contents to confirm that the new fields (the polygon points in variant_log, the mouse_get_position probe) are correct.
+
+T5 显示只有 6 个文件在允许范围内，T6 的标签因变量名问题需要重跑以获得清晰结果。我现在会重新运行验证并检查 JSON 文件内容。
+dsh: reasoning:
+Excellent — the headless execution is generating exactly the intended state:
+
+- Startup variant = polygon (production default), supported=true, applied=true
+- effective_mouse_passthrough=false, polygon = ship rectangle [[60,50],[160,50],[160,110],[60,110]] — the actual interactive area of the ship (matches the Ship's ColorRect offsets)
+- mouse_get_position exists, window_start_drag exists (only probed, not called)
+- max_fps=30
+- All 3 JSONs are valid (exit 0)
+
+All automatic gates passed:
+- T0=0, T1a=0, T1b=0, T2=0, T3a=0, T3b=0, T4=1 (no residuals), T5a=0, T5b=0 (scope: only tests/spike/overlay/**), T6×3=0.
+
+Note: variant_matrix.json equals observed_state (both have been written). The variant_log in the report JSON currently only has the polygon entry (the headless execution just starts up and quits — keys 1/3 aren't pressed in headless).
+
+Next, write report.md to the evidence directory. Contents to include:
+- List of changed files
+- Executed commands and exit codes (the actual ones)
+- Test output summary
+- Acceptance criteria covered
+- Remaining risks (items requiring human GUI review: G-001a/b/c/d, G-002, G-003, G-004; the polygon semantics on macOS are untested; the window_start_drag fallback is approved as needed)
+- Declaration of compliance (no sub-agents, no writes to approvals, no git commits)
+
+Also note: no BLOCKED — nothing was found outside the scope of the plan. Correction B stated "if drag still shakes... you may test window_start_drag" — but since it can't be verified in headless, I'll leave it as a documented fallback. This is not a blocking factor, but is documented as a risk.
+
+One more thing to confirm: that variant_matrix.json also has the same contents. Confirmed as valid via T6. Good.
+
+Should I also re-check the README rendering? A simple read isn't necessary. I edited it carefully. But let me quickly read the README once to confirm consistency.
+dsh: reasoning:
+The README is consistent. Next, write report.md into the evidence directory. The content will include the following:
+
+- List of modified files (3 source files + 3 runtime artifacts)
+- Execution commands and exit codes (actual values: T0=0, T1a=0, T1b=0, T2=0, T3a=0, T3b=0, T4=1 (expected 1 = no residuals), T5a=0, T5b=0, T6×3=0)
+- Summary of test output (key points: no SCRIPT ERROR; observed_state's variant=polygon, eff_mp=false, polygon=4-point hull rectangle, mouse_get_position=true, max_fps=30; explanation of user:// err=12 sandbox)
+- Acceptance criteria covered
+- GUI items requiring human verification (revision C: 6 items)
+- Residual risks
+- Compliance declaration
+
+Also update the todos. After that, output PHASE-B-DONE as the final line of my reply. Note: the report file itself — the "output 'BLOCKED...' on the final line" mentioned in the ticket instructions pertains to my reply. After writing, end the final message with PHASE-B-DONE.
+dsh: reasoning:
+Final check: run `git status` one last time, confirm the final state (report.md is untracked but that's within the allowed scope since it's inside the evidence directory), and update all todos to completed. Then create the summary, and finally wrap up with PHASE-B-DONE.
+dsh: reasoning:
+All complete. Final status confirmed:
+- Changes only to the 6 allowed files under tests/spike/overlay/**
+- report.md has been written to the evidence directory
+- No lingering Godot processes
+- No writes to git
+
+Update the TODO to complete, create a summary, and wrap up with PHASE-B-DONE.
+dsh: reasoning:
+Further investigation is needed. Let me check the details.
+
+Done. Final summary with PHASE-B-DONE on the last line.

@@ -31,6 +31,13 @@ func _ready() -> void:
 		"main_display_safe_area": null,
 		"window_properties": {},
 		"property_values": {},
+		# SPIKE-001-FIX-001：拖动坐标源/原生拖动备选的方法存在性（只探测，不调用未证实 API）。
+		"display_server_methods": {
+			"mouse_get_position": ClassDB.class_has_method("DisplayServer", "mouse_get_position"),
+			"window_start_drag": ClassDB.class_has_method("DisplayServer", "window_start_drag"),
+			"get_display_safe_area": ClassDB.class_has_method("DisplayServer", "get_display_safe_area"),
+		},
+		"mouse_get_position_value": null,
 		"ts_utc": Time.get_datetime_string_from_system(true, true),
 	}
 	# 区分“project 设置未生效”与“设置名写错”：记录设置项读取结果（headless 窗口 64×64 属 dummy 行为）。
@@ -50,6 +57,10 @@ func _ready() -> void:
 		# 实测：本引擎 get_display_safe_area() 为 0 参数（4.7.2 真实签名）。
 		var area: Rect2i = DisplayServer.get_display_safe_area()
 		report["main_display_safe_area"] = [area.position.x, area.position.y, area.size.x, area.size.y]
+		# GUI 下记录真实屏幕光标坐标（headless 返回哨兵值，不记录以免误导）。
+		if ClassDB.class_has_method("DisplayServer", "mouse_get_position"):
+			var mp: Vector2i = DisplayServer.mouse_get_position()
+			report["mouse_get_position_value"] = [mp.x, mp.y]
 	var win: Window = get_window()
 	var props: Array[Dictionary] = win.get_property_list()
 	for prop_name in WINDOW_PROPERTIES:

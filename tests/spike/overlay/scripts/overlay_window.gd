@@ -14,10 +14,12 @@ const DRAG_THRESHOLD_PX := 6.0
 const DEFAULT_POS := Vector2i(120, 120)
 const FPS_WINDOW_MS := 1000
 const FPS_SAMPLES_KEPT := 120
+const DRAG_SAMPLE_CAP := 400
 
-# Godot 4.3 Window.MousePassthroughMode: DISABLED=0, LOCAL_ONLY=1, LOCAL_AND_PARENT=2
-const PASSTHROUGH_DISABLED := 0
-const PASSTHROUGH_LOCAL_ONLY := 1
+# SPIKE-001-FIX-001 修正 A（人工审核为准）：Window.mouse_passthrough_polygon 的真实语义 =
+# 多边形内部接收鼠标事件，多边形外部鼠标穿透；mouse_passthrough=true 时多边形设置无效。
+# 本构建（4.7.2）实测无 mouse_passthrough_mode 属性，变体一律只用 mouse_passthrough(bool) +
+# mouse_passthrough_polygon 表达；禁止反向凹多边形（全窗减船体）。
 
 var _win: Window
 var _variant := "init"
@@ -27,8 +29,14 @@ var _events: Array = []
 var _ship_clicks := 0
 var _drag_pending := false
 var _dragging := false
-var _drag_start_mouse := Vector2.ZERO
+# SPIKE-001-FIX-001 修正 B：拖动基准 = 按下瞬间的屏幕绝对坐标（不随窗口移动）+ 窗口起始位置。
+# 禁止用 event.global_position 计算窗口位移（窗口一动即被反方向污染 → 往复抖动）。
+var _drag_start_cursor := Vector2i.ZERO
 var _drag_start_win := Vector2i.ZERO
+var _mouse_pos_supported := false
+var _drag_unsupported_logged := false
+var _drag_samples: Array = []
+var _drag_sample_count := 0
 var _fps_window_start_ms := 0
 var _fps_window_frames := 0
 var _fps_last := 0.0
@@ -49,6 +57,8 @@ func _ready() -> void:
 		"always_on_top": _has_prop("always_on_top"),
 		"unfocusable": _has_prop("unfocusable"),
 	}
+	_mouse_pos_supported = ClassDB.class_has_method("DisplayServer", "mouse_get_position")
+	_variant_api["displayserver_mouse_get_position"] = _mouse_pos_supported
 	# 运行时兜底：即使 project 设置缺失/未生效，也尝试在代码里置透明与无边框。
 	if _variant_api["transparent"]:
 		_win.set("transparent", true)
@@ -59,7 +69,8 @@ func _ready() -> void:
 	_restore_position()
 	$Ship.gui_input.connect(_on_ship_gui_input)
 	_win.visibility_changed.connect(_on_visibility_changed)
-	_set_variant("off")
+	# SPIKE-001-FIX-001：启动默认 = polygon 生产语义（透明区穿透 + 船体可交互）。
+	_set_variant("polygon")
 	_update_status()
 	_fps_window_start_ms = Time.get_ticks_msec()
 	_log_event("ready")
@@ -103,30 +114,44 @@ func _notification(what: int) -> void:
 # ---------- 变体切换（键 1/2/3） ----------
 
 func _set_variant(variant: String) -> void:
+	# SPIKE-001-FIX-001 修正 A（人工审核为准，覆盖原计划 §1-A 的"polygon 内为穿透区"错误说法）：
+	#   full    : mouse_passthrough=true  + polygon=空数组（整窗穿透，对照组）
+	#   polygon : mouse_passthrough=false + polygon=Ship 实际可交互矩形（生产语义，启动默认）
+	#             → 多边形内（船体）接收鼠标事件，多边形外（透明区）穿透
+	#   off     : mouse_passthrough=false + polygon=空数组（整窗拦截，对照组）
+	# 禁止"全窗口减去船体"的反向凹多边形。
 	var supported := true
 	var note := ""
-	var enable := (variant != "off")
+	var enable := (variant == "full")
+	var poly := PackedVector2Array()
 	if variant == "polygon":
 		if not _variant_api.get("mouse_passthrough_polygon", false):
 			supported = false
-			enable = false
-			note = "mouse_passthrough_polygon 属性不存在 → 变体记 unsupported，退回关闭穿透"
+			note = "mouse_passthrough_polygon 属性不存在 → 变体记 unsupported，退回整窗拦截"
+		else:
+			var ship := get_node_or_null("Ship") as Control
+			if ship == null:
+				supported = false
+				note = "Ship 节点缺失 → 变体记 unsupported，退回整窗拦截"
+			else:
+				var r := ship.get_global_rect()
+				poly = PackedVector2Array([
+					r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y),
+				])
 	var applied := false
-	if _variant_api.get("mouse_passthrough_mode", false):
-		_win.set("mouse_passthrough_mode", PASSTHROUGH_LOCAL_ONLY if enable else PASSTHROUGH_DISABLED)
-		applied = true
-	elif _variant_api.get("mouse_passthrough", false):
+	if _variant_api.get("mouse_passthrough", false):
+		# 本构建实测无 mouse_passthrough_mode 属性，仅用布尔 + 多边形表达（修正 A）；
+		# 布尔为 true 时多边形无效，故仅 full 置 true。
 		_win.set("mouse_passthrough", enable)
 		applied = true
+	else:
+		note = (note + "; " if note != "" else "") + "mouse_passthrough 属性不存在 → 无法应用穿透变体"
 	if _variant_api.get("mouse_passthrough_polygon", false):
-		var poly := PackedVector2Array()
-		if variant == "polygon" and supported:
-			# 顶部状态条区域穿透；船体与其余区域保持可交互（透明视觉 != 输入穿透）。
-			var w := float(_win.size.x)
-			poly = PackedVector2Array([
-				Vector2(0, 0), Vector2(w, 0), Vector2(w, 45), Vector2(0, 45),
-			])
+		# full/off 显式清空多边形，避免旧多边形残留（godot-overlay §3）。
 		_win.set("mouse_passthrough_polygon", poly)
+	var poly_points: Array = []
+	for pt in poly:
+		poly_points.append([pt.x, pt.y])
 	_variant = variant
 	_variant_log.append({
 		"variant": variant,
@@ -135,7 +160,8 @@ func _set_variant(variant: String) -> void:
 		"note": note,
 		"at_utc": Time.get_datetime_string_from_system(true, true),
 		"effective_mouse_passthrough": _win.get("mouse_passthrough") if _variant_api.get("mouse_passthrough", false) else null,
-		"effective_mouse_passthrough_mode": _win.get("mouse_passthrough_mode") if _variant_api.get("mouse_passthrough_mode", false) else null,
+		"effective_mouse_passthrough_polygon": poly_points,
+		"effective_mouse_passthrough_polygon_point_count": poly_points.size(),
 		"human_observation": "",
 	})
 	_log_event("variant:" + variant)
@@ -150,26 +176,48 @@ func _on_ship_gui_input(event: InputEvent) -> void:
 		if event.pressed:
 			_drag_pending = true
 			_dragging = false
-			_drag_start_mouse = event.global_position
+			_drag_unsupported_logged = false
+			# 修正 B：只在按下瞬间冻结一次屏幕绝对坐标与窗口位置作为拖动基准。
+			if _mouse_pos_supported:
+				_drag_start_cursor = DisplayServer.mouse_get_position()
 			_drag_start_win = _win.position
+			_drag_samples = []
+			_drag_sample_count = 0
 		else:
 			if _drag_pending and not _dragging:
-				# 位移未达阈值 → 判定为点击，不误判为拖动（G-002）。
+				# 位移未达阈值 → 判定为点击，不误判为拖动（G-002a）。
 				_ship_clicks += 1
 				_log_event("ship_click")
+			if _drag_pending and _dragging:
+				_log_event("drag_end:samples=%d" % _drag_sample_count)
 			if _drag_pending:
 				_save_position()
+				_write_reports()
 			_drag_pending = false
 			_dragging = false
 			_update_status()
 	elif event is InputEventMouseMotion and _drag_pending:
-		var d: Vector2 = event.global_position - _drag_start_mouse
+		# 修正 B：位移 = 当前屏幕坐标 − 按下时屏幕坐标；坐标源不随窗口移动，无自我反馈 → 无抖动。
+		# 禁止 event.global_position 计算位移；禁止 Input.capture_mouse（非 Godot 4 API）。
+		if not _mouse_pos_supported:
+			# 探测→unsupported→如实记录（R-03）：不猜测缺失 API，也不降级为 global_position 位移。
+			if not _drag_unsupported_logged:
+				_drag_unsupported_logged = true
+				_log_event("drag_unsupported:DisplayServer.mouse_get_position")
+			return
+		var cur := DisplayServer.mouse_get_position()
+		var d := Vector2(cur - _drag_start_cursor)
 		if not _dragging and d.length() >= DRAG_THRESHOLD_PX:
 			_dragging = true
 			_log_event("drag_start")
 			_update_status()
 		if _dragging:
-			_win.position = Vector2i(Vector2(_drag_start_win) + d.round())
+			# 每事件基于冻结基准一次性取整，避免 ±1px 抖振；G-001d 轨迹样本供人工核对。
+			var target := (Vector2(_drag_start_win) + d).round()
+			_win.position = Vector2i(int(target.x), int(target.y))
+			_drag_sample_count += 1
+			if _drag_samples.size() < DRAG_SAMPLE_CAP:
+				_drag_samples.append([Time.get_ticks_msec(), d.x, d.y])
 
 
 # ---------- 位置持久化（临时探针几何，非业务存档） ----------
@@ -254,6 +302,9 @@ func _write_reports() -> void:
 		"events": _events,
 		"ship_clicks": _ship_clicks,
 		"drag_threshold_px": DRAG_THRESHOLD_PX,
+		"mouse_get_position_supported": _mouse_pos_supported,
+		"last_drag_sample_count": _drag_sample_count,
+		"last_drag_samples": _drag_samples,
 		"window_position": [_win.position.x, _win.position.y],
 		"window_size": [_win.size.x, _win.size.y],
 		"max_fps": Engine.max_fps,
@@ -273,7 +324,7 @@ func _update_status() -> void:
 	if label == null:
 		return
 	var state := "DRAG" if _dragging else ("HOLD" if _drag_pending else "IDLE")
-	label.text = "SPIKE-001 variant=%s %s fps=%.1f pos=(%d,%d) clicks=%d\n[1]=全窗穿透 [2]=穿透多边形 [3]=关 [9]=截图 [Q]=退出" % [
+	label.text = "SPIKE-001 variant=%s %s fps=%.1f pos=(%d,%d) clicks=%d\n[1]=整窗穿透 [2]=船体多边形(默认) [3]=全拦截 [9]=截图 [Q]=退出" % [
 		_variant, state, _fps_last, _win.position.x, _win.position.y, _ship_clicks
 	]
 

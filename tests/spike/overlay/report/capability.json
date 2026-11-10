@@ -1,9 +1,15 @@
 {
   "display_count": -1,
   "display_server": "headless",
+  "display_server_methods": {
+    "get_display_safe_area": true,
+    "mouse_get_position": true,
+    "window_start_drag": true
+  },
   "engine_version": "4.7.2-stable (official)",
   "headless": true,
   "main_display_safe_area": null,
+  "mouse_get_position_value": null,
   "project_display_settings": {
     "display/window/size/always_on_top": true,
     "display/window/size/borderless": true,
@@ -22,7 +28,7 @@
   },
   "renderer_note": "headless 下此值可能为 dummy；Metal/Compatibility 实证必须来自 GUI 人工运行",
   "rendering_method": "forward_plus",
-  "ts_utc": "2026-11-10 20:39:45",
+  "ts_utc": "2026-11-10 22:32:16",
   "window_properties": {
     "always_on_top": true,
     "borderless": true,
