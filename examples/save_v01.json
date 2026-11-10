@@ -1,0 +1,22 @@
+{
+  "save_version": 1,
+  "revision": 0,
+  "wallet_gold": 0,
+  "basket_capacity": 10,
+  "basket": [],
+  "processed_catch_ids": [],
+  "processed_sale_ids": [],
+  "fishing_checkpoint": {
+    "state": "IDLE",
+    "event_id": null,
+    "wait_seconds": null,
+    "elapsed_effective_seconds": 0
+  },
+  "desktop_window": {
+    "x": 80,
+    "y": 80,
+    "width": 220,
+    "height": 160,
+    "display_hint": null
+  }
+}

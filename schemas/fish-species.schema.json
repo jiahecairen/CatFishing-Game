@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/fishing/v0.1/fish-species.schema.json",
+  "title": "Fishing v0.1 fish species catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["catalog_version", "species"],
+  "properties": {
+    "catalog_version": {"const": 1},
+    "species": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name_zh", "rarity", "catch_weight", "base_price", "asset_key"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "name_zh": {"type": "string", "minLength": 1},
+          "rarity": {"enum": ["common", "uncommon", "rare"]},
+          "catch_weight": {"type": "number", "exclusiveMinimum": 0},
+          "base_price": {"type": "integer", "minimum": 0},
+          "asset_key": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  },
+  "$comment": "Duplicate species[].id cannot be expressed with standard uniqueItems; validate IDs explicitly in ConfigLoader. Placeholder values are not final game economy approvals."
+}

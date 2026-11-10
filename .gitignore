@@ -1,0 +1,34 @@
+# --- OS / editors ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+*.swp
+*~
+.vscode/
+.idea/
+
+# --- Godot ---
+# Godot 4 editor cache / imported artifacts (never commit)
+.godot/
+*.uid
+.import/
+export.cfg
+# Real export output; regenerated per build
+*.tmp
+build/
+dist/
+
+# --- Godot user data safety net ---
+# v0.1 saves belong in the OS user-data dir (user://), NOT in this tree
+# (docs/INTERFACES_AND_DATA.md §8). Keep stray local saves out of version control.
+/save/
+game_state.json
+game_state.bak.json
+
+# --- Local evidence larger than a doc; keep redacted summaries in DEV_LOG ---
+*.avi
+*.png.mp4
+/tmp/

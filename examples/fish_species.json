@@ -1,0 +1,8 @@
+{
+  "catalog_version": 1,
+  "species": [
+    {"id": "river_carp", "name_zh": "测试鲤鱼", "rarity": "common", "catch_weight": 60, "base_price": 8, "asset_key": "placeholder/carp"},
+    {"id": "silver_perch", "name_zh": "测试银鲈", "rarity": "uncommon", "catch_weight": 30, "base_price": 16, "asset_key": "placeholder/perch"},
+    {"id": "golden_trout", "name_zh": "测试金鳟", "rarity": "rare", "catch_weight": 10, "base_price": 32, "asset_key": "placeholder/trout"}
+  ]
+}

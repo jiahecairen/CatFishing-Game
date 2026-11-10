@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/fishing/v0.1/game-save.schema.json",
+  "title": "Fishing v0.1 persisted state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["save_version", "revision", "wallet_gold", "basket_capacity", "basket", "processed_catch_ids", "processed_sale_ids", "fishing_checkpoint", "desktop_window"],
+  "properties": {
+    "save_version": {"const": 1},
+    "revision": {"type": "integer", "minimum": 0},
+    "wallet_gold": {"type": "integer", "minimum": 0},
+    "basket_capacity": {"type": "integer", "minimum": 1},
+    "basket": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["instance_id", "species_id", "caught_at_utc", "source_event_id", "sale_price_at_catch"],
+        "properties": {
+          "instance_id": {"type": "string", "minLength": 1},
+          "species_id": {"type": "string", "minLength": 1},
+          "caught_at_utc": {"type": "string", "format": "date-time"},
+          "source_event_id": {"type": "string", "minLength": 1},
+          "sale_price_at_catch": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "processed_catch_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "processed_sale_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "fishing_checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "event_id", "wait_seconds", "elapsed_effective_seconds"],
+      "properties": {
+        "state": {"enum": ["IDLE", "CASTING", "WAITING", "HOOKED", "REELING", "SETTLEMENT", "PAUSED"]},
+        "event_id": {"type": ["string", "null"]},
+        "wait_seconds": {"type": ["number", "null"], "minimum": 0},
+        "elapsed_effective_seconds": {"type": "number", "minimum": 0}
+      }
+    },
+    "desktop_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height", "display_hint"],
+      "properties": {
+        "x": {"type": "integer"}, "y": {"type": "integer"},
+        "width": {"type": "integer", "minimum": 1},
+        "height": {"type": "integer", "minimum": 1},
+        "display_hint": {"type": ["integer", "null"], "minimum": 0}
+      }
+    }
+  },
+  "$comment": "Further semantic checks required in Godot: basket length <= capacity, unique instance/source IDs, state-specific checkpoint completeness, valid species/processed transaction reconciliation, currency overflow, event payload identity."
+}
