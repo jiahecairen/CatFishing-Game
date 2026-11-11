@@ -60,7 +60,7 @@ Godot 导入生成的 `*.gd.uid` 均落在上述允许目录内且被 `.gitignor
 - **L-1（plan D-2 既有偏差）**：`scripts/io/config_loader.gd` 骨架注释声称 CFG-001 实现它，但 `scripts/io/**` 不在允许范围；本票按 plan 在 `scripts/config/` 另立实现类，未触碰骨架。后续由 runner/人工决定 io 骨架薄转发或删除。
 - **L-2（本机引擎行为）**：该 4.7.2 构建的 GDScript **静态函数内无法解析 `fract()`/`is_finite()` 等全局数学内建**（"not found in base self"），已用纯运算（`v - v == 0.0` 有限性 + `float(int(v)) == v` 整数性）替代。后续票在静态函数中用数学内建需注意。
 - **L-3（runner 设计结论）**：Godot `-s` 脚本加载/编译失败时**退出码可能为 0**（run 1 step2），单靠退出码不可靠；必须同时校验 PASS 标记并拒绝 `SCRIPT ERROR`/FAIL 标记——runner 已内置，后续票沿用。
-- **L-4（如实记录）**：run 2 step2 出现 exit **-15 (SIGTERM)**（脚本错误后 Godot 进程被终止，来源未定位）；run 3 未复现，全部退出码 0，不掩盖。
+- **L-4（如实记录）**：run 2 step2 出现 exit **-15 (SIGTERM)**。复核确认：Codex 对本轮 `run_cfg001_checks.py` 启动的 headless Godot 子进程 PID 10133 发送了 SIGTERM；当时 Godot 已记录 `fract()` 脚本解析错误及后续无效调用，但进程仍挂起约 1 分 43 秒。该信号只发给本轮创建的 headless 子进程，未触碰用户 GUI 编辑器 PID 5720。run 3 与后续复跑均通过。
 - **L-5（经济参数）**：60/30/10、8/16/32、20–60s、30FPS、容量 10 均为已批准初值/候选值，本票零改动；任何调节须用户批准。
 - **L-6（范围外待办）**：`basket_capacity` 未锁 10（按 plan 属候选值）；GUI/桌面类验收不适用本票，留待 UI-001/G 系列人工验收。
 - **L-7（可复现性）**：runner 默认 Godot 路径 `/Applications/Godot.app/Contents/MacOS/Godot`，可用 `GODOT_BIN` 覆盖；隔离 HOME 临时目录建在本证据目录内且跑完即删（当前已删，目录仅存 phaseA.out/plan.md/review.md/本报告）。

@@ -72,6 +72,23 @@ func _initialize() -> void:
 	if Gate.blocked_reasons(catalog, runtime).size() != 0:
 		_fail("P3 gate blocked_reasons must be empty for valid configs")
 		return
+	# ---- 反例 P4：伪造/半成品成功结果不得绕过启动门禁 ----
+	var missing_catalog_payload := {"ok": true, "error_code": ""}
+	if Gate.can_start_economy(missing_catalog_payload, runtime):
+		_fail("P4 gate must reject a successful envelope without species")
+		return
+	var empty_catalog_payload := {"ok": true, "error_code": "", "species": []}
+	if Gate.can_start_economy(empty_catalog_payload, runtime):
+		_fail("P4 gate must reject an empty successful catalog")
+		return
+	var missing_error_code := {"ok": true, "species": species}
+	if Gate.can_start_economy(missing_error_code, runtime):
+		_fail("P4 gate must reject a result without explicit error_code")
+		return
+	var empty_runtime_payload := {"ok": true, "error_code": "", "config": {}}
+	if Gate.can_start_economy(catalog, empty_runtime_payload):
+		_fail("P4 gate must reject an empty successful runtime config")
+		return
 
 	# ---- 反例 N1：全部 catalog 夹具 → ok=false、error_code 精确、零默认值、gate 拒绝 ----
 	for row in CATALOG_FIXTURES:
