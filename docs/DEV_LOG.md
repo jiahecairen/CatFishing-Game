@@ -151,3 +151,12 @@ B/60 > B/30 > A/60 > A/30
 - `python3 -B tests/unit/run_ui001_checks.py` passed on the current tree: import-first plus UI/SAVE/ECO/FSM/CORE/CFG all exit 0 with required PASS markers and no `SCRIPT ERROR`.
 - Reversed the native hit-region polygon winding and added a headless regression. `python3 -B tests/unit/run_ui001_checks.py` passed. Isolated macOS runs separately confirmed a boat click reaches the game and a transparent-area click reaches an opaque underlay; repeat routing after focus/menu changes was inconsistent, so G-UI-1/2 and the remaining GUI matrix stay unverified. G-UI-4 hide/resume remains recorded.
 - The global queue freeze remains set and UI-001 remains blocked. Existing untracked session archives were not touched; no push occurred.
+
+## 2026-11-11 — UI-001 approved transparency key and isolated sale check
+
+- The project owner approved only `display/window/per_pixel_transparency/allowed=true`. `plan.md` now records the exact seven-key SC-1 boundary; the approval addendum does not alter `tasks/APPROVALS.md` or `tools/auto/queue.json`.
+- The isolated, import-first UI runner log at `tasks/evidence/UI-001/test-current.log` records exit 0 for import and all six suites, each with its exact PASS marker and no `SCRIPT ERROR`.
+- An editor-hosted run of an isolated project showed the HUD, cat/boat, basket, and durable **Sell All** result (0 gold/10 fish → 144 gold/0 fish; 144 gold remained after restart). This is partial G-UI-3 evidence only; it does not establish native desktop click-through or drag behavior.
+- Earlier diagnostics may have allowed the production save to auto-fish to capacity. The observed save was revision 161, wallet 0, basket 10/10. No production sale, rollback, or save edit was performed; details are in `gui-sale-isolated-2026-11-11.md`.
+- The current runner reports `frozen=None`; `tools/auto/queue.json` contains the earlier 20:08 `unfrozen` audit record. This follow-up did not change queue or freeze state. UI-001 remains blocked; LOG-001 and REL-001 remain held.
+- The temporary GUI run was stopped and its test editor processes exited. In this follow-up, no Godot process was launched with the production project path. A later attempt to set up a desktop underlay test did not complete after the user took control of Safari; the observed existing tab remained unchanged.

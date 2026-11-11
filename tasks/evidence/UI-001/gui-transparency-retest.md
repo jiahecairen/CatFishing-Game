@@ -2,6 +2,10 @@
 
 Date: 2026-11-11
 
+## Follow-up status
+
+The approval boundary below records the state when this comparison was first written. On 2026-11-11, the project owner approved the one additional setting demonstrated by this test. The exact seven-key limit is now recorded in `plan.md` and `transparency-approval-addendum.md`; the tracked project contains the approved key. No other setting or path was approved.
+
 ## Result
 
 The UI renders in the isolated GUI run, but the current six approved `[display]` keys do not make its background transparent. A controlled comparison isolated the missing setting:
@@ -30,4 +34,4 @@ Every step exited 0, emitted its single expected PASS marker, and had no `SCRIPT
 
 ## Approval boundary
 
-The approved UI-001 plan allows exactly six conditional `project.godot` window settings and explicitly forbids additional keys. The demonstrated fix requires one more key, `window/per_pixel_transparency/allowed=true` in the `[display]` section. This report records the evidence; it does not amend the plan, change the approval ledger or queue, or apply the setting to the real project. UI-001 and the global queue therefore remain blocked/frozen pending authorization of that single setting.
+At the time of the original comparison, the approved UI-001 plan allowed exactly six conditional `project.godot` window settings and explicitly forbade additional keys. The demonstrated fix required `window/per_pixel_transparency/allowed=true` in `[display]`. This report did not itself amend the plan, approval ledger, or queue. The subsequent owner approval and plan amendment are recorded in `transparency-approval-addendum.md`; the remaining GUI acceptance items still block UI-001.

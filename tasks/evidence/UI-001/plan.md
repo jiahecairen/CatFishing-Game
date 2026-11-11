@@ -51,7 +51,7 @@
 | `scenes/main.tscn`（修改） | 保持根 `Main`(Node2D)，根脚本仍为 `res://scripts/core/game_controller.gd`；新增视图节点，由 GameController 装配 HUD/鱼篓面板/猫船。 |
 | `tests/unit/test_ui001_ui.gd` | `extends SceneTree` headless：装配/新档安全启动/损坏档拒绝/捕获/售鱼/幂等/待结算重放/隐藏恢复/保存故障/帧率策略/几何持久化矩阵（§5）；成功标记仅 `UI001 UI PASS`，失败标记 `UI001 UI FAIL` 并 quit(1)；IO 仅临时目录 + 故障注入 seam。 |
 | `tests/unit/run_ui001_checks.py` | 隔离副本 runner（见 §5），镜像 `run_save001_checks.py`：value-lock、v1 示例锁、schema v2 锁、类名唯一锁（含 `FishingSession` 全局唯一、`SaveService` 仍在 scripts/io 骨架）+ 交付文件齐全 → 临时副本 + 隔离 HOME → 串行 Godot 7 步。 |
-| `project.godot`（条件修改） | 仅当主工程 GUI 实测证明运行时透明/窗口属性无效时，追加与已验收 spike 完全一致的六个 `[display]` 窗口设置；保留 `run/max_fps=30` 和现有 main scene；不得添加其它键。该精确文件已列入白名单，仅授权此条件改动。 |
+| `project.godot`（条件修改） | 仅当 Mac GUI 实测证明运行时透明设置无效时，追加与已验收 spike 相符的七个 `[display]` 窗口设置；第七项 `window/per_pixel_transparency/allowed=true` 已由项目所有者于 2026-11-11 明确批准。保留 `run/max_fps=30` 和现有 main scene；不得添加其它键。该精确文件已列入白名单，仅授权此条件改动。 |
 
 **不修改**（超出范围，零 diff）：`scripts/core/game_state.gd`、`scripts/core/fishing_system.gd`、
 `scripts/io/**`、`data/**`、`examples/**`、`schemas/**`、`tools/**`、
@@ -71,9 +71,9 @@
 
 | 编号 | 触发条件 | 精确允许的改动 |
 |---|---|---|
-| SC-1 | Mac GUI 证实运行时透明设置在主工程不生效；headless 测试不能证明窗口透明 | 仅追加 `[display]` 六键，逐值镜像已验收 SPIKE：`window/size/viewport_width=220`、`window/size/viewport_height=160`、`window/size/resizable=false`、`window/size/borderless=true`、`window/size/always_on_top=true`、`window/size/transparent=true`。保留 `run/max_fps=30` 与现有 main scene，不添加其他键。 |
+| SC-1 | Mac GUI 证实运行时透明设置在主工程不生效；headless 测试不能证明窗口透明 | 仅允许这七个 `[display]` 窗口键：`window/size/viewport_width=220`、`window/size/viewport_height=160`、`window/size/resizable=false`、`window/size/borderless=true`、`window/size/always_on_top=true`、`window/size/transparent=true`、`window/per_pixel_transparency/allowed=true`。第七项经项目所有者于 2026-11-11 明确批准，依据见 `transparency-approval-addendum.md`。保留 `run/max_fps=30` 与现有 main scene，不添加其他键。 |
 
-除 SC-1 外不动态扩权；若实现需要任何额外路径，先停下并报告。队列白名单须与 §2 一致。Phase B 审批只能由现有审批服务写入账本并变更队列状态，不得手工绕过门禁。
+除 SC-1 外不动态扩权；若实现需要任何额外路径，先停下并报告。队列白名单须与 §2 一致。Phase B 审批只能由现有审批服务写入账本并变更队列状态，不得手工绕过门禁。原 Phase A 审查记录中的“六键”描述反映当时边界；本次有记录的单项批准只扩展为以上第七键，没有扩展文件范围或其他设置。
 
 ## 4. 接口与不变量（Phase B 必须保持）
 

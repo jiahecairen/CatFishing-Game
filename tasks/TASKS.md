@@ -282,15 +282,15 @@ Owner approval: 项目所有者已委托 Codex 在本地 v0.1 范围内逐票独
 
 ```text
 ID: UI-001
-Status: Blocked（全局冻结保持；代码已提交，自动回归通过，桌面 GUI 验收未完成）
+Status: Blocked（代码已提交、自动回归通过，桌面 GUI 验收未完成；当前队列文件没有 `frozen` 字段，并保留 2026-11-11 20:08 的恢复记录，本轮未改队列）
 Owner: Codex delegated implementer/reviewer
 Scope / Dependencies / Allowed files: SAVE-001、SPIKE-001；UI-001 已批准范围，外加 tasks/evidence/UI-001/** 证据。
 Executed commands & exit codes: 当前树 `python3 -B tests/unit/run_ui001_checks.py` -> 0；先隔离导入，再 UI/SAVE/ECO/FSM/CORE/CFG 各步退出码 0、唯一 PASS、无 `SCRIPT ERROR`。
 Test result & evidence: 新增 U-window 回归，覆盖短点击信号、native-drag 按下语义及松手点击分类、手动拖动几何保存；`tasks/evidence/UI-001/macos-hide-60s.md`。
-GUI status: G-UI-4 隐藏 60 秒与恢复已记录；交互区多边形顶点顺序已修复并加入 headless 回归，隔离 GUI 中船体点击与透明点各有一次通过。焦点/菜单状态变化后的重复路由不一致，G-UI-1/2 及拖动/重启、GUI 售鱼、FPS、保存失败、Retina、全屏共存仍未验收。
+GUI status: G-UI-4 隐藏 60 秒与恢复已记录；交互区多边形顶点顺序已修复并加入 headless 回归，隔离 GUI 中船体点击与透明点各有一次通过。2026-11-11 的独立存档 GUI 复测还确认打开鱼篓、Sell All 从 0 金币/10 鱼变为 144 金币/0 鱼，并在重启后保留 144 金币；这只覆盖 G-UI-3 的部分售鱼路径。焦点/菜单状态变化后的重复路由不一致，G-UI-1/2、售所选/双击去重、拖动/重启、FPS、保存失败、Retina、全屏共存仍未验收。
 Git diff / commit: UI 主实现 `188bc27`；画面证据 `87855cf`；本次回归与记录在当前本地进度提交。
-Risks & unresolved decisions: `tools/auto/queue.json` 的全局冻结字段和 UI-001 blocked 状态保持；不把 headless policy test 视为 macOS GUI 通过。
-Owner approval: Phase B 既有授权有效；项目所有者要求保持人工审批和冻结机制。
+Risks & unresolved decisions: UI-001 仍为 blocked；当前 `tools/auto/queue.json` 的 `frozen` 字段缺省，且保留既有 `unfrozen` 审计记录。本轮未操作冻结状态。不得把 headless policy test 或 editor-hosted debug run 当作 macOS 桌面点击穿透/拖动通过。
+Owner approval: Phase B 既有授权有效；项目所有者于 2026-11-11 另行批准 SC-1 的唯一第七键 `display/window/per_pixel_transparency/allowed=true`，详见 `tasks/evidence/UI-001/transparency-approval-addendum.md`。该批准不完成剩余人工验收。
 ```
 
 ```text
