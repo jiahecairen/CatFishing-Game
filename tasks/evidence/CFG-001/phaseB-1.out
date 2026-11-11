@@ -1,0 +1,733 @@
+CFG-001 Phase B 执行完毕。摘要：
+
+**改动（全部新增，严格限于 `data/**`、`scripts/config/**`、`tests/**` + 证据目录）**
+- `data/fish_species.json`、`data/runtime_config.json`：与 `examples/` 逐字节一致（cp + diff 为空，零数值改动）
+- `scripts/config/fish_species_catalog.gd` / `runtime_config.gd` / `config_gate.gd`：纯 RefCounted 校验器 + 经济启动门禁，稳定错误码，失败路径零默认值，未占用 `ConfigLoader` 类名
+- `tests/unit/fixtures/cfg001/`：12 个反例夹具（plan §3 清单）
+- `tests/unit/test_cfg001_config.gd`：3 组正例 + 13 项反例断言，PASS/FAIL 约定与 CORE-001 一致
+- `tests/unit/run_cfg001_checks.py`：标准库 runner，按 queue 要求把 HOME 隔离到证据目录内临时目录（跑完即删），串行执行 Godot 导入 → CFG-001 单测 → CORE-001 回归，要求 PASS 标记并拒绝 FAIL 标记 / `SCRIPT ERROR` / 非零退出
+
+**真实测试记录**（`python3 -B tests/unit/run_cfg001_checks.py`，项目根执行）
+- 第 1 次：退出码 **1**（runner 如实拦截我测试脚本的 GDScript 类型推断错误——门禁未伪造通过）
+- 第 2 次：退出码 **1**（静态函数内 `fract()` 不可解析，已如实写入报告 L-2/L-4）
+- 第 3 次（最终）：退出码 **0** — step1 导入=0（全局类注册成功）、step2=`CFG001 CONFIG PASS`（exit 0）、step3=`CORE001 SMOKE PASS`（exit 0，CORE-001 无回归）
+- `git status --porcelain`/`git diff --stat` 退出码 0：零已跟踪文件改动，新增仅落在允许路径；`icon.svg.import` 未被弄脏
+
+**验收覆盖**：T-CONF-01 全部反例（DUP_ID / BAD_WEIGHT / BAD_PRICE / MIN_GT_MAX / JSON_PARSE / 门禁阻断经济启动）、V01-F01 恰 3 鱼种、SDD-175 30FPS、SDD-177 20–60s、SDD-172 容量 10 候选不锁定、AGENTS §4 明确失败路径。
+
+**移交事项**：详见 `tasks/evidence/CFG-001/report.md` §5（io 骨架 D-2 偏差待裁定；本机构建静态函数无数学内建；Godot `-s` 失败时退出码可能为 0，判定必须靠标记；未做任何 git 写操作，交调度器统一提交）。
+
+PHASE-B-DONE
+
+---STDERR---
+dsh: reasoning:
+Let's start by reading the plan file and understanding the project structure.
+
+First, read the plan: /Users/rain/DevGame/Fishing/tasks/evidence/CFG-001/plan.md. Also, AGENTS.md has already been injected. Per the task, I must not use sub-agents or background jobs — everything should be done serially within this session.
+
+Let's read the plan and check the related documentation. AGENTS.md says to read things like docs/SDD_v0.1.md. However, the primary constraint is to follow plan.md. Let's read the plan first.
+dsh: reasoning:
+The plan says to run the test with Godot headless `--script res://tests/unit/test_cfg001_config.gd`. But my instructions say to run `python3 -B tests/unit/run_cfg001_checks.py`. Hmm — the task instructions say to run `python3 -B tests/unit/run_cfg001_checks.py` in the project root, and to honestly record the actual exit code. The plan says to create `tests/unit/test_cfg001_config.gd` as a GDScript test.
+
+Wait, there's a discrepancy: the plan specifies a Godot GDScript test, but the dispatcher's instructions say to run a Python check script `tests/unit/run_cfg001_checks.py`. That script doesn't exist yet — do I need to create it myself? The dispatcher's instructions say "run the tests: python3 -B tests/unit/run_cfg001_checks.py". tests/** is within the allowed file scope. So I should create the Python check script that runs the tests (and probably also create the GDScript test), then run the Python command and record the exit code.
+
+Hmm, but the plan's test is Godot-based. Maybe I should implement both: the GDScript validator per the plan (since the plan is the approved implementation guide), and a Python runner `run_cfg001_checks.py` that runs the checks — but the Python script can't easily run Godot... well, actually it can: shell out to the Godot binary. But the plan's test command is Godot headless. The dispatcher explicitly instructs to run `python3 -B tests/unit/run_cfg001_checks.py` as the test.
+
+Options: the Python script could run the Godot headless test and assert exit code 0 and stdout contains "CFG001 CONFIG PASS", and also perform JSON validation checks on the data files themselves in pure Python (JSON parse, value checks, duplicate IDs, etc.). That way I can satisfy both the plan and the dispatcher.
+
+But wait — isn't this a "requirement change not covered by the plan"? The plan didn't cover a Python test runner. The dispatcher's instructions explicitly say to run it, and direct human instructions take precedence over general development habits. The dispatcher is the scheduler. This is a minor tooling discrepancy: the plan calls for a Godot GDScript test, while the dispatcher wants a Python check runner command. I can satisfy both: create the GDScript test and validator per the plan, and create `tests/unit/run_cfg001_checks.py` (inside tests/**, allowed) that runs the Godot headless test plus the CORE-001 regression, and additionally performs data file validation. Record the actual exit codes.
+
+No, wait a sec. Let me think about whether the Python runner that shells out to Godot is risky: per the plan, the Godot binary exists at /Applications/Godot.app/Contents/MacOS/Godot (4.7.2). Running Godot headless might create .godot cache files (ignored by .gitignore) or dirty icon.svg.import (risk R-3 — record honestly, don't restore). That's fine.
+
+But there's a subtle point: the Python test runner must be a real test. Let me design run_cfg001_checks.py as follows:
+1. Directly validate the data/fish_species.json and data/runtime_config.json values (exact match against expected values, 3 species, weights, prices).
+2. Re-implement mirror checks of GDScript's error paths on the fixtures? Hmm, that would duplicate the validator logic in Python, and wouldn't test the GDScript code. Better: run the Godot test via subprocess, capture the exit code and stdout, and assert PASS and exit code 0; run the CORE-001 regression, assert exit code 0. Plus validate the data files against examples (value equivalence, key ordering may differ). And run git status --porcelain to confirm the scope. If everything passes, exit code 0.
+
+Wait, but is it acceptable for the Python runner to depend on Godot being present? The plan's main test command is Godot. The dispatcher overrode with the python command. The Python runner can shell out to Godot. If Godot is missing, it should fail clearly. Let me first confirm Godot's presence.
+
+Also, the plan says the GDScript test should be run via --script. Godot 4.7? "4.7.2.stable" — an unusual version but that's what was recorded. Whatever.
+
+First let me read the relevant docs: INTERFACES_AND_DATA §1, schemas, examples, ACCEPTANCE_TESTS T-CONF-01, the CFG-001 line in TASKS.md, review.md (the Phase A review — maybe it has adjustments), queue.json. Also the test_core001_smoke.gd conventions.
+
+Allowed: data/**, scripts/config/**, tests/**, evidence directory. Reading anything is fine (only reading/modifying APPROVALS.md is prohibited — specifically "禁止读取或修改 tasks/APPROVALS.md" (prohibited from reading or modifying tasks/APPROVALS.md) — reading it is also forbidden, so I must not read tasks/APPROVALS.md).
+
+Also skills: the plan references the fishing-state-and-save and godot-validation skills. The system reminder says that if a task clearly matches a skill, load the skill first. The plan says "项目 Skills `fishing-state-and-save`、`godot-validation`" (project Skills `fishing-state-and-save`, `godot-validation`) — these are the project's skills (.dsh/skills). They're not in the available_skills catalog... actually, the catalog does list `fishing-state-and-save` and `godot-validation`. Yes, both are in the available skills list. I should load these before taking task actions. Also `router`? Not needed; the task clearly matches fishing-state-and-save (config/save) and godot-validation (headless test). Load both.
+
+Let me load the skills and read the files in parallel.
+dsh: reasoning:
+Now, I'll read the related files: examples/*.json, schemas/*.json, tests/unit/test_core001_smoke.gd, tasks/evidence/CFG-001/review.md, the relevant section of docs/INTERFACES_AND_DATA.md, T-CONF-01 in docs/ACCEPTANCE_TESTS.md, line 10 of tasks/TASKS.md, tools/auto/queue.json, and the scripts/io/config_loader.gd skeleton (read-only).
+dsh: reasoning:
+Alright. Review.md is adding important details:
+- JSON parsing must use `JSON.new()`'s `parse(text)` and `get_error()`/return code checks. `JSON.parse_string()` itself does not expose a `parse_error` property. Hmm — actually in Godot 4, `JSON.parse_string()` is static and returns a Variant (null on failure), with no error info. The review is saying to use an instance of `JSON.new()`, and use `parse(text)` which returns an Error code, and `get_error_location()` etc. Wait, does Godot 4's JSON have `get_error()`? `JSON.get_error_location()`, `get_error_message()`, and `error_text(error)` are static. The `JSON.parse()` method returns an Error enum. So do this: `var j = JSON.new(); var err = j.parse(text); if err != OK -> JSON_PARSE`. Also, the result is in `j.data`, so check `j.data is Dictionary`.
+
+Hmm, but wait: in Godot 4.7? That version doesn't exist as far as I know (Godot 4.3/4.4 are the latest), but the plan records that `4.7.2.stable.official.ed1daf0bf` was reported by --version. Whatever — the environment claims Godot 4.7 with features PackedStringArray("4.7"). I'll just have to test and confirm.
+
+- The auto test command uses `tests/unit/run_cfg001_checks.py` (Python standard library only): it runs Godot's import, the CFG-001 test, and the CORE-001 regression in order, capturing exit codes, requiring `CFG001 CONFIG PASS` and `CORE001 SMOKE PASS`, and rejecting the corresponding FAIL markers and any `SCRIPT ERROR`.
+
+So the Python runner's spec is in review.md §"auto test command". Good — the plan + review align on the architecture, and the review pins down the Python runner. Also "run Godot import in order" — first run Godot import (e.g. `Godot --headless --path . --import` or `--headless --editor --quit`?). Godot 4.x supports `--headless --import` (or `--editor --quit`). Actually the `--import` flag exists in 4.2+ (runs a single frame and quits, performing resource imports). Let me check what the Godot binary supports.
+
+Now, checking the remaining docs I need: docs/INTERFACES_AND_DATA.md §1, T-CONF-01 in docs/ACCEPTANCE_TESTS.md, line 10 of tasks/TASKS.md, tools/auto/queue.json. Just to be safe, I'll skim these (read-only).
+
+The Phase A review has confirmed the architecture and specified the exact runner contract (`run_cfg001_checks.py`, standard library only, Godot import + CFG-001 + CORE-001 regression, FAIL/SCRIPT ERROR is rejected). Before implementation, I'll check the remaining contract documents.
+dsh: reasoning:
+All context has been grasped. The queue's CFG-001 overview gives the runner's exact requirements:
+- New file `tests/unit/run_cfg001_checks.py` (Python standard library only):
+  - Set HOME to a temporary directory inside this ticket's evidence directory (/Users/rain/DevGame/Fishing/tasks/evidence/CFG-001/...)
+  - Serially execute Godot `--headless --path <repo> --editor --quit` (import), `test_cfg001_config.gd`, `test_core001_smoke.gd`
+  - Capture output and require `CFG001 CONFIG PASS` / `CORE001 SMOKE PASS`; reject FAIL markers, `SCRIPT ERROR`, and non-zero exit codes
+  - Only exit 0 if all succeed
+  - Use JSON.new().parse(text)'s Error return code to handle malformed JSON
+  - Config values must match examples' values exactly
+
+Why set HOME to a temp dir? Because the user's persistent Godot editor (PID 27116) regenerates icon.svg.import, and running the editor with headless --editor --quit may write to ~/Library or user config. Setting HOME isolates Godot's user settings directory and avoids polluting the user's actual environment. The evidence directory is writable for me.
+
+Plan:
+1. Create `data/fish_species.json` and `data/runtime_config.json` — copy examples verbatim.
+2. Create `scripts/config/fish_species_catalog.gd`, `runtime_config.gd`, `config_gate.gd`.
+3. Create fixtures under `tests/unit/fixtures/cfg001/` (12 fixtures).
+4. Create `tests/unit/test_cfg001_config.gd` (SceneTree script, PASS/FAIL + quit(0/1) convention).
+5. Create `tests/unit/run_cfg001_checks.py`.
+6. Run `python3 -B tests/unit/run_cfg001_checks.py` from project root and honestly record the exit code.
+7. Run `git status --porcelain` to check scope.
+8. Write report.md to the evidence directory.
+
+GDScript implementation details:
+
+FishSpeciesCatalog:
+```gdscript
+class_name FishSpeciesCatalog
+extends RefCounted
+
+const ERROR_FILE_MISSING := "FILE_MISSING"
+...
+static func load_catalog(path: String) -> Dictionary:
+    if not FileAccess.file_exists(path):
+        return _fail(ERR_FILE_MISSING)  # "FILE_MISSING"
+    var f := FileAccess.open(path, FileAccess.READ)
+    if f == null:
+        return _fail("FILE_OPEN:" ... ) 
+```
+
+Wait, the plan says `FILE_MISSING/FILE_OPEN`. Return a stable code: `FILE_MISSING` when file_exists is false, `FILE_OPEN` when open fails. Keep the error_code as a stable string; should we also include detail? The plan says return {ok, error_code, species}. Keep error_code as a stable enum-like string; may also include an "error" detail field for logging — the plan's matrix checks for exact match on error_code. As long as error_code is the stable string, adding an extra "detail" key is fine. Tests assert exact match on error_code. For machine readability, keep only the stable code and add a `detail` field for debugging. Hmm, but the plan's contract says returns Dictionary {ok: bool, error_code: String, species: Array}. Extra keys are harmless; on failure species: [].
+
+Order of validations (catalog):
+1. FILE_MISSING / FILE_OPEN
+2. Read text; JSON.new() var j = JSON.new(); err = j.parse(text); if err != OK → JSON_PARSE. Then if not (j.data is Dictionary) → JSON_PARSE (per plan: "if JSON.parse_string returns non-Dictionary → JSON_PARSE").
+3. Shape: dictionary keys are exactly {catalog_version, species} (additionalProperties:false → extra key → BAD_SHAPE; missing → BAD_SHAPE). catalog_version must be int (or a float with integer value?) equal to 1 → otherwise BAD_VERSION.
+4. species must be an Array with size >= 1 → EMPTY_SPECIES if empty array; if not Array → BAD_SHAPE.
+5. Each element: Dictionary with exactly the 6 required keys (additionalProperties false → extra key → BAD_SHAPE) → otherwise BAD_SHAPE.
+   - id: String matching ^[a-z][a-z0-9_]*$ → BAD_ID_PATTERN
+   - rarity ∈ {common, uncommon, rare} → BAD_RARITY
+   - catch_weight: numeric (int or float) and > 0 → BAD_WEIGHT (non-numeric → BAD_WEIGHT? plan says "numeric and > 0" → BAD_WEIGHT)
+   - base_price: integer (int or float with fract==0) and >= 0 → BAD_PRICE
+   - asset_key/name_zh: non-empty String → BAD_ASSET for asset_key; missing/empty name_zh → BAD_SHAPE? plan says "asset_key/name_zh non-empty string", and the code list has BAD_ASSET. Hmm — if name_zh is non-empty? The `missing_field.json` fixture could have a field missing → BAD_SHAPE. For empty name_zh... let's make name_zh invalid → BAD_SHAPE (shape/type issue), and asset_key invalid → BAD_ASSET. Document in code comments. Actually simpler: missing/extra keys → BAD_SHAPE; name_zh empty/non-string → BAD_SHAPE; asset_key empty/non-string → BAD_ASSET.
+6. Duplicate id → DUP_ID (checked after per-element id validity, order: plan order is id pattern → rarity → weight → price → asset → dedup. Plan order: item 4 (per-element field check) followed by item 5 dedup. So per element all field checks, then a dedup pass? "pairwise compare" after element validation. Do it this way: loop 1 validates all elements' fields in order; loop 2 dedup. Wait, the plan's order: step 4 is per-element field checks, step 5 is ID dedup. Right.
+
+Godot 4 GDScript RegEx: use RegEx.new(), compile("^[a-z][a-z0-9_]*$"), then search(text) != null. Actually `regex.search(text)` returns a RegExMatch or null. For full match use `regex.search(text).get_string(0) == text`? Anchors ^...$ handle it. Does Godot's RegEx $ also match before a trailing newline? PCRE's $ also matches before the final newline... e.g. id "carp\n" — edge case, ignore; or use full_match? Godot 4.3+ doesn't have full_match... actually RegEx has `search_all`. Keep the anchored search — fine.
+
+Numeric int check in GDScript: `v is int` or (`v is float` and `fract(v) == 0.0` and `is_finite(v)`). JSON parse: does Godot's JSON return float for all numbers? Careful: Godot's JSON parser returns numbers as float (REAL) in JSON by default! Actually in Godot 4, JSON.parse returns float for numbers, and int if there's an ".0"? Let me recall: Godot 4's JSON.cpp: numbers are parsed with `String::to_int`/`to_float`; stores as double; if the value has no fractional part and fits, does it keep int? I think Godot 4.x JSON returns float for `60`... hmm. In Godot 4, `JSON.parse_string("1")` is... I believe returns float. Godot's Variant has INT and FLOAT; the JSON parser uses `Variant::FLOAT` for numbers (real_t). Actually, I remember `typeof(JSON.parse_string("1")) == TYPE_FLOAT` is true in Godot 4? Let's think: in Godot 4 `JSON.new(); parse('{"a":1}'); print(typeof(data.a))` prints 4 (FLOAT) — yes, Godot's JSON parser returns floats for all JSON numbers. Hmm, I've actually seen this: Godot 4 returns float. And `JSON.stringify(1)` → "1"... The plan's R-2 explicitly says: "Godot 4 gives int/float respectively for `8` and `8.5`" — claims Godot 4 gives int for 8. Not 100% sure. To be safe, my validator accepts both int and float via `v is int or v is float` and for integer fields uses the fract(v)==0.0 check — this handles both behaviors. I can quickly test Godot's actual behavior with a small print... but I shouldn't add scratch files outside allowed dirs. I can test with `godot --headless -s` with an inline script? -s needs a script path within res://. Use `--script -` with a temp file? Not allowed. Simpler: put a debug print in my own test run, or use `godot --headless --path . --do-string "print(...)"`? Does Godot 4 have `--do-string`? `--do-file` exists... I don't think there's a `--do-string` for headless scripting. Does 4.x have `godot -s -` (stdin)? Not sure.
+
+Better approach: write the validator to accept both int and float states and have tests assert values match examples with value equality (`==` and fract check), which works either way. For "exact value match" assertions between data file and examples, load both files with the same validator (or JSON directly) and compare dicts — same parse path, so consistent. In the Python runner, can I also do pure-Python value comparison of data/ against examples/? Review says the runner's role is to run the three Godot commands; but adding a Python data-file value check is allowed (tests/**). Hmm, the runner's contract says "only exit 0 if all succeed" regarding the three commands. Can I add an additional check that data JSON equals examples JSON value-wise (python json.load of both, strict equality)? That's a reasonable additional guard that doesn't violate anything. But careful: runner must remain faithful to queue's brief; adding a check is fine. Actually, keep the runner minimal and exactly as specified: HOME to a temp under evidence, run the three commands, check markers/SCRIPT ERROR/exit code. The value equality check belongs in the GDScript test (plan §5 item 4: positive assertions "values match examples element-wise"). The GDScript test itself compares data files vs examples files. Good.
+
+GDScript test (test_cfg001_config.gd), steps:
+1. Load data/fish_species.json via FishSpeciesCatalog → ok=true, species.size()==3, ids == [river_carp, silver_perch, golden_trout], weights 60/30/10, prices 8/16/32, rarity/asset/name match examples — easiest: parse examples/fish_species.json directly with JSON and compare equality of the parsed dictionaries. If Godot JSON returns floats, both sides float — equality holds.
+2. Load data/runtime_config.json via RuntimeConfig → ok=true, and compare parsed examples/runtime_config.json for dict equality; assert visible_fps==30 (fract check or ==30), min 20, max 60, capacity 10, version 1.
+3. Gate: can_start_economy(catalog_result, runtime_result) == true.
+4. Negative fixtures: for each fixture, load → ok=false and error_code == expected; gate returns false for (fixture_result, valid runtime) or (valid catalog, fixture runtime).
+   Fixtures: dup_id(DUP_ID), zero_weight(BAD_WEIGHT), neg_weight(BAD_WEIGHT), neg_price(BAD_PRICE), bad_id(BAD_ID_PATTERN), bad_rarity(BAD_RARITY), missing_field(BAD_SHAPE), bad_version(BAD_VERSION), invalid_json(JSON_PARSE), min_gt_max(MIN_GT_MAX), fps_not_30(BAD_FPS? plan's runtime code list...)
+
+RuntimeConfig error codes: the plan lists MIN_GT_MAX explicitly; need stable codes for fps/version/capacity too. Let me define: FILE_MISSING/FILE_OPEN/JSON_PARSE/BAD_VERSION/BAD_SHAPE/BAD_FPS/BAD_RANGE (bite wait out of 1..86400 range)/MIN_GT_MAX/BAD_CAPACITY. Fixture fps_not_30 → BAD_FPS. Also, a missing fixture for runtime min/max? Only min_gt_max is listed. That's fine.
+
+Also missing-file test: load "res://data/nonexistent.json" → FILE_MISSING. And empty_species (EMPTY_SPECIES). Also extra_key → BAD_SHAPE. The plan lists 12 fixtures: dup_id, zero_weight, neg_weight, neg_price, bad_id, bad_rarity, missing_field, bad_version, invalid_json, min_gt_max, fps_not_30, empty_species. Negative count ≥10. Let's assert all 12 + the FILE_MISSING path + the gate-false matrix.
+
+Fixtures are catalog-type, except min_gt_max and fps_not_30 which are runtime-type, bad_version is ambiguous — catalog's bad_version (catalog_version=2) or runtime? Let me make bad_version a catalog fixture (catalog_version: 2). empty_species → catalog with species: [] → EMPTY_SPECIES. missing_field → catalog element missing base_price → BAD_SHAPE. bad_id → "River Carp!!" → BAD_ID_PATTERN. bad_rarity → "legendary" → BAD_RARITY. zero_weight/neg_weight → BAD_WEIGHT. neg_price → BAD_PRICE. dup_id → two with river_carp → DUP_ID. invalid_json → truncated JSON, e.g. `{"catalog_version": 1, "species": [ {"id": "river_carp"` → JSON_PARSE (JSON.parse returns ERR_PARSE_ERROR / ERR_FILE_CORRUPT).
+
+ConfigGate:
+```gdscript
+class_name ConfigGate
+extends RefCounted
+static func can_start_economy(catalog: Dictionary, runtime: Dictionary) -> bool:
+    return bool(catalog.get("ok", false)) and bool(runtime.get("ok", false))
+```
+Plus `static func rejection_reasons(...)` that enumerates error codes (plan §4 "reasons enumerable" — the gate returns false and reasons are enumerable; can_start_economy returns bool; reasons come from error_code fields; may add a helper `blocked_reasons`). Keep simple: `can_start_economy` + `blocked_reasons(catalog, runtime) -> PackedStringArray`.
+
+Note on class_name registration: new class_names FishSpeciesCatalog, RuntimeConfig, ConfigGate — no conflict with ConfigLoader/GameState etc. Does running `--editor --quit` trigger a full-project scan and global-class registration? With --headless -s script execution, does Godot load the script and resolve class_name via the global class cache in .godot/global_script_class_cache.cfg — running the editor import regenerates it. That's why the runner does the import first. Good: the runner's step 1 = `--headless --path <repo> --editor --quit`.
+
+HOME isolation: the queue's brief says "set HOME to a temporary directory inside this ticket's evidence". So in Python: tempfile.mkdtemp(dir=evidence_dir) or evidence_dir/tmp_home; set env HOME=tmp; XDG also? macOS Godot uses ~/Library/Application Support/Godot. HOME override covers it. Note: user editor PID 27116 is still running — may dirty icon.svg.import independently; if git status shows that, record R-3.
+
+Concern: `--editor --quit` with a fresh HOME — Godot will do a full import; may create .godot/ directory changes (gitignored) and write to user settings under the temp HOME — fine. Also the project may already be imported.
+
+Also: running tests with `--script` needs global class cache to know class_name; my test script uses `FishSpeciesCatalog.load_catalog(...)` — for a script run with -s, is the project loaded and is the global class cache used? If cache is stale (doesn't contain my new classes), will it be regenerated? Running with -s doesn't do a scan. The import step (--editor --quit) does the scan and regenerates global_script_class_cache.cfg. That's why the order matters: import first, then tests. Good — matches the queue's brief.
+
+Alternative: avoid the class_name dependency by using `preload("res://scripts/config/fish_species_catalog.gd")` inside tests. More robust. But class_name is also used by downstream FSM/ECO. Do both: scripts use class_name; tests use preload constants. This makes tests robust regardless of cache freshness, while downstream tickets keep the global classes.
+
+Now the Python runner design (stdlib only):
+
+```python
+#!/usr/bin/env python3
+"""CFG-001 ..."""
+import json, os, re, subprocess, sys, tempfile, shutil
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # repo root
+GODOT = os.environ.get("GODOT_BIN", "/Applications/Godot.app/Contents/MacOS/Godot")
+EVIDENCE = os.path.join(ROOT, "tasks", "evidence", "CFG-001")
+
+def run(cmd, env):
+    print("+ " + " ".join(cmd)); flush
+    p = subprocess.run(cmd, cwd=ROOT, env=env, capture_output=True, text=True, timeout=600)
+    return p
+
+steps:
+1. import: [GODOT, --headless, --path, ROOT, --editor, --quit]  → exit 0 required, no SCRIPT ERROR
+2. cfg test: [GODOT, --headless, --path, ROOT, --script, res://tests/unit/test_cfg001_config.gd] → exit 0 and "CFG001 CONFIG PASS" present, no "CFG001 CONFIG FAIL", no "SCRIPT ERROR"
+3. core regression: [... test_core001_smoke.gd] → exit 0 and "CORE001 SMOKE PASS", no FAIL, no SCRIPT ERROR
+Plus step 0: data file vs examples value-wise equality in Python (strict deep equality after json.load; note: python json parses int as int). This is a good independent value-locking guard (R-4). The queue's brief says "config values must exactly match examples element-wise" — the runner can enforce directly. Add it.
+Plus fixture presence check? Keep light: only verify the required fixture files exist (json parseable, except invalid_json). Well — GDScript tests cover semantics; Python checks are value lock. Keep the runner as specified + data-vs-examples check.
+HOME: home_dir = tempfile.mkdtemp(prefix="cfg001_home_", dir=EVIDENCE); env = dict(os.environ, HOME=home_dir); also set "XDG_CONFIG_HOME" and "XDG_CACHE_HOME" to subdirs? Not needed for macOS, harmless to set. Cleanup with shutil.rmtree? Leave for evidence? Queue says HOME to temp dir inside evidence — after success, cleanup to keep the tree clean; but evidence dir isn't tracked by scope check (tasks/** is not allowed to modify! wait — evidence directory is specially allowed for writes). But git status would show tasks/evidence/CFG-001 as modified/untracked — already untracked (does tasks/evidence appear in git status? Earlier `git status --porcelain` showed only `?? tasks/evidence/_runner/` — so tasks/evidence/CFG-001 is either tracked (plan.md/phaseA.out committed) or ignored. git log says "Approve CFG-001 Phase B under delegation", review.md is committed. My report.md/plan files → changes under tasks/** — but evidence dir is specially allowed in my brief. Scope self-check: runner/Godot's run shouldn't dirty other tracked files. report.md inside evidence is allowed by my brief ("separately allowed to write files inside evidence dir").
+Leave home dir? For reproducibility cleanup after run (shutil.rmtree with ignore_errors) and print path. Hmm, leaving tmp HOME would pollute evidence; cleanup is fine.
+
+Failure semantics: print summary line with each step's exit code; if all OK, sys.exit(0); else 1. Also print a short tail of output (stdout/stderr lines) for the report. Print full stdout? Might be long; print stdout in full (small) and stderr in full — Godot headless prints Godot banner lines; fine, but limit each to last 60 lines.
+
+Timeout: subprocess.run(..., timeout=600).
+
+Also, the runner must not modify allowed scope — it doesn't.
+
+Edge: `--editor --quit` with headless may return non-zero? On CORE-001/SPIKE the queue's test_cmd used plain --script. --editor --quit usually exits 0. If the import step exits non-zero, we fail and investigate.
+
+Another concern: the user's Godot editor (PID 27116) is running on the same project — a second editor instance on the same project will complain "another instance is running"? Godot editor uses an editor_settings lock? There's a project lock (editor runs fine in multiple instances? Godot 4 warns "Another instance of Godot is already running on this project" and refuses to open the project... actually the Godot editor has an `--singleton`? Hmm. Does `godot --headless --editor --quit` with an existing editor open on the same project → open the project in a new headless editor instance; there's a check via an `editor_lock`? I don't think the Godot editor prevents opening the same project twice (does it warn?). I recall "Another instance is already running, quitting." comes from the `--singleton`? No — that message comes from `--singleton`. The editor also has a project lock check: in Godot 4 the editor creates a `.godot/editor_project... .tmp` lock? Does EditorNode::is_project_loaded check a temp file in the project dir "editor <hash>.tmp"? Yes! Does EditorPaths save a lock file in the project's .godot? On project load, the editor creates an "editor<hash>.tmp" lock in the *user data dir* (under HOME!). Because I set HOME to a temp dir, the lock file check looks in the temp HOME and won't detect the running editor. That's probably why the queue mandates HOME isolation.
+
+Then the import step should run cleanly.
+
+Next, the GDScript test's steps. Test convention: `extends SceneTree`, `_initialize()`, on failure print & quit(1); on success print "CFG001 CONFIG PASS" and quit(0).
+
+Note: in SceneTree script `_initialize` — is print flushed? quit() exits the loop; print before quit shows (CORE-001 does exactly this and presumably worked).
+
+Also assert zero default-value invariant: on failure result, returned data must be empty: catalog failure → `species == []`; runtime failure → `config == {}`. Add assertions.
+
+Now, GDScript JSON number behavior: in tests, comparing the loaded `config` dict values from the catalog against literals 60/30/10 — if parsed as float, `60 == 60.0` is true in GDScript. `species[0]["catch_weight"] == 60.0` works either way. int check: `is_int_like(v)`: (v is int) or (v is float and fract(v)==0 and is_finite(v)). But if the JSON parser returns everything as float, the "base_price must be int" check passes for 8.0 — good, matches plan's R-2 intent. And fixture `neg_price` with -1 → BAD_PRICE via <0. And a float-price 8.5 fixture? Not on the list; skip (validator would reject 8.5 via fract check).
+
+Also BAD_RANGE for bite wait: fixture? Not on list; code still defined.
+
+Empty species: plan's error list includes EMPTY_SPECIES (plan order says: "species.size() >= 1" check... plan order: shape/version → per-element → dedup; empty array can't reach per-element check. So check for empty species after version, before per-element: EMPTY_SPECIES.
+
+BAD_SHAPE cases: non-dict element, extra key, missing key, non-string name_zh.
+
+Godot JSON: parse of `{"catalog_version": 1.5}` gives float; catalog_version must == 1 (int or float 1.0): bad_version fixture is `catalog_version: 2` → BAD_VERSION.
+
+JSON dictionary key order: Godot's Dictionary preserves insertion order; equality of two dicts ignores order. Python json equality also ignores order. Good — "key order may differ".
+
+Now let me write the files. data/fish_species.json: copy examples verbatim (byte-identical copy? "byte-for-byte same" means same values; plan allows only key-order/whitespace differences; simplest: `cp examples/fish_species.json data/fish_species.json` — byte-identical, zero risk). cp is allowed (write to data/**).
+
+Fixture creation: write each file.
+
+Let me define fixtures precisely (catalog-type based on valid example, single mutation):
+
+1. dup_id.json: catalog_version 1, species: river_carp (common 60/8), silver_perch, river_carp again (rare 10/32) — duplicate id river_carp → DUP_ID.
+2. zero_weight.json: river_carp catch_weight 0 → BAD_WEIGHT.
+3. neg_weight.json: river_carp catch_weight -5 → BAD_WEIGHT.
+4. neg_price.json: river_carp base_price -1 → BAD_PRICE.
+5. bad_id.json: id "RiverCarp" (uppercase) → BAD_ID_PATTERN. Use "River Carp" with a space.
+6. bad_rarity.json: rarity "legendary" → BAD_RARITY.
+7. missing_field.json: element missing base_price → BAD_SHAPE.
+8. bad_version.json: catalog_version 2 → BAD_VERSION.
+9. invalid_json.json: truncated: `{"catalog_version": 1, "species": [ {"id": "river_carp",` (truncated).
+10. empty_species.json: catalog_version 1, species: [].
+11. min_gt_max.json: runtime: version 1, fps 30, min 60, max 20, capacity 10 → MIN_GT_MAX.
+12. fps_not_30.json: runtime fps 60 → BAD_FPS.
+
+Extra fixture extra_key.json → BAD_SHAPE? The plan doesn't list it; keep exactly 12 as planned. Also invalid_runtime_version? Not needed.
+
+Test asserts for 12 fixtures + missing-file + empty-config? Enough: 12 fixtures + FILE_MISSING = 13 negatives.
+
+GDScript code:
+
+fish_species_catalog.gd:
+
+```gdscript
+class_name FishSpeciesCatalog
+extends RefCounted
+# CFG-001: Pure-data fish species catalog validator... (comments)
+
+const ERR_FILE_MISSING := "FILE_MISSING"
+const ERR_FILE_OPEN := "FILE_OPEN"
+const ERR_JSON_PARSE := "JSON_PARSE"
+const ERR_BAD_VERSION := "BAD_VERSION"
+const ERR_BAD_SHAPE := "BAD_SHAPE"
+const ERR_EMPTY_SPECIES := "EMPTY_SPECIES"
+const ERR_BAD_ID_PATTERN := "BAD_ID_PATTERN"
+const ERR_DUP_ID := "DUP_ID"
+const ERR_BAD_RARITY := "BAD_RARITY"
+const ERR_BAD_WEIGHT := "BAD_WEIGHT"
+const ERR_BAD_PRICE := "BAD_PRICE"
+const ERR_BAD_ASSET := "BAD_ASSET"
+
+const CATALOG_VERSION := 1
+const RARITIES := ["common", "uncommon", "rare"]
+const SPECIES_FIELDS := ["id", "name_zh", "rarity", "catch_weight", "base_price", "asset_key"]
+const ID_PATTERN := "^[a-z][a-z0-9_]*$"
+
+static func load_catalog(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return _fail(ERR_FILE_MISSING)
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return _fail(ERR_FILE_OPEN)
+	var text: String = file.get_as_text()
+	file = null
+	if text.is_empty():
+		return _fail(ERR_JSON_PARSE)
+	var json := JSON.new()
+	if json.parse(text) != OK:
+		return _fail(ERR_JSON_PARSE)
+	var data: Variant = json.data
+	if not (data is Dictionary):
+		return _fail(ERR_JSON_PARSE)
+	var root: Dictionary = data
+	if not _has_exact_keys(root, ["catalog_version", "species"]):
+		return _fail(ERR_BAD_SHAPE)
+	if not _is_int_equal(root["catalog_version"], CATALOG_VERSION):
+		return _fail(ERR_BAD_VERSION)
+	var raw_species: Variant = root["species"]
+	if not (raw_species is Array):
+		return _fail(ERR_BAD_SHAPE)
+	var arr: Array = raw_species
+	if arr.is_empty():
+		return _fail(ERR_EMPTY_SPECIES)
+	var id_re := RegEx.new()
+	if id_re.compile(ID_PATTERN) != OK:
+		return _fail(ERR_BAD_SHAPE)  # shouldn't happen
+	var seen := {}
+	for element in arr:
+		if not (element is Dictionary):
+			return _fail(ERR_BAD_SHAPE)
+		var sp: Dictionary = element
+		if not _has_exact_keys(sp, SPECIES_FIELDS):
+			return _fail(ERR_BAD_SHAPE)
+		var id_value: Variant = sp["id"]
+		if not (id_value is String) or (id_value as String).is_empty() or id_re.search(id_value) == null:
+			return _fail(ERR_BAD_ID_PATTERN)
+		var name_value: Variant = sp["name_zh"]
+		if not (name_value is String) or (name_value as String).is_empty():
+			return _fail(ERR_BAD_SHAPE)
+		if not (sp["rarity"] in RARITIES):
+			return _fail(ERR_BAD_RARITY)
+		if not _is_positive_number(sp["catch_weight"]):
+			return _fail(ERR_BAD_WEIGHT)
+		if not _is_nonneg_int(sp["base_price"]):
+			return _fail(ERR_BAD_PRICE)
+		var asset: Variant = sp["asset_key"]
+		if not (asset is String) or (asset as String).is_empty():
+			return _fail(ERR_BAD_ASSET)
+		var sid: String = id_value
+		if seen.has(sid):
+			return _fail(ERR_DUP_ID)
+		seen[sid] = true
+	return {"ok": true, "error_code": "", "species": arr.duplicate(true)}
+```
+
+Wait — the plan says dedup comes after per-element field checks (two passes); my single pass interleaves dedup into the element loop. In dup_id.json, both elements are otherwise valid so the result is the same. Plan's order: per-element all field checks, then pairwise compare. My per-element approach is subtly different (duplicate on element #1 vs weight error on element #2 → my version reports DUP_ID first... e.g., species [a, b] where b duplicates a but b has bad weight — plan would report BAD_WEIGHT first (field pass before dedup pass)). No such case in the fixtures. For fidelity to plan, do 2 passes: first loop validates all fields; second loop checks duplicates. Easy enough.
+
+Also, plan's `search`: `id_re.search(str) != null` — but a full anchor is needed; RegEx's `^[a-z][a-z0-9_]*$` search: Godot's RegEx uses PCRE, `$` matches before a trailing newline; id "river_carp\n" would pass. Use `\A...\z`? Godot 4's RegEx supports those? PCRE supports \A and \z; but keep it simple. Or compare: `m.get_string(0) == id_value` — full coverage: `var m = id_re.search(v); if m == null or m.get_string(0) != v: fail`. This is robust against the $-newline quirk. Do that.
+
+Helper `_is_int_equal(v, expected)`: `(v is int and v == expected) or (v is float and is_equal_approx(v, expected))`. For version compare use exact: `v is int and int(v)==1` or `v is float and fract==0 and int(v)==1`. Simpler: `_is_nonneg_int(v) and v == expected`... let me write:
+
+```
+static func _is_integral(v: Variant) -> bool:
+	if v is int: return true
+	if v is float: return is_finite(v) and fract(absf(v)) == 0.0
+	return false
+static func _as_int(v: Variant) -> int:
+	return int(v)
+```
+
+_version==1_: `_is_integral(v) and int(v) == CATALOG_VERSION` — but negative version -1: _is_integral true, int(v)==1 false → BAD_VERSION. Good.
+
+_is_positive_number(v): `(v is int and v>0) or (v is float and is_finite(v) and v>0.0)`.
+_is_nonneg_int(v): `_is_integral(v) and v >= 0` → but v might be int... `float(v) >= 0.0`.
+
+_has_exact_keys(d, keys): size equal and all present and no extras:
+```
+if d.size() != keys.size(): return false
+for k in keys: if not d.has(k): return false
+return true
+```
+Size-equal + all-present ⇒ no extras. Good.
+
+_fail(code): `return {"ok": false, "error_code": code, "species": []}`.
+
+runtime_config.gd similar:
+
+```gdscript
+class_name RuntimeConfig
+extends RefCounted
+const ERR_... FILE_MISSING, FILE_OPEN, JSON_PARSE, BAD_VERSION, BAD_SHAPE, BAD_FPS, BAD_BITE_WAIT, MIN_GT_MAX, BAD_CAPACITY
+const KEYS := ["config_version","visible_fps","bite_wait_min_sec","bite_wait_max_sec","basket_capacity"]
+const CONFIG_VERSION := 1
+const VISIBLE_FPS := 30
+const WAIT_MIN := 1.0 WAIT_MAX 86400.0
+load_config: file checks; parse; dict; exact keys; version==1 → BAD_VERSION; visible_fps int==30 → BAD_FPS; bite_wait_min: numeric in [1,86400] → BAD_BITE_WAIT; same max; min<=max → MIN_GT_MAX; basket_capacity is nonneg int >=1 → BAD_CAPACITY; ok → {"ok":true,"error_code":"","config":root.duplicate(true)}
+```
+
+Plan says `1 <= min <= 86400` etc. Schema says number (float allowed) with min 1 max 86400 — allow float; basket_capacity is integer ≥1.
+
+config_gate.gd:
+
+```gdscript
+class_name ConfigGate
+extends RefCounted
+static func can_start_economy(catalog: Dictionary, runtime: Dictionary) -> bool:
+	return _ok(catalog) and _ok(runtime)
+static func _ok(r: Dictionary) -> bool:
+	return r.get("ok", false) == true and String(r.get("error_code", "")) == ""
+static func blocked_reasons(catalog: Dictionary, runtime: Dictionary) -> PackedStringArray:
+	var out := PackedStringArray()
+	if not _ok(catalog): out.append("catalog:" + String(catalog.get("error_code", "UNKNOWN")))
+	if not _ok(runtime): out.append("runtime:" + String(runtime.get("error_code", "UNKNOWN")))
+	return out
+```
+
+test_cfg001_config.gd:
+
+```gdscript
+extends SceneTree
+# CFG-001 configuration validator headless unit test...
+const Catalog := preload("res://scripts/config/fish_species_catalog.gd")
+const Runtime := preload("res://scripts/config/runtime_config.gd")
+const Gate := preload("res://scripts/config/config_gate.gd")
+
+const FIXTURES := {
+	"res://tests/unit/fixtures/cfg001/dup_id.json": Catalog.ERR_DUP_ID, ...
+}
+```
+Wait, dict with const values — is a const dict allowed? Does Godot 4's const dictionary literal work with constant values? A constant dictionary of constant-string values is fine. But referencing another class's constants from a const dict — `Catalog.ERR_DUP_ID` with Catalog as a preloaded constant: is that allowed in const context in Godot 4? Class constants accessed via preload constant are allowed in const context? `const X := preload(...).SOME_CONST` works; inside a dict literal probably works too. To be safe, use an Array of [path, expected_code] pairs.
+
+Better to use plain var inside _initialize or const arrays of arrays.
+
+Test structure:
+
+```
+func _initialize() -> void:
+	# P1 positive catalog
+	var cat := Catalog.load_catalog("res://data/fish_species.json")
+	if cat["ok"] != true: _fail("P1 catalog ok"); return
+	if cat["species"].size() != 3: _fail("P1 catalog size"); return
+	# P1b exact value match against examples (deep equal via JSON)
+	var ex := _parse_json("res://examples/fish_species.json")
+	if ex == null or ex != cat's raw? 
+```
+Hmm: cat["species"] is the parsed species array from data; examples' parse gives an array; compare `ex["species"] == cat["species"]` — Godot's Dictionary/Array == is deep equality. Since data is a byte-identical copy, they're equal. Use that.
+
+Runtime: `rt["config"] == ex_runtime` (full dict). And assert literal values: visible_fps==30 (int or float: use float() comparison), 20/60/10, version 1, capacity 10.
+
+Gate true.
+
+Negatives: loop the fixture matrix: for each [path, expect]:
+```
+var is_runtime := path.get_file() in ["min_gt_max.json", "fps_not_30.json"]
+var res := Runtime.load_config(path) if is_runtime else Catalog.load_catalog(path)
+if res["ok"] != false → fail
+if res["error_code"] != expect → fail
+Zero defaults: if not res["species"].is_empty() / res["config"].is_empty() → fail
+gate: Gate.can_start_economy(res if catalog else valid_cat, res if runtime else valid_rt) must be false
+Also blocked_reasons().size() >= 1
+```
+
+FILE_MISSING: load res://data/does_not_exist_cfg001.json → expect ok=false, FILE_MISSING.
+JSON_PARSE is already in invalid_json fixture.
+
+Finally print("CFG001 CONFIG PASS"); quit(0).
+
+_fail prints "CFG001 CONFIG FAIL: <step>" and quit(1).
+
+Python runner details:
+
+```python
+#!/usr/bin/env python3
+import json, os, subprocess, sys, tempfile, shutil
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+GODOT = os.environ.get("GODOT_BIN", "/Applications/Godot.app/Contents/MacOS/Godot")
+EVIDENCE = os.path.join(ROOT, "tasks", "evidence", "CFG-001")
+
+def load_json(path):
+    with open(path, "r", encoding="utf-8") as f: return json.load(f)
+
+def check_values_locked():
+    problems = []
+    d = load_json(os.path.join(ROOT, "data/fish_species.json"))
+    e = load_json(os.path.join(ROOT, "examples/fish_species.json"))
+    if d != e: problems.append("data/fish_species.json differs from examples value-wise")
+    ... runtime ...
+    return problems
+
+def run_step(name, cmd, env, want=None, forbid=("SCRIPT ERROR", "CFG001 CONFIG FAIL", "CORE001 SMOKE FAIL")):
+```
+Note: step 1's forbidden list: only "SCRIPT ERROR" and exit code 0. Steps 2/3: their respective FAIL markers + SCRIPT ERROR + required PASS marker.
+
+Print each step's exit code and last lines. Overall summary; if all OK exit 0, else 1.
+
+Also verify fixture presence (12) — light check.
+
+HOME temp: `home = tempfile.mkdtemp(prefix="run_cfg001_home_", dir=EVIDENCE)`; env HOME=home, XDG_CONFIG_HOME/CACHE under home; Godot on macOS also uses ~ for logs. Cleanup in finally with shutil.rmtree(home, ignore_errors=True).
+
+Timeout 600 seconds per step; on timeout → fail with message, non-zero exit.
+
+If Godot binary absent → print and exit 2? Queue says exit 0 only on success; use exit 1 for failure and print reason. Use 1 uniformly for all failures and print reason.
+
+Now, running the Python runner may dirty the tree: Godot import regenerates .godot cache (gitignored) and may touch icon.svg.import (tracked? in CORE-001 history icon.svg.import is tracked? Earlier git status was clean apart from _runner; icon.svg.import exists in tree; is it tracked? Probably committed in the CORE-001 commit; the earlier block reason mentioned "?? icon.svg.import" untracked before. Now presumably tracked and clean. Running headless --editor may rewrite it → dirty. R-3: if dirty, record honestly.
+
+Now — one more thing to double-check: `Godot --headless --editor --quit` exits with code 0? Let's run the whole thing and see anyway.
+
+Also the runner prints full stdout of test scripts (small: just PASS line + Godot banner ~5 lines).
+
+Now let me write the files. Then run tests, git status, write report.md, done.
+
+Report path: /Users/rain/DevGame/Fishing/tasks/evidence/CFG-001/report.md.
+
+Now let me create the files. First, data via cp (byte-identical), then GDScript files, fixtures, tests, runner.
+
+Careful with GDScript string interpolation and RegEx string with backslashes — no backslash sequences beyond \A in `^[a-z][a-z0-9_]*$`. Fine.
+
+One concern: `json.data` — Godot 4's JSON has a `data` property (yes, JSON.data). And `json.parse(text)` returns Error. Good.
+
+`RegEx.new()` + compile. OK in static function? RegEx is RefCounted, fine.
+
+Also in GDScript static funcs you can't use `self`, fine; call via Class.func.
+
+Static function + class_name + preload constant usage in test: `Catalog.load_catalog(...)` with Catalog being a preloaded GDScriptResource — works.
+
+Note: does the test run with `--script` need `--headless`? Yes.
+
+`_initialize` override in SceneTree: standard for -s scripts extending SceneTree... actually the -s script must extend `MainLoop` or `SceneTree`; Godot 4 requires the script to extend `MainLoop`/`SceneTree`/`MeshLibraryContainer`? CORE-001 uses SceneTree + _initialize successfully. Follow it.
+
+Writing everything now. Also: python runner must be executable? Not needed since we run it via python3 -B.
+
+Let me write the files.
+
+One more runner detail: queue says "set HOME to a temporary directory inside this ticket's evidence" — do exactly that. And "run Godot --headless --path <repo> --editor --quit" — note flag order: `--headless --path ROOT --editor --quit`.
+
+Potential issue: `--editor --quit` + headless on an already-imported project with a running GUI editor sharing .godot directory → race conditions possible. Accept it; observe output.
+
+Also should the runner avoid `HOME` being empty (unset)? Set it to the temp dir.
+
+Now write all files.
+
+Fixture files (catalog-type, keep other elements valid, so the target mutation triggers first):
+
+dup_id.json:
+```json
+{
+  "catalog_version": 1,
+  "species": [
+    {"id": "river_carp", "name_zh": "测试鲤鱼", "rarity": "common", "catch_weight": 60, "base_price": 8, "asset_key": "placeholder/carp"},
+    {"id": "river_carp", "name_zh": "测试鲤鱼副本", "rarity": "uncommon", "catch_weight": 30, "base_price": 16, "asset_key": "placeholder/carp2"}
+  ]
+}
+```
+Wait: dup on the second element — pass 1 field checks all pass, pass 2 dup → DUP_ID. Good.
+
+zero_weight.json / neg_weight.json / neg_price.json / bad_id.json / bad_rarity.json / missing_field.json (element without "base_price") / bad_version.json (catalog_version: 2) / empty_species.json (species: []) / invalid_json.json truncated.
+
+runtime: min_gt_max.json (min 60, max 20), fps_not_30.json (visible_fps 60).
+
+invalid_json.json content: `{"catalog_version": 1, "species": [ {"id": "river_carp", "name_zh": "测试鲤鱼", "rarity": "common", "catch_weight": 60, "base_price": 8, "asset_key": "placeholder/carp"}` — unclosed bracket.
+
+Now write files.
+
+The context is clear and consistent: plan.md + review.md + the CFG-001 summary in queue.json all align (GDScript validator class under scripts/config/**, fixtures, `test_cfg001_config.gd` + Python standard-library runner `run_cfg001_checks.py` with an isolated temporary HOME inside the evidence directory). The worktree is clean (only `?? tasks/evidence/_runner/`), and Godot 4.7.2 is present. Everything I'm about to create fits within `data/**`, `scripts/config/**`, and `tests/**`.
+dsh: reasoning:
+First, copy the sample data (data file, byte-identical), create the fixture, and write the GDScript file.
+dsh: reasoning:
+Next, I'll write the three GDScript validator classes.
+dsh: reasoning:
+Next, the 12 fixtures. Write each one using a bash here-document or individual write calls. For the JSON fixtures, use a bash here-document — a single command can efficiently write out all 12. Use a single bash call with a quoted delimiter per file to prevent expansion.
+dsh: reasoning:
+All 12 fixtures have been written. invalid_json.json is intentionally truncated (not scanned). Next, I'll write the GDScript test and the Python runner.
+
+I've created 12 fixtures with invalid_json.json intentionally left as invalid JSON. Now I'll set up the headless test and Python runner.
+dsh: reasoning:
+Next, run the actual test command from the project root and honestly record the exit code. Godot's import may take some time, so set a generous timeout for the bash invocation (the runner itself has a 600-second timeout per step. The bash tool may have a default timeout, so set timeoutMs high, e.g., 300000 → but each step is capped at 600 seconds within the runner. Total worst case is 30 minutes. Realistically, import takes about 10–30 seconds and tests just a few seconds. Set the bash timeout to 600000 (10 minutes). If exceeded, it moves to background — in that case we'll need to collect it via job_output, but that's fine (this isn't a run_in_background that the instructions forbid. The instructions forbid intentionally starting background jobs. If the tool moves it to background due to timeout, collection is a harness matter. It's better to set it to a high enough value to complete in the foreground. Set it to 900000).
+dsh: reasoning:
+The runner correctly detected an actual parse error inside my test — good, the gate is working and wasn't faked. The problem: inside `for row in CATALOG_FIXTURES:` I wrote `var path := FIXTURE_DIR + row[0]` — but row[0] is a Variant (untyped) coming from an Array of untyped arrays, so `:=` type inference fails. Fix: `var path: String = FIXTURE_DIR + String(row[0])`.
+
+Interesting point: step2's exit_code was 0 despite the script load failure?! Godot's -s script load failure didn't propagate to the exit code — good thing the runner checks markers and SCRIPT ERROR. This validates the validity of the runner's contract design.
+
+Fix lines 78 and 98: declare as `var path: String = FIXTURE_DIR + String(row[0])`, and use the `bad` variable the same way (bad is typed as Dictionary via `Catalog.load_catalog(path)` → no problem).
+
+Also, in step3, the smoke test output "CORE001 GameController ready..." — the output from the Main scene instantiation? No problem.
+
+Edit the test file.
+
+The runner's gate functioned as designed — rather than blindly returning a pass, it detected an actual GDScript parse error inside my test (a `:=` inference against an untyped array element) and returned exit 1. I'll fix the two `var path :=` lines with explicit typing:
+dsh: reasoning:
+Also, let me check if there are other places where `:=` is used in a way where the type can't be inferred. `_ids_of` returns Array, no problem. `var catalog: Dictionary = ...` is fine. `var example_catalog: Variant = _parse_json(...)` — `_parse_json` returns Variant. `var text := FileAccess.get_file_as_string(path)` returns String, so OK. `var json := JSON.new()` is also fine. `var missing: Dictionary = ...` is fine too.
+
+Let me rerun the runner.
+dsh: reasoning:
+Two findings from the actual output:
+
+1. `fract()` was not found — in Godot 4, `fract()` is a global built-in function, but… does it exist in Godot 4? Hmm, Godot 4's @GDScript has `fract(pos)`. The error says "not found in base self" on line 128 — but it's being called inside a static function. Does Godot 4.x have a known issue where global math functions like fract aren't usable inside static functions? Actually, in Godot 4 some built-in functions weren't usable in static contexts in older versions… but 4.7 here is a newer/modified version. The error says "not found in base self" — perhaps this build has moved fract to @GDScript and it should be accessed as `@GDScript.fract()`, or maybe it just isn't available inside static functions. The simplest and most robust fix: avoid fract entirely. Implement the fractional-part check with `value - floor(value)`: `var iv := int(value)`; then compare with `absf(value - float(iv)) == 0.0`. int() truncates toward zero; for a value of -5.0, int is -5, difference is 0.0 — no problem. Use `is_equal_approx`? A strict equality comparison of a float against its floor is sufficient for integer values parsed from JSON (JSON integer values are exactly representable as floats).
+
+So, replace `fract(absf(value)) == 0.0` with `(value - float(int(value))) == 0.0`… though `int(value)` for a float inside a static function should be fine (is int() a language keyword/cast, not a function lookup? `int(value)` is a built-in function but at the same time it's a constructor-like cast; casts like int(), float(), and String() are special forms in GDScript and always work). floor() might hit the same static problem. Avoid floor too — use int() casts and comparison operators only.
+
+_is_integral:
+```
+if value is float:
+    var as_int := int(value)
+    return is_finite(value) and float(as_int) == value
+```
+int() cast — is it a "cast" keyword that works in a static context? Yes, `int(...)` is a built-in type cast, and should be part of the language's special forms. is_finite might have the same issue! Let's avoid is_finite too: NaN/inf in JSON — Godot's JSON parser: does it accept "NaN"/"Infinity" literals? Godot 4's JSON parser by default doesn't accept NaN/Infinity (non-strict mode?). JSON.stringify may emit inf/nan but the parser rejects them? To be safe: check `value == value` (NaN guard) and absf… absf() might also not be found inside static. Use `value > 0.0` etc. For _is_positive_number's float case: `float(value) > 0.0` — NaN > 0 is false; +inf > 0 is true → inf passes as a positive number; is that bad? inf for catch_weight is weird, but the JSON parser rejects Infinity literals anyway (JSON spec). Let's avoid extra built-ins: use the comparison `(value - value) == 0.0`, which is true for NaN/inf → NaN-NaN=NaN != 0 → false; inf-inf=NaN → false. This is the classic finite-value check without a floor/isfinite builtin: `(value - value) == 0.0` is true only for finite numbers.
+
+So:
+- Finite check: `float(value) - float(value) == 0.0` → true if finite, false if NaN/±inf.
+- Integer check: `float(int(value)) == float(value)` (for a finite float) → for huge floats beyond int64, int() is clamped; the comparison then fails → rejected. No problem.
+
+2. Second issue: exit code -15 (SIGTERM) — huh? step2's exit is -15: the process was killed by a signal? Actually -15 means subprocess reported termination due to SIGTERM. Interesting: after the SCRIPT ERROR "Invalid call. Nonexistent function 'load_catalog' in base 'GDScript'" in _initialize → quit(?) never got called… then SceneTree continues; but SIGTERM? Maybe the harness? No — the runner's subprocess timeout is 600 seconds; the step finished immediately (the log appears right after). Does Godot self-terminate with SIGTERM? Or does the user's editor watchdog kill duplicate editor instances? Hmm. Maybe Godot headless -s with a script error: script's `_initialize` errors (invalid call) → the engine aborts via a crash handler? SIGTERM is odd. But note: the previous run's exit was 0, because the script's *parsing* failed and the engine just proceeded with the default SceneTree, running on and… then quit? In the previous run, the step2 exit code was 0 despite the load failure! So Godot -s with script load failure returns 0 (the engine runs a bare SceneTree… hmm, and exits immediately?). Whatever — the runner's marker catches that.
+
+This time: parse error in a depended script → compile dependency fails → then load_catalog is missing at runtime → _initialize throws an error, doesn't call quit → SceneTree keeps running forever → killed by 600-second timeout? But the entire runner finished quickly (steps 2 and 3 completed within the same command's output… actually I didn't measure the time; the bash call could have taken 600 seconds! Total timeout is 900 seconds. It's possible the command took 10+ minutes. exit -15 = subprocess's TimeoutExpired? No — subprocess.run raises TimeoutExpired on timeout; it doesn't return -15. But when run() catches TimeoutExpired it prints TIMEOUT. It didn't print. -15 means the process died with SIGTERM. Something external (macOS? user's editor?) or Godot's own crash handler sent the SIGTERM? Perhaps the watchdog is: Godot's -s script error → `_initialize` errors with an invalid-call error but doesn't crash. SceneTree keeps running… indefinitely. Unless a crash handler… Let's not over-analyze: after the fix, the script should work and the step should pass quickly. If step2 hangs again, I'll investigate.
+
+Actually wait — it's probably this: when _initialize throws an error (invalid call), does Godot abort() after fatal errors in headless -s mode? abort → SIGABRT (-6), not -15. SIGTERM suggests something killed it. Maybe the bash tool's timeoutMs was applied? The bash tool timeout is 900000ms; if it had expired, the command would be backgrounded, not killed, and the output would have been truncated mid-way. But the output contains all steps and RUNNER_EXIT_CODE=1 — the runner completed all steps. So step2 received SIGTERM within about 600 seconds… or the runner's own subprocess timeout? subprocess.run(timeout=600) on timeout: kills the child (SIGTERM on POSIX) and then raises TimeoutExpired → should have printed TIMEOUT. Unless kill+wait race: subprocess.run calls process.kill(), then communicate again, and raises TimeoutExpired. My except catches TimeoutExpired and prints TIMEOUT and returns False — it didn't print. Hmm, but the output shows "[step2-cfg001] exit_code=-15", which comes from the normal path proc.returncode=-15. So proc terminated with SIGTERM before the timeout, without raising TimeoutExpired.
+
+Who sent the SIGTERM? Maybe a user's resident Godot editor (PID 27116) with a file watcher? Or macOS? Or did Godot 4.7's `-s` mode detect a second instance? Actually! Godot 4.x added a `--singleton` hint; and the editor refuses if a lock exists ("Another instance is already running, quitting."). That prints an ERROR and returns ERR_CANT_OPEN… the editor lock is under HOME (the isolated temp HOME) — a fresh temp HOME per run → no lock. But step1 ran --editor --quit with the temp HOME… it quit and cleaned up, then step2 runs as a -s script (not editor) — the editor lock shouldn't apply.
+
+Or: crash because _initialize kept running the default main loop (main scene main.tscn? -s with SceneTree: main scene isn't auto-run? When you use -s, the custom SceneTree script becomes the main loop; the main scene isn't loaded. The script runs the SceneTree's default _initialize → keeps running forever). Then the bash tool's timeout… but I said it was backgrounded. Actually, when the bash tool's timeout was hit, "the command is backgrounded, not killed" — but I got complete output including the final echo. So no.
+
+Hmm wait — maybe it did take a long time: step2 timeout 600 seconds: subprocess.run: on TimeoutExpired, child killed with SIGTERM, communicate() collects, and re-raises. My code catches TimeoutExpired and returns False with TIMEOUT print… but the shown line says exit_code=-15, which means no exception. Confusing. Unless… TimeoutExpired happened, and in Python subprocess.run: on timeout it calls process.kill(); process.communicate(); raise. My except TimeoutExpired should have printed TIMEOUT. It didn't.
+
+Let me look again at the runner logic for the -15 line: the runner printed "[step2-cfg001] exit_code=-15" — the normal path. So Godot terminated by SIGTERM on its own within under 600 seconds. Possibility: a macOS watchdog kills non-responsive headless GUI-subsystem apps? Or Godot's crash handler forwards SIGTERM on fatal script errors in _initialize? Actually — Godot has a Watchdog for the editor… headless -s with an invalid function call is a runtime script error (non-fatal; prints the error and continues). SceneTree continues → infinite run → bash timeout…
+
+No wait: the total command could have taken 600 seconds (step2), then the remaining steps a few seconds, totaling about 610 seconds < my bash's 900-second timeout. But who sent SIGTERM? Python's subprocess.run(timeout=600): kills with SIGTERM then raises TimeoutExpired — which is caught and should print "TIMEOUT after 600s". That's not what I see.
+
+Hmm, unless the kill happens but the TimeoutExpired is raised with the output and my `except subprocess.TimeoutExpired:` block prints TIMEOUT… the actual output shows the normal path. So really no timeout exception.
+
+Alternative: Godot 4.7 with `--script`: if the script fails to load at startup ("Failed to load script ... with error"), Godot… in step2 of the previous run: script load failed with parse error → exit 0 immediately (the engine ran and quit with no main loop?). This time: the depended script failed to compile, but the test script itself "loaded" (compile error of dependency → load returned null? But then the error "Invalid call. Nonexistent function 'load_catalog' in base 'GDScript'" at line 36 means the script did run (Catalog was the GDScript of the failed script). So _initialize ran and errored on the first call, but SceneTree continued. Infinite loop → eventually SIGTERM from someone → returncode -15.
+
+Who? The only killer I know that sends SIGTERM to the process group is… `timeout`? Not used. Honestly, maybe macOS killed it due to memory? Or Godot's own headless "no main window" exit… not productive to keep guessing. The important thing: after the fract fix, the test script should PASS and quit(0) quickly. But there's a hang risk: if any of the errors in _initialize prevents quit(0), the step will hang for 600 seconds and then kill the whole run. The fix should completely eliminate the SCRIPT ERROR, and _initialize will always end with either _fail → quit(1) or PASS → quit(0). quit() inside _initialize of a SceneTree: works (CORE-001 uses it).
+
+Also note: the previous CORE-001 smoke printed "CORE001 GameController ready..." after PASS — from _initialize's main scene's _ready; no problem.
+
+So the fix is: replace `fract(absf(value)) == 0.0` in both _is_integral functions with a cast-based check that avoids fract/is_finite/absf:
+
+```gdscript
+static func _is_integral(value: Variant) -> bool:
+	if value is int:
+		return true
+	if value is float:
+		var v := float(value)
+		if v - v != 0.0: # NaN/±inf non-finite
+			return false
+		return float(int(v)) == v
+	return false
+```
+
+And _is_positive_number:
+```gdscript
+	if value is float:
+		var v := float(value)
+		return v - v == 0.0 and v > 0.0
+```
+
+Wait, `v - v != 0.0` for inf: inf-inf=NaN; NaN != 0.0 → true → returns false. Good.
+
+int(v) for v=1e18 is OK within int64. float(int(1e18)) == 1e18 → 1e18 is exactly representable as a float? 1e18 = 2^18*... 1e18 is exactly representable (10^18 divides 2^18×5^18; 5^18≈3.8e12 < 2^53). In any case, edge cases are irrelevant to the actual values.
+
+Are `is_finite` and `absf` fine in static? The error only flagged fract. But to be safe, replace all three with pure operators.
+
+Also the int()/float() casts — these are GDScript special forms (constructors), which always work.
+
+Also line 128 of the file I wrote: that's inside _is_integral. Both files have the same pattern.
+
+Apply the edits, then re-run the runner. Also add a guard: nothing else needed.
+
+Additionally: `is_finite` might not be the only missing builtin; also `FileAccess.get_file_as_string` (a static on the FileAccess class — no problem), and the `RegEx` class is fine too.
+
+Edit both files.
+
+Actual failure detected: GDScript's static function can't resolve the `fract()` built-in function in this Godot build. Replace the number check with a pure operator (cast + NaN/inf guard via `v - v == 0.0`), making it independent from the global math function:
+dsh: reasoning:
+Also, regarding the earlier concern: `int(root["catalog_version"])` — the int() cast on a Variant works. `float(value)` on an int-typed Variant works too.
+
+Another potential issue regarding the static function: `String(row[0])` and `String(result.get(...))` inside _fail/_code — String() casts are a special form, so they're fine.
+
+`PackedStringArray()` inside a static in ConfigGate — it's a constructor special form, so no problem.
+
+`RegEx.new()` inside a static — no problem (it's class instantiation).
+
+`entry["id"]` inside `var sid: String = element["id"]` — the Variant→String implicit conversion on typed var assignment needs a valid conversion, and at runtime the JSON returns a String, so it's OK.
+
+Also `id_regex.search(value)` returns a RegExMatch — typed as `var match_result: RegExMatch = id_regex.search(value)`; the search returns a Variant (RegExMatch or null) — typed assignment from null to an object type is permitted.
+
+Rerunning the runner.
+dsh: reasoning:
+Runner PASS, exit code 0. All 3 steps exit code 0: step2 `CFG001 CONFIG PASS`, step3 `CORE001 SMOKE PASS`, no SCRIPT ERROR.
+
+Next:
+1. Verify negative control — confirm that the tests actually fail when they're supposed to fail? The runner was already demonstrated in the 2nd run to honestly return exit code 1. The test's matrix asserts error codes per fixture, and the fact that all 12 passed in a single PASS run means the error code logic was executed. This is sufficient, but a simple sanity check for whether the negative path actually fires: already proven — if the validator were returning ok=true for all fixtures, N1 would fail and the tests would FAIL. Therefore PASS means all 12 rejections matched their exact codes. Good.
+
+2. Scope self-check: git status --porcelain. Check that changes are only in data/**, scripts/config/**, tests/**, evidence dirs (already permitted), and also check whether there are any changes to .godot/icon.svg.import.
+
+3. Check whether any temporary HOME directories remain (already cleaned up).
+
+4. Write report.md.
+
+Also, verify the file listing of new files and confirm that files in the evidence directory (run_cfg001_home_*) have been deleted.
+dsh: reasoning:
+Scope check:
+- `?? data/`, `?? scripts/config/`, `?? tests/unit/fixtures/`, `?? tests/unit/run_cfg001_checks.py`, `?? tests/unit/test_cfg001_config.gd` — all within the permitted scope.
+- `?? tasks/evidence/_runner/` — existing runner-owned, unmodified (baseline state).
+- No tracked files were modified at all (git diff --stat is empty; in particular, icon.svg.import was not dirtied by the headless run — R-3 did not manifest. The import run used a temporary HOME, and .godot is already in an up-to-date state / ignore settings).
+- The `.uid` file was generated inside a permitted directory (tests/unit/*.uid, scripts/config/*.uid) — but wait, in plan/AGENTS it said `*.uid` is gitignored… however git status doesn't show them individually. That's because they're inside the untracked directories `scripts/config/` and `tests/unit/fixtures/` — git status collapses untracked directories. `tests/unit/test_cfg001_config.gd.uid` is not shown individually → it's ignored by .gitignore's `*.uid`. Good.
+- Temporary HOME directory has been cleaned up (evidence directory contains only the existing 4 files).
+
+Note that .uid files exist on disk (generated by Godot's import) inside permitted directories — no problem, they're ignored by git.
+
+One more sanity check to strengthen the evidence: run the test command directly once more? Not needed — the runner already ran the Godot command directly and captured the output.
+
+Also confirmed that no modifications were made to prohibited paths: scripts/io, examples, schemas, docs, project.godot, tools — confirmed clean via git status.
+
+Furthermore, AGENTS.md §3.5 says to leave traces in tasks/TASKS.md and docs/DEV_LOG.md — but my ticket constraints only permit data/**, scripts/config/**, tests/** and the evidence directory. Therefore TASKS.md/DEV_LOG.md are not to be touched. The dispatcher/scheduler handles status updates. This is the correct behavior per my instructions (the scheduler will commit after checks pass).
+
+Now I'll write report.md in the evidence directory. Contents: list of changed files, executed commands and exit codes (honestly including the 2 failed runs during development), test output summary, coverage acceptance items, residual risks.
+
+Details of exit codes to record honestly:
+- Run 1: python3 -B tests/unit/run_cfg001_checks.py → exit 1 (my test script had a parse error: `var path := FIXTURE_DIR + row[0]` type inference; step2 failed; step1/step3 were 0)
+- Run 2: exit 1 (the built-in fract()/is_finite was not found in the static context; step2 failed)
+- Run 3 (final): exit 0, all 3 steps exit 0, CFG001 CONFIG PASS + CORE001 SMOKE PASS.
+
+Also, note the anomaly during the run 2 investigation: step2 once returned exit -15 (SIGTERM) — no wait, in run 2 step2 was exit_code=-15? Looking at the run 2 output: "[step2-cfg001] exit_code=-15"? No — run 2 displayed exit_code=0 with FAIL markers (parse error was step2? Hmm, let me re-read.
+
+Run 1 (first): step2 exit 0 but stderr contained SCRIPT ERROR parse error (type inference for test_cfg001_config.gd:78/98) → runner FAIL exit 1.
+Run 2 (after path fix): step2 exit_code=-15! Yes, run 2 showed exit_code=-15 with fract() parse error, forbidden marker + non-zero. So step2 received SIGTERM — probably because _initialize kept looping the SceneTree after the runtime SCRIPT ERROR ('load_catalog' nonexistent in the GDScript base — because the dependent scripts failed to compile) — and something killed it… actually, why -15? Hmm: Godot's watchdog? Well, whatever — it was during the development iteration and has been honestly recorded. After the fract fix, in run 3 everything was clean.
+
+Wait, was there a timeout? The runner's timeout is 600 seconds. The run 2 command — I didn't measure the time. -15 = SIGTERM. Python's subprocess kills with SIGTERM after the 600s timeout and raises TimeoutExpired → the runner prints TIMEOUT… it didn't print that. Actually looking at my run() code: TimeoutExpired → prints TIMEOUT. Run 2's output did not print TIMEOUT. So SIGTERM came from somewhere else. Godot itself? After "SCRIPT ERROR: Invalid call ... at: _initialize", Godot's SceneTree continues. Then…? -15 might be because Godot treats script errors in _initialize as fatal in headless -s? Whatever the mechanism, honest record: run 2's step2 returned -15.
+
+Hmm, actually, could macOS have killed it due to being unresponsive? Not worth digging further. In run 3, all steps are exit 0 with correct markers.
+
+Also note the R-3 risk: the resident editor's PID 27116 did not dirty icon.svg.import during this run (git diff is clean).
+
+Now writing report.md. Include:
+1. List of changed files (all new): data 2, scripts/config 3 (.gd + .uid auto), tests 2 + 12 fixtures (+ test .uid).
+2. Executed commands and exit codes: 3 runner executions (1st/2nd = 1, 3rd = 0) + direct git status (0), git diff --stat (0).
+3. Test output summary: step1/2/3 exit 0, markers.
+4. Coverage acceptance items: T-CONF-01 mapping (5 counterexample kinds + economy startup block), V01-F01 3 species, V01-W03/SDD-175 30FPS, SDD-177 20-60, SDD-172 capacity 10 candidate is non-locked, AGENTS §4 zero-default value.
+5. Residual risks/legacy:
+   - L-1: This ticket did not touch scripts/io/config_loader.gd as planned (D-2); subsequent tickets decide whether to thin-forward.
+   - L-2: The Godot 4.7.2 build in this machine's static function cannot resolve global math built-ins like fract()/is_finite() — switched to pure arithmetic; subsequent tickets should note this when using math built-ins in static functions.
+   - L-3: When Godot -s fails to load the script, the exit code is not necessarily non-zero (run 1: parse error yet exit 0). The runner must always judge by marker + SCRIPT ERROR, and must not depend on exit code alone — already built into the runner.
+   - L-4: Run 2's step2 observed -15 (after script error, process was SIGTERM-terminated by the system / engine, specific source unknown; did not recur in run 3). Honest record.
+   - L-5: data/ is the canonical candidate value for the initial economy parameters. Any adjustment requires user approval (not changed in this ticket, verified by value lock).
+   - L-6: The basket_capacity=10 candidate is not locked by the validator (per plan). If capacity needs to be locked, human approval is required.
+   - L-7: The runner depends on the default Godot path; can be overridden via GODOT_BIN. GUI-related acceptance items are not applicable to this ticket.
+   - The temporary HOME isolation directory has been cleaned up; tasks/evidence/_runner is not touched (existing runner-owned state).
+   - git commit not executed (per scheduler's requirement, scheduler will commit).
+
+Also note: .uid files (Godot-generated) are gitignored, so the commit scope is clean.
+
+Now writing the report.
+dsh: reasoning:
+complete. Update the todo to completed state and do a final confirmation that report.md exists — it exists (already created). One more thing to verify: the instructions require the test's exit code to be from the actual execution — done (0). The final line must be "PHASE-B-DONE".
+
+Also re-confirming that there were no other changes — git status showed only the allowed paths. I haven't read tasks/APPROVALS.md. No sub-agents, no background jobs. Good.
+
+Final summary message with PHASE-B-DONE on the final line.
+dsh: reasoning:
+All done. Final answer: summarize, with the actual exit code, and make sure the last line is "PHASE-B-DONE".

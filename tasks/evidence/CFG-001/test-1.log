@@ -1,0 +1,53 @@
+=== TEST ===
+CFG-001 runner root: /Users/rain/DevGame/Fishing
+Godot binary: /Applications/Godot.app/Contents/MacOS/Godot
+pre-flight: data==examples (value-identical), 12 fixtures present
+isolated HOME (ticket-local temp): /Users/rain/DevGame/Fishing/tasks/evidence/CFG-001/run_cfg001_home_a2iypy0c
+========================================================================
+[step1-import] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --editor --quit
+[step1-import] exit_code=0
+[step1-import] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Started Project initialization (5 steps)[39m[0m
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Scanning file structure...[39m[0m
+[  16% ] [90m[1mfirst_scan_filesystem[22m | Loading global class names...[39m[0m
+[  33% ] [90m[1mfirst_scan_filesystem[22m | Verifying GDExtensions...[39m[0m
+[  50% ] [90m[1mfirst_scan_filesystem[22m | Creating autoload scripts...[39m[0m
+[  66% ] [90m[1mfirst_scan_filesystem[22m | Initializing plugins...[39m[0m
+[  83% ] [90m[1mfirst_scan_filesystem[22m | Starting file scan...[39m[0m
+[92m[ DONE ][39m [1mfirst_scan_filesystem[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Loading editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Loading editor layout...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Loading docks...[39m[0m
+[  33% ] [90m[1mloading_editor_layout[22m | Reopening scenes...[39m[0m
+[  50% ] [90m[1mloading_editor_layout[22m | Loading central editor layout...[39m[0m
+[  66% ] [90m[1mloading_editor_layout[22m | Loading plugin window layout...[39m[0m
+[  83% ] [90m[1mloading_editor_layout[22m | Editor layout ready.[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m
+[step1-import] OK
+========================================================================
+[step2-cfg001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --script res://tests/unit/test_cfg001_config.gd
+[step2-cfg001] exit_code=0
+[step2-cfg001] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CFG001 CONFIG PASS
+[step2-cfg001] OK
+========================================================================
+[step3-core001-regression] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --script res://tests/unit/test_core001_smoke.gd
+[step3-core001-regression] exit_code=0
+[step3-core001-regression] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CORE001 SMOKE PASS
+CORE001 GameController ready: wallet_gold=0 basket=0 basket_capacity=10
+[step3-core001-regression] OK
+cleaned isolated HOME: /Users/rain/DevGame/Fishing/tasks/evidence/CFG-001/run_cfg001_home_a2iypy0c
+CFG001 RUNNER PASS
+
+---STDERR---
+
+EXIT=0

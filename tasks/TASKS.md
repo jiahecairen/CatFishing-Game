@@ -139,3 +139,13 @@ Test result & evidence: tasks/evidence/CORE-001/ (会话归档+日志+diff)
 Risks & unresolved decisions: 见 tasks/evidence/CORE-001/phaseA.out 与 report.md
 Recorded by AUTO-001 at 2026-11-11T04:27:42+00:00
 ```
+
+```text
+ID: CFG-001
+Status: In Review（AUTO-001 自动通过测试/范围/批准检查，待人工验收）
+Owner: AUTO-001 scheduler + headless Qwen Flash (serial)
+Executed commands + exit codes: test_cmd=python3 -B tests/unit/run_cfg001_checks.py -> 0; attempt=1
+Test result & evidence: tasks/evidence/CFG-001/ (会话归档+日志+diff)
+Risks & unresolved decisions: 见 tasks/evidence/CFG-001/phaseA.out 与 report.md
+Recorded by AUTO-001 at 2026-11-11T05:00:58+00:00
+```

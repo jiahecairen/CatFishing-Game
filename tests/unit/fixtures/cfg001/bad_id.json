@@ -1,0 +1,6 @@
+{
+  "catalog_version": 1,
+  "species": [
+    {"id": "River Carp!", "name_zh": "测试鲤鱼", "rarity": "common", "catch_weight": 60, "base_price": 8, "asset_key": "placeholder/carp"}
+  ]
+}

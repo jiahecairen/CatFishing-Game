@@ -1,0 +1,7 @@
+{
+  "config_version": 1,
+  "visible_fps": 30,
+  "bite_wait_min_sec": 60,
+  "bite_wait_max_sec": 20,
+  "basket_capacity": 10
+}
