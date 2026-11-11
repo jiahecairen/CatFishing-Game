@@ -15,6 +15,7 @@ extends RefCounted
 const SCHEMA_KEYS := ["instance_id", "species_id", "caught_at_utc", "source_event_id", "sale_price_at_catch"]
 const ID_PREFIX := "fish-"
 const UTC_PATTERN := "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})Z$"
+const MAX_INT64_FLOAT_EXCLUSIVE := 9223372036854775808.0
 
 
 ## 由已校验的 catch 事件与目录条目构造鱼实例字典（五键，schema v1）。
@@ -76,9 +77,9 @@ static func price_valid(value: Variant) -> bool:
 		return int(value) >= 0
 	if value is float:
 		var v := float(value)
-		if v - v != 0.0:  # 纯运算判有限（对齐 CFG-001 先例）
+		if v - v != 0.0 or v < 0.0 or v >= MAX_INT64_FLOAT_EXCLUSIVE:
 			return false
-		return float(int(v)) == v and v >= 0.0
+		return float(int(v)) == v
 	return false
 
 

@@ -406,7 +406,11 @@ func _persist(payload: Dictionary) -> bool:
 
 
 func _init_reject(code: String) -> Dictionary:
-	# 初始化失败零副作用：不提交目录/不置位，后续命令恒 NOT_INITIALIZED。
+	# 配置重验失败必须 fail-closed：清除旧目录/幂等缓存并停用服务，防止旧配置继续落账。
+	_initialized = false
+	_catalog_by_id.clear()
+	_catch_ledger.clear()
+	_sale_ledger.clear()
 	_append_log("initialize", "", code, false, {})
 	return {"ok": false, "error_code": code}
 

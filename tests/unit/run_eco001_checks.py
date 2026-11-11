@@ -118,8 +118,8 @@ def run_step(step_name, cmd, env, project_root, want_marker=None, forbid_markers
     for marker in ("SCRIPT ERROR",) + tuple(forbid_markers):
         if marker in combined:
             failures.append("forbidden marker %r" % marker)
-    if want_marker is not None and want_marker not in (proc.stdout or ""):
-        failures.append("missing required marker %r" % want_marker)
+    if want_marker is not None and (proc.stdout or "").count(want_marker) != 1:
+        failures.append("required marker %r must appear exactly once" % want_marker)
 
     print("[%s] stdout(tail):\n%s" % (step_name, tail(proc.stdout)))
     err = tail(proc.stderr)

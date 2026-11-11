@@ -47,7 +47,7 @@ func _e0() -> bool:
 		return false
 	if not _check(FishScript.price_valid(0) and FishScript.price_valid(8) and FishScript.price_valid(8.0), "E0 valid price rejected"):
 		return false
-	for bad_price in [-1, 8.5, "8", null, true, -0.5]:
+	for bad_price in [-1, 8.5, "8", null, true, -0.5, 9223372036854775808.0]:
 		if not _check(not FishScript.price_valid(bad_price), "E0 invalid price accepted: %s" % str(bad_price)):
 			return false
 	var bad_price_fish := fish.duplicate(true); bad_price_fish["sale_price_at_catch"] = -5
@@ -332,7 +332,10 @@ func _e9() -> bool:
 	var bad_catalog: Dictionary = CatalogScript.load_catalog(FIXTURE_DIR + "dup_id.json")
 	if not _check(bad_runtime.get("ok") == false and bad_catalog.get("ok") == false, "E9 cfg001 fixtures must be invalid"):
 		return false
-	var svc: EconomyService = EcoScript.new()
+	var svc: EconomyService = _svc()
+	var live_state := GameState.new()
+	if not _check(svc != null, "E9 reinitialize setup") or not _apply_commit(svc, live_state, "catch-e9-live", "river_carp", _utc(1)):
+		return false
 	var init_runtime: Dictionary = svc.initialize(_catalog, bad_runtime)
 	var init_catalog: Dictionary = svc.initialize(bad_catalog, _runtime)
 	var init_both: Dictionary = svc.initialize(bad_catalog, bad_runtime)
@@ -342,7 +345,7 @@ func _e9() -> bool:
 			and String(init_both["error_code"]).contains("runtime:MIN_GT_MAX"),
 			"E9 gate codes runtime:/catalog: prefixed"):
 		return false
-	var state := GameState.new()
+	var state := live_state
 	if not (_reject(svc, false, state, "catch-e9", "river_carp", _utc(1), "NOT_INITIALIZED")
 			and _reject(svc, true, state, "sale-e9", ["fish-x"], null, "NOT_INITIALIZED")):
 		return false
