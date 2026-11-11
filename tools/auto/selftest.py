@@ -10,6 +10,11 @@
   T5 成功路径 → 自动 commit + TASKS.md 记录 + in_review（dsh stub 写码）
   T6 持续测试失败 → 首跑+重试2次后 Blocked + 冻结 + 不 commit + 证据保留
   T7 会话篡改 APPROVALS.md → 立即 Blocked + 冻结（防伪造批准）
+  T8 tracked/untracked queue 归属校验，tools/auto 其他文件仍受范围保护
+  T9 仅允许随 icon.svg 生成的 icon.svg.import
+  T10 CORE smoke 先导入并要求 PASS、无 SCRIPT ERROR，导入错误也拒绝
+  T11 自动 commit 只包含白名单路径，保留其他预暂存文件
+  T12 Godot 并发改写导入旁车时拒绝 commit
 """
 import importlib
 import json
@@ -17,10 +22,11 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SIMROOT = "/tmp/dsh-auto-001/selftest"
+SIMROOT = tempfile.mkdtemp(prefix="dsh-auto-001-selftest-")
 RESULTS = []
 PATCH = os.path.join(HERE, "headless-local-qwen.patch.yml")
 
@@ -161,6 +167,141 @@ def run(_a):
     _, bad = R.scope_violations(["hello.py"])
     check("T1b APPROVALS.md 改动永远越界", any(p == "tasks/APPROVALS.md" for _, p, _ in bad))
 
+    # ---- T8 tracked queue: runner 自有状态可变，Agent 篡改仍越界
+    root = make_sim("t8-queue-ownership", "noop")
+    qpath = write_queue(root, [ticket()])
+    gargs = ["git", "-C", root, "-c", "user.email=auto-001@local", "-c",
+             "user.name=AUTO-001 selftest"]
+    subprocess.run(gargs + ["add", "--", "tools/auto/queue.json"], check=True,
+                   capture_output=True, text=True)
+    subprocess.run(gargs + ["commit", "-q", "-m", "track queue"], check=True,
+                   capture_output=True, text=True)
+    R = mk_runner(r, root, qpath, write_approvals(root))
+    qdata = json.load(open(qpath))
+    qdata["runner_state_test"] = "saved-by-runner"
+    R.save_q(qdata)
+    _, bad = R.scope_violations(["hello.py"])
+    check("T8a runner 更新 tracked queue 不触发越界", not any(p == "tools/auto/queue.json" for _, p, _ in bad))
+    with open(qpath, "a") as f:
+        f.write("\n")
+    _, bad = R.scope_violations(["hello.py"])
+    check("T8b 会话改写 tracked queue 必被拦截",
+          any(p == "tools/auto/queue.json" and "队列文件" in why for _, p, why in bad))
+
+    root = make_sim("t8b-auto-dir", "noop")
+    qpath = write_queue(root, [ticket()])
+    R = mk_runner(r, root, qpath, write_approvals(root))
+    with open(os.path.join(root, "tools/auto/fake_dsh.py"), "a") as f:
+        f.write("# unexpected edit\n")
+    _, bad = R.scope_violations(["hello.py"])
+    check("T8c tools/auto 其他文件仍受范围门禁保护",
+          any(p == "tools/auto/fake_dsh.py" for _, p, _ in bad))
+    with open(qpath, "a") as f:
+        f.write("\\n")
+    _, bad = R.scope_violations(["hello.py"])
+    check("T8d untracked queue 被会话改写也必拦截",
+          any(p == "tools/auto/queue.json" and "队列文件" in why for _, p, why in bad))
+
+    # ---- T9 Godot 允许文件的唯一明确导入旁车
+    root = make_sim("t9-import-sidecar", "noop")
+    qpath = write_queue(root, [ticket(allowed=("icon.svg",))])
+    R = mk_runner(r, root, qpath, write_approvals(root))
+    with open(os.path.join(root, "icon.svg.import"), "w") as f:
+        f.write('[remap]\\nimporter="texture"\\n')
+    _, bad = R.scope_violations(["icon.svg"])
+    check("T9a icon.svg.import 随允许的 icon.svg 归属", not any(p == "icon.svg.import" for _, p, _ in bad))
+    with open(os.path.join(root, "unrelated.svg.import"), "w") as f:
+        f.write("not allowed\\n")
+    _, bad = R.scope_violations(["icon.svg"])
+    check("T9b 其他 import 文件不因旁车规则获豁免",
+          any(p == "unrelated.svg.import" for _, p, _ in bad))
+
+    # ---- T10 CORE 冒烟测试必须先导入、输出 PASS 且无 SCRIPT ERROR
+    root = make_sim("t10-smoke-contract", "noop")
+    qpath = write_queue(root, [ticket()])
+    R = mk_runner(r, root, qpath, write_approvals(root))
+    ev = os.path.join(root, "tasks/evidence/SIM-T-01")
+    os.makedirs(ev, exist_ok=True)
+    smoke_ticket = ticket(test_cmd=("/Applications/Godot.app/Contents/MacOS/Godot --headless "
+                                    f"--path {root} --script res://tests/unit/test_core001_smoke.gd"))
+    calls = []
+    fake_result = {"stdout": "CORE001 SMOKE PASS\\n", "stderr": ""}
+    fake_import_result = {"stdout": "Godot import complete\\n", "stderr": ""}
+    original_run = subprocess.run
+
+    def fake_run(command, **kwargs):
+        if isinstance(command, list):
+            calls.append(("import", command))
+            return subprocess.CompletedProcess(command, 0, fake_import_result["stdout"], fake_import_result["stderr"])
+        calls.append(("test", command))
+        return subprocess.CompletedProcess(command, 0, fake_result["stdout"], fake_result["stderr"])
+
+    try:
+        subprocess.run = fake_run
+        rc = R.run_test(smoke_ticket, ev, 1)
+        first = calls[0][1] if calls and calls[0][0] == "import" else []
+        check("T10a CORE 冒烟先跑 Godot editor 导入", rc == 0 and
+              "--editor" in first and "--quit" in first and smoke_ticket["test_cmd"] in calls[-1][1])
+        fake_result["stdout"] = "Godot Engine started but script did not run\\n"
+        rc_missing = R.run_test(smoke_ticket, ev, 2)
+        check("T10b 缺少 CORE001 SMOKE PASS 即失败", rc_missing != 0)
+        fake_result["stdout"] = "CORE001 SMOKE PASS\\n"
+        fake_result["stderr"] = "SCRIPT ERROR: parse failed\\n"
+        rc_script_error = R.run_test(smoke_ticket, ev, 3)
+        check("T10c 有 SCRIPT ERROR 即失败，即使退出码为零", rc_script_error != 0)
+        calls.clear()
+        fake_import_result["stderr"] = "SCRIPT ERROR: import failed\\n"
+        rc_import_error = R.run_test(smoke_ticket, ev, 4)
+        check("T10d 导入阶段脚本错误时不执行 smoke", rc_import_error != 0 and
+              len(calls) == 1 and calls[0][0] == "import")
+    finally:
+        subprocess.run = original_run
+
+    # ---- T11 自动提交只提交白名单路径，保留预先暂存的越界文件
+    root = make_sim("t11-commit-whitelist", "noop")
+    qpath = write_queue(root, [ticket(allowed=("hello.py", "icon.svg"))])
+    qdata = json.load(open(qpath))
+    R = mk_runner(r, root, qpath, write_approvals(root))
+    ev = os.path.join(root, "tasks/evidence/SIM-T-01")
+    os.makedirs(ev, exist_ok=True)
+    with open(os.path.join(root, "evil.txt"), "w") as f:
+        f.write("must stay staged and uncommitted\\n")
+    subprocess.run(gargs[:2] + [root] + gargs[3:] + ["add", "--", "evil.txt"],
+                   check=True, capture_output=True, text=True)
+    with open(os.path.join(root, "hello.py"), "w") as f:
+        f.write("def add(a, b): return a + b\\n")
+    with open(os.path.join(root, "icon.svg"), "w") as f:
+        f.write("<svg></svg>\\n")
+    with open(os.path.join(root, "icon.svg.import"), "w") as f:
+        f.write('[remap]\\nimporter="texture"\\n')
+    ticket_data = ticket(allowed=("hello.py", "icon.svg"))
+    commit_rc = R.commit_success(qdata, ticket_data, ev, 1, 0)
+    shown = subprocess.run(["git", "-C", root, "show", "--format=", "--name-only", "HEAD"],
+                           check=True, capture_output=True, text=True).stdout.splitlines()
+    staged = subprocess.run(["git", "-C", root, "diff", "--cached", "--name-only"],
+                            check=True, capture_output=True, text=True).stdout.splitlines()
+    check("T11a 自动提交只含白名单及 icon 对应导入旁车",
+          commit_rc == 0 and set(shown) == {"hello.py", "icon.svg", "icon.svg.import", "tasks/TASKS.md"}, str(shown))
+    check("T11b 越界预暂存文件保留且未混入 commit", "evil.txt" not in shown and "evil.txt" in staged,
+          f"commit={shown}; staged={staged}")
+
+    # ---- T12 导入期间被 Godot 编辑器改写时拒绝自动提交
+    root = make_sim("t12-import-race", "noop")
+    qpath = write_queue(root, [ticket(allowed=("icon.svg",))])
+    qdata = json.load(open(qpath))
+    R = mk_runner(r, root, qpath, write_approvals(root))
+    ev = os.path.join(root, "tasks/evidence/SIM-T-01")
+    os.makedirs(ev, exist_ok=True)
+    with open(os.path.join(root, "icon.svg"), "w") as f:
+        f.write("<svg></svg>\\n")
+    with open(os.path.join(root, "icon.svg.import"), "w") as f:
+        f.write('[remap]\\nimporter="texture"\\n')
+    fingerprints = iter(("stable-before", "changed-during-add"))
+    R.stable_file_fingerprint = lambda _path: next(fingerprints)
+    race_rc = R.commit_success(qdata, ticket(allowed=("icon.svg",)), ev, 1, 0)
+    check("T12 并发改写导入旁车时冻结且不 commit",
+          race_rc == 66 and git_n_commits(root) == 1)
+
     # ---- T2 批准解析
     root = make_sim("t2-approval", "noop")
     ap = write_approvals(root, real=False)
@@ -174,6 +315,7 @@ def run(_a):
     root = make_sim("t3-noapprove", "noop")
     q = write_queue(root, [ticket()])
     R = mk_runner(r, root, q, missing_approvals(root))
+    R.gate_model = lambda: (True, "selftest stub")
     rc = R.cmd_start("SIM-T-01")
     dirty = [l for l in git_dirty(root) if "tools/auto/" not in l and "tasks/evidence/" not in l]
     qq = json.load(open(q))
@@ -185,6 +327,7 @@ def run(_a):
     root = make_sim("t4-model", "noop")
     q = write_queue(root, [ticket(status="ready")])
     R = mk_runner(r, root, q, write_approvals(root), base="http://127.0.0.1:59999/v1")
+    R.gate_model = lambda: (False, "selftest model unavailable")
     rc = R.cmd_start("SIM-T-01")
     qq = json.load(open(q))
     check("T4a 模型不可达 exit 60", rc == 60, f"rc={rc}")
@@ -195,6 +338,7 @@ def run(_a):
     root = make_sim("t5-commit", "ok_write", ledger=True)
     q = write_queue(root, [ticket()])
     R = mk_runner(r, root, q, write_approvals(root))
+    R.gate_model = lambda: (True, "selftest stub")
     n0 = git_n_commits(root)
     rc = R.cmd_start("SIM-T-01")
     qq = json.load(open(q))
@@ -211,6 +355,7 @@ def run(_a):
     root = make_sim("t6-retry", "noop", ledger=True)
     q = write_queue(root, [ticket()])
     R = mk_runner(r, root, q, write_approvals(root))
+    R.gate_model = lambda: (True, "selftest stub")
     n0 = git_n_commits(root)
     rc = R.cmd_start("SIM-T-01")
     qq = json.load(open(q))
@@ -227,6 +372,7 @@ def run(_a):
     q = write_queue(root, [ticket(test="python3 -c pass")])
     ap = write_approvals(root)
     R = mk_runner(r, root, q, ap)
+    R.gate_model = lambda: (True, "selftest stub")
     rc = R.cmd_start("SIM-T-01")
     qq = json.load(open(q))
     check("T7a 篡改账本 → Blocked+冻结", rc == 66 and bool(qq.get("frozen")), f"rc={rc}")
@@ -234,7 +380,6 @@ def run(_a):
     check("T7c 不 commit 任何内容", git_n_commits(root) == 1)
 
     ok = all(c for _, c in RESULTS)
-    os.makedirs(SIMROOT, exist_ok=True)
     with open(os.path.join(SIMROOT, "report.txt"), "w") as f:
         f.write(f"AUTO-001 selftest {time.strftime('%F %T %z')}\n")
         for n, c in RESULTS:

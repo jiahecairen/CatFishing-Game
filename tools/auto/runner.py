@@ -18,9 +18,11 @@
 import argparse
 import datetime
 import fnmatch
+import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -33,7 +35,6 @@ DSH = os.environ.get("AUTO001_DSH", "/opt/homebrew/bin/dsh")
 BASE_DEFAULT = "http://127.0.0.1:9931/v1"
 MAX_RETRIES = 2  # 每票最多自动重试 2 次（含首跑最多 3 次尝试）
 SESSIONS_ROOT = os.path.expanduser("~/.dsh/sessions")
-RUNNER_OWNED = ("tools/auto/", "tasks/evidence/")
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # 退出码
@@ -47,7 +48,9 @@ def now():
 class Runner:
     def __init__(self, args):
         self.root = os.path.realpath(args.root or ROOT_DEFAULT)
-        self.queue_path = args.queue or os.path.join(self.root, "tools/auto/queue.json")
+        self.queue_path = os.path.realpath(args.queue or os.path.join(self.root, "tools/auto/queue.json"))
+        self.queue_relpath = os.path.relpath(self.queue_path, self.root).replace(os.sep, "/")
+        self._queue_fingerprint = self.file_fingerprint(self.queue_path)
         self.approvals_path = args.approvals or os.path.join(self.root, "tasks/APPROVALS.md")
         self.patch = args.patch or os.path.join(HERE, "headless-local-qwen.patch.yml")
         self.base = args.base_url or BASE_DEFAULT
@@ -97,6 +100,32 @@ class Runner:
         with open(tmp, "w") as f:
             json.dump(q, f, ensure_ascii=False, indent=2)
         os.replace(tmp, self.queue_path)
+        self._queue_fingerprint = self.file_fingerprint(self.queue_path)
+
+    @staticmethod
+    def file_fingerprint(path):
+        try:
+            with open(path, "rb") as f:
+                return hashlib.sha256(f.read()).hexdigest()
+        except OSError:
+            return None
+
+    @staticmethod
+    def stable_file_fingerprint(path, retries=4, interval=0.1):
+        for attempt in range(retries):
+            try:
+                before = os.stat(path)
+                fingerprint = Runner.file_fingerprint(path)
+                after = os.stat(path)
+            except OSError:
+                return None
+            before_state = (before.st_ino, before.st_size, before.st_mtime_ns)
+            after_state = (after.st_ino, after.st_size, after.st_mtime_ns)
+            if fingerprint is not None and before_state == after_state:
+                return fingerprint
+            if attempt + 1 < retries:
+                time.sleep(interval)
+        return None
 
     def ticket(self, q, tid):
         for t in q["tickets"]:
@@ -180,16 +209,25 @@ class Runner:
             untracked = xy == "??"
             if self.ignored(path):
                 continue
-            if untracked and path.startswith(RUNNER_OWNED):
-                continue  # 调度器自有文件（锁/日志/pause/queue），不算 agent 改动
+            if path == self.queue_relpath:
+                current = self.file_fingerprint(os.path.join(self.root, path))
+                if current == self._queue_fingerprint:
+                    continue  # 只豁免与 runner 最近一次读写快照完全一致的队列状态
+                bad.append((xy, path, "队列文件被 runner 会话或外部进程改动"))
+                continue
             if path == "tasks/APPROVALS.md":
                 if not untracked:  # 账本被"改动"才算伪造；未跟踪=人工尚未 commit 的新账本
                     bad.append((xy, path, "批准账本被改动"))
                 continue
-            if any(self.in_glob(path, g) for g in always):
+            if self.allowed_icon_import(path, allowed) or any(self.in_glob(path, g) for g in always):
                 continue
             bad.append((xy, path, "超出 allowed_files"))
         return files, bad
+
+    @staticmethod
+    def allowed_icon_import(path, allowed):
+        # Godot 生成的 icon.svg.import 仅随明确允许的 icon.svg 一起归属本票。
+        return path == "icon.svg.import" and any(Runner.in_glob("icon.svg", g) for g in allowed)
 
     # ---------- 会话 ----------
     def session_slug_dir(self):
@@ -333,12 +371,48 @@ class Runner:
     def run_test(self, t, ev, attempt):
         if not t.get("test_cmd"):
             return 127  # 无测试命令一律视为失败，禁止静默通过
-        p = subprocess.run(t["test_cmd"], shell=True, cwd=self.root,
-                           capture_output=True, text=True)
+        command = t["test_cmd"]
+        import_command = None
+        try:
+            argv = shlex.split(command)
+        except ValueError:
+            argv = []
+        smoke_script = "res://tests/unit/test_core001_smoke.gd"
+        if argv and os.path.basename(argv[0]).lower().startswith("godot"):
+            for i, arg in enumerate(argv[:-1]):
+                if arg == "--script" and argv[i + 1] == smoke_script:
+                    import_command = argv[:i] + argv[i + 2:] + ["--editor", "--quit"]
+                    break
+
+        chunks = []
+        if import_command:
+            imported = subprocess.run(import_command, cwd=self.root, capture_output=True, text=True)
+            import_output = imported.stdout + "\n---STDERR---\n" + imported.stderr
+            chunks.append("=== GODOT IMPORT PREFLIGHT ===\n" + import_output +
+                          f"\nIMPORT_EXIT={imported.returncode}\n")
+            if imported.returncode != 0 or self.has_script_error(import_output):
+                with open(os.path.join(ev, f"test-{attempt}.log"), "w", encoding="utf-8") as f:
+                    f.write("\n".join(chunks) + f"\nEXIT={imported.returncode or 1}\n")
+                self.log(f"{t['id']} test attempt {attempt} import preflight failed")
+                return imported.returncode or 1
+
+        p = subprocess.run(command, shell=True, cwd=self.root, capture_output=True, text=True)
+        test_output = p.stdout + "\n---STDERR---\n" + p.stderr
+        chunks.append("=== TEST ===\n" + test_output)
+        effective_rc = p.returncode
+        if import_command and (
+                "CORE001 SMOKE PASS" not in p.stdout or
+                "CORE001 SMOKE FAIL" in p.stdout or
+                self.has_script_error(test_output)):
+            effective_rc = effective_rc or 1
         with open(os.path.join(ev, f"test-{attempt}.log"), "w", encoding="utf-8") as f:
-            f.write(p.stdout + "\n---STDERR---\n" + p.stderr + f"\nEXIT={p.returncode}\n")
-        self.log(f"{t['id']} test attempt {attempt} exit={p.returncode}")
-        return p.returncode
+            f.write("\n".join(chunks) + f"\nEXIT={effective_rc}\n")
+        self.log(f"{t['id']} test attempt {attempt} exit={effective_rc}")
+        return effective_rc
+
+    @staticmethod
+    def has_script_error(output):
+        return re.search(r"(?im)^\s*SCRIPT ERROR:", output) is not None
 
     def commit_success(self, q, t, ev, attempt, trc):
         # 先记录 TASKS.md（Git 可追踪的状态变更），再一次性 commit
@@ -354,11 +428,32 @@ class Runner:
         with open(tasks_md, "a", encoding="utf-8") as f:
             f.write(rec)
         files = self.changed_files_all()
+        allowed = t.get("allowed_files", [])
         add = [p for _, p in files if p == "tasks/TASKS.md" or p.startswith(f"tasks/evidence/{t['id']}/")
-               or any(self.in_glob(p, g) for g in t.get("allowed_files", []))]
+               or self.allowed_icon_import(p, allowed)
+               or any(self.in_glob(p, g) for g in allowed)]
         if add:
-            self.git("add", "--", *add)
-        rc, _, err = self.git("commit", "--no-verify", "-m", f"AUTO-001 {t['id']}: {t.get('title','')} (tests pass, scope clean)")
+            for path in add:
+                if self.allowed_icon_import(path, allowed):
+                    before = self.stable_file_fingerprint(os.path.join(self.root, path))
+                    if before is None:
+                        self.block(q, t, f"Godot 导入元数据正在变化或不可读，拒绝提交: {path}")
+                        return EXIT_BLOCKED
+            add_rc, _, add_err = self.git("add", "--", *add)
+            if add_rc != 0:
+                self.block(q, t, f"git add 白名单文件失败: {add_err}")
+                return EXIT_BLOCKED
+            for path in add:
+                if self.allowed_icon_import(path, allowed):
+                    current = self.stable_file_fingerprint(os.path.join(self.root, path))
+                    index_rc, index_blob, _ = self.git("rev-parse", f":{path}")
+                    work_rc, work_blob, _ = self.git("hash-object", os.path.join(self.root, path))
+                    if current != before or index_rc != 0 or work_rc != 0 or index_blob.strip() != work_blob.strip():
+                        self.block(q, t, f"Godot 编辑器并发改写导入元数据，拒绝提交: {path}")
+                        return EXIT_BLOCKED
+        rc, _, err = self.git("commit", "--only", "--no-verify", "-m",
+                              f"AUTO-001 {t['id']}: {t.get('title','')} (tests pass, scope clean)",
+                              "--", *add)
         if rc != 0:
             self.block(q, t, f"自动 commit 失败: {err}")
             return EXIT_BLOCKED
