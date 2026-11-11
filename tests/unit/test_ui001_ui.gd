@@ -54,7 +54,8 @@ func _initialize() -> void:
 			"UI transparency must allow per-pixel alpha"):
 		return
 	await process_frame
-	for step in [_test_basket_selection_survives_new_catch, _test_click_vs_drag_policy,
+	for step in [_test_basket_selection_survives_new_catch, _test_mouse_passthrough_polygon_winding,
+			_test_click_vs_drag_policy,
 			_test_hide_control_and_reactivation,
 			_test_boot_fail_closed,
 			_test_catch_and_crash_recovery, _test_sales_and_price_snapshot,
@@ -120,6 +121,25 @@ func _test_hide_control_and_reactivation() -> bool:
 	return _check(restores_hidden_window and restores_window_focus and waits_until_window_is_restored
 			and ignores_hide_transition and ignores_focus_out and keeps_visible_window,
 			"U-hide app focus restores minimized window; window focus waits for OS unminimize")
+
+
+func _test_mouse_passthrough_polygon_winding() -> bool:
+	var window := Window.new()
+	window.size = Vector2i(220, 160)
+	var platform := TestPlatform.new()
+	var regions := [
+		Rect2(Vector2(38, 76), Vector2(144, 76)),
+		Rect2(Vector2(170, 30), Vector2(40, 31)),
+	]
+	var applied := platform.apply_mouse_regions(window, regions)
+	var expected := PackedVector2Array([
+		Vector2(38, 30), Vector2(38, 152), Vector2(210, 152), Vector2(210, 30),
+	])
+	var correct := applied and not window.mouse_passthrough \
+			and window.mouse_passthrough_polygon == expected
+	window.free()
+	return _check(correct,
+			"U-region applies the interactive rectangle with the macOS-safe winding")
 
 
 func _test_click_vs_drag_policy() -> bool:

@@ -287,7 +287,7 @@ Owner: Codex delegated implementer/reviewer
 Scope / Dependencies / Allowed files: SAVE-001、SPIKE-001；UI-001 已批准范围，外加 tasks/evidence/UI-001/** 证据。
 Executed commands & exit codes: 当前树 `python3 -B tests/unit/run_ui001_checks.py` -> 0；先隔离导入，再 UI/SAVE/ECO/FSM/CORE/CFG 各步退出码 0、唯一 PASS、无 `SCRIPT ERROR`。
 Test result & evidence: 新增 U-window 回归，覆盖短点击信号、native-drag 按下语义及松手点击分类、手动拖动几何保存；`tasks/evidence/UI-001/macos-hide-60s.md`。
-GUI status: G-UI-4 隐藏 60 秒与恢复已记录；受控点击证明一个透明点可穿透到下层。G-UI-1 的船体/面板点击及其余拖动/重启、GUI 售鱼、FPS、保存失败、Retina、全屏共存仍未验收。
+GUI status: G-UI-4 隐藏 60 秒与恢复已记录；交互区多边形顶点顺序已修复并加入 headless 回归，隔离 GUI 中船体点击与透明点各有一次通过。焦点/菜单状态变化后的重复路由不一致，G-UI-1/2 及拖动/重启、GUI 售鱼、FPS、保存失败、Retina、全屏共存仍未验收。
 Git diff / commit: UI 主实现 `188bc27`；画面证据 `87855cf`；本次回归与记录在当前本地进度提交。
 Risks & unresolved decisions: `tools/auto/queue.json` 的全局冻结字段和 UI-001 blocked 状态保持；不把 headless policy test 视为 macOS GUI 通过。
 Owner approval: Phase B 既有授权有效；项目所有者要求保持人工审批和冻结机制。

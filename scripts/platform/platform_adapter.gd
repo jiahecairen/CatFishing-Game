@@ -80,8 +80,10 @@ func apply_mouse_regions(window: Window, rects: Array) -> bool:
 		window.set("mouse_passthrough_polygon", PackedVector2Array())
 		return true
 	var end := bounds.end
+	# Keep the native hit-region winding consistent on macOS. The forward winding
+	# caused the transparent overlay to pass boat clicks through on Retina displays.
 	var polygon := PackedVector2Array([
-		bounds.position, Vector2(end.x, bounds.position.y), end, Vector2(bounds.position.x, end.y),
+		bounds.position, Vector2(bounds.position.x, end.y), end, Vector2(end.x, bounds.position.y),
 	])
 	window.set("mouse_passthrough_polygon", polygon)
 	return true
