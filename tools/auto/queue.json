@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-11T07:28:08+00:00",
+  "updated": "2026-11-11T07:57:37+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -86,7 +86,7 @@
     {
       "id": "ECO-001",
       "title": "唯一鱼实例/有限鱼篓/出售与金币",
-      "status": "ready",
+      "status": "exec_ready",
       "deps": [
         "FSM-001"
       ],
@@ -94,9 +94,9 @@
         "scripts/economy/**",
         "tests/**"
       ],
-      "test_cmd": "",
+      "test_cmd": "python3 -B tests/unit/run_eco001_checks.py",
       "needs_human": false,
-      "brief": "见 tasks/TASKS.md。"
+      "brief": "按 tasks/evidence/ECO-001/plan.md 与 review.md 实施。仅 scripts/economy/**、tests/**；本票不改 GameState 源码、schema、配置值、SaveService、UI 或文档。售鱼清单重复 instance ID 先去重；同 sale ID 重试为 ALREADY_APPLIED，同 ID 异参为 CONFLICT_SALE_PARAMS；同 catch ID 异参为 CONFLICT_CATCH_PARAMS。捕获价格快照为非负整数；金币溢出与坏状态失败且零副作用。持久化门只收完整 next-state 与 ledger 深拷贝，只有 bool true 才发布；false、非 bool、调用错误均拒绝。实现 snapshot_ledger/restore_ledger 并 fail-closed。测试必须在临时工程副本隔离 HOME 内先导入，再串行跑 ECO、CORE、CFG、FSM；逐步检查退出码、PASS/FAIL 标记和 SCRIPT ERROR。不得在真实工程路径启动 Godot；不得写盘或触碰 user://。"
     },
     {
       "id": "SAVE-001",

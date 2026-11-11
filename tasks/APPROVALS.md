@@ -79,3 +79,11 @@ date: 2026-11-11
 scope: scripts/fishing/**, tests/**
 notes: 项目所有者在持续执行授权中委托 Codex 自动审批本地 v0.1。仅按 tasks/evidence/FSM-001/plan.md 与 review.md 实施；review.md 的五项条件均为强制项，特别是满篓拒绝、精确步长不变时间轴、可重放待结算候选、隔离副本串行测试。不得修改 GameState/schema、经济值或 GUI。
 END-APPROVAL
+
+BEGIN-APPROVAL ID=ECO-001 PHASE=B
+APPROVED
+by: Codex
+date: 2026-11-11
+scope: scripts/economy/**, tests/**
+notes: 项目所有者在持续执行授权中委托 Codex 审查并批准本地 v0.1。仅按 tasks/evidence/ECO-001/plan.md 与 review.md 实施；强制满足重复实例 ID 去重、事务重试幂等与异参冲突、捕获价格快照、失败零副作用、金币溢出防护、持久化门只收深拷贝且仅 bool true 可发布、ledger snapshot/restore fail-closed，以及隔离副本先导入再串行回归。不得改 GameState 源码、schema、配置数值、SaveService、UI 或文档；ECO 不写盘、不触碰 user://。
+END-APPROVAL

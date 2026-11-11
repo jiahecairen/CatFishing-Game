@@ -1,0 +1,304 @@
+ECO-001 Phase A 完成。摘要：
+
+**已读依据**：AGENTS.md（实测与注入一致）、TASKS.md 工单段、SDD_v0.1、DECISION_REGISTER、ARCHITECTURE、INTERFACES_AND_DATA、ACCEPTANCE_TESTS、TECH_SPIKE、DEV_LOG、HARNESS_LOCAL_SETUP、REQUIREMENTS_CHANGELOG、queue.json（ECO-001=ready、needs_human=false）、项目 Skills（fishing-state-and-save / godot-validation 已加载）。未读取 APPROVALS.md，无任何 git 写操作。
+
+**只读实测要点**（命令与退出码已如实记入 plan.md §2）：
+- `git status` = 0（仅 `_runner` 两项既有状态，无用户未提交代码）；HEAD=`52ab254`；Godot 4.7.2 = 0
+- `scripts/economy/` **不存在**（Phase B 新建，零范围偏差）；GameState/FSM/ConfigGate/测试 runner 约定全部核实
+- FSM-001 移交项（report.md R-3：同 catch/sale ID 落账复核）与 FSM 侧 `BASKET_FULL`/`AlreadyApplied` 接口确认可复用
+
+**计划要点**（`tasks/evidence/ECO-001/plan.md`，第二行经 diff 验证与 AGENTS.md 规则行逐字一致，VERBATIM-OK）：
+- 新增 4 个文件（全部在允许范围）：`scripts/economy/fish_instance.gd`、`scripts/economy/economy_service.gd`、`tests/unit/test_eco001_economy.gd`、`tests/unit/run_eco001_checks.py`
+- 接口：`initialize`（过 ConfigGate）、`commit_catch`、`sell_fish`、`set_persistence_gate`（SAVE-001 注入门）；`instance_id="fish-"+catch_event_id` 构造性唯一；价格捕获时快照；同 ID 重试 `ALREADY_APPLIED`、同 ID 异参 `CONFLICT_*`；失败路径零副作用；本票纯内存、零写盘
+- 建议 test_cmd：`python3 -B tests/unit/run_eco001_checks.py` → 0（内含隔离副本 5 步：导入 + ECO + CORE/CFG/FSM 回归，禁止对主工程跑 Godot）
+- 覆盖矩阵 E1–E10 映射 T-ECO-01～04、V01-E01/E02、T-CONF-01 交界、快照价裁定、FSM R-3 移交
+- 回滚 = 仅删除新增未跟踪文件；禁止 `git clean -fdx`
+- 审批判定：AUDIT-001 R-09（快照价/容量 10）已由 2026-11-11 委托冻结裁定关闭；本票不改需求、不改数值、无破坏性操作，queue needs_human=false → 无需人工批准
+
+PHASE-A-DONE
+
+---STDERR---
+dsh: reasoning:
+Let me start by understanding the task. I'm the Phase A (read-only planning) agent for AUTO-001 scheduler, working on ticket ECO-001: unique fish instances / limited basket / sell and coins.
+
+Constraints:
+- Read-only: no creating/modifying/deleting/moving files; no side-effect commands.
+- Only allowed write: /Users/rain/DevGame/Fishing/tasks/evidence/ECO-001/plan.md
+- No subagents, no fork, no parallel workflows, no background jobs.
+- No reading/modifying tasks/APPROVALS.md; no git write ops.
+- No human approval interaction: if ticket needs human approval, output "BLOCKED: <reason>" as last line.
+
+Steps:
+1. Read AGENTS.md (already injected — verify compliance).
+2. Read tasks/TASKS.md ECO-001 section, and docs (SDD_v0.1, DECISION_REGISTER, ACCEPTANCE_TESTS, TECH_SPIKE, DEV_LOG, HARNESS_LOCAL_SETUP).
+3. Read-only verification: project file structure, related code/scenes/scripts exist, git status and recent log; record commands and exit codes.
+4. Write plan to plan.md: goals / files to change (within allowed scope scripts/economy/**, tests/**) / interfaces and invariants / exact test commands and expected exit codes / risks and rollback / acceptance criteria mapping.
+5. Second line of plan.md must verbatim quote a line from AGENTS.md.
+
+Note: the plan.md file needs to exist in evidence dir — writing to it creates directories presumably. That's the only allowed write.
+
+Let me also check relevant skills: `fishing-state-and-save` and `godot-validation` are project skills mentioned in AGENTS.md §5. AGENTS.md says "每次相关任务先枚举 Skills 并按需读取指引" — enumerate skills and read as needed. Skills are in `<project>/.dsh/skills/<skill-name>/SKILL.md` and `~/.agents/skills`. The available_skills catalog lists `fishing-state-and-save`, `godot-validation`, `godot-overlay`. I should load relevant ones via skill tool. This ticket is about unique fish instances, limited basket, selling and coins — that clearly matches `fishing-state-and-save` (deterministic fishing FSM, unique fish inventory, idempotent sale transactions, crash-safe persistence) and `godot-validation` (evidence-based acceptance tests, headless).
+
+Let me begin reading files. Start with parallel independent calls: read AGENTS.md to verify injected content (it was injected, but I should check the actual file), tasks/TASKS.md, docs listing.
+
+Let me be efficient with a plan:
+
+1. Load skills fishing-state-and-save and godot-validation.
+2. Read AGENTS.md file.
+3. Read tasks/TASKS.md.
+4. Read docs files.
+5. Read-only checks: ls project tree, git status, git log.
+6. Write plan.md.
+
+Let me start with the skill calls and reads. The skill tool can be called for both skills in parallel with the reads? Let me do skill calls first (independent).
+
+Actually all independent — I can batch: skill(fishing-state-and-save), skill(godot-validation), read AGENTS.md, read tasks/TASKS.md, glob docs. Let me do that.
+dsh: reasoning:
+Alright, let's set up a ToDo list and start reading the documentation. First, let me check the project structure.
+dsh: reasoning:
+The AGENTS.md file matches the injected content. Good. Next, read tasks/TASKS.md (the ECO-001 section) and the documentation. Don't read APPROVALS.md (it's prohibited).
+
+Let's read TASKS.md and the documentation.
+dsh: reasoning:
+Interesting point: `scripts/economy/` does not exist yet — the permitted scope for ECO-001 in Phase B is `scripts/economy/**, tests/**`. A `scripts/core/game_state.gd` from CORE-001 does exist, and it may hold authoritative game state. Need to read the docs: SDD_v0.1, DECISION_REGISTER, ACCEPTANCE_TESTS (T-ECO-01 through 04), TECH_SPIKE, DEV_LOG, HARNESS_LOCAL_SETUP, INTERFACES_AND_DATA, ARCHITECTURE, REQUIREMENTS_CHANGELOG. Additionally, read game_state.gd, fishing_system.gd, game_controller.gd, fishing_state_machine.gd (the FSM-001 interface — the payment candidate that gets carried over into ECO-001), save_service.gd (stub?), the test runner, and queue.json (for the ECO-001 ticket definition) — all of these as well.
+
+Let's read the docs in parallel.
+dsh: reasoning:
+Okay, so I'll read the remaining documents: ARCHITECTURE, INTERFACES_AND_DATA, TECH_SPIKE, DEV_LOG, HARNESS_LOCAL_SETUP, REQUIREMENTS_CHANGELOG. And queue.json for the ticket definition of ECO-001.
+dsh: reasoning:
+Alright, DEV_LOG, HARNESS_LOCAL_SETUP, REQUIREMENTS_CHANGELOG, and queue.json. Plus the actual code: game_state.gd, game_controller.gd, fishing_system.gd, fishing_state_machine.gd, save_service.gd, run_fsm001_checks.py, and the FSM-001 plan for reference. Let's batch the reads and run them.
+dsh: reasoning:
+Next, I need to read the actual code: game_state.gd, game_controller.gd, fishing_system.gd, fishing_state_machine.gd, deterministic_rng.gd, virtual_clock.gd, save_service.gd (probably a stub), config-related files, and the FSM-001 plan/review for interface reference. Additionally, the runners run_fsm001_checks.py and run_cfg001_checks.py for test patterns. And also the schemas for fish-species and game-save. Furthermore, check the git status and log.
+
+Let's execute these reads together. Start with game_state.gd and fishing_state_machine.gd first.
+dsh: reasoning:
+Next, read game_controller.gd, fishing_system.gd, save_service.gd, config_gate.gd, fish_species_catalog.gd, deterministic_rng.gd, virtual_clock.gd. And also the test runner. Let's batch a few of these reads together.
+dsh: reasoning:
+Next, I'll read the config-related files (config_gate.gd, fish_species_catalog.gd, runtime_config.gd), the deterministic RNG, and the virtual clock, and also check the test runners (run_fsm001_checks.py, run_cfg001_checks.py). I'll also check the FSM-001 planning document. And then I'll check git status / log too. I'll run these all together.
+dsh: reasoning:
+Next, let's check the test runner and FSM-001's plan/review documents, along with the data configuration and schemas. Also, let's take a quick look at run_fsm001_checks.py and run_cfg001_checks.py to understand the isolated copy test pattern (Phase B's test commands need to follow this). Furthermore, let's also check the contents of FSM-001's evidence directory and the game-save schema. After that, let's run git status and git log.
+dsh: reasoning:
+Git status: clean except for runner.log being modified and runner.lock being untracked — these are files owned by the runner (harness), not caused by me. Godot 4.7.2 confirmed. The evidence/ECO-001 directory already exists — check what's inside.
+
+Also, to match the format of the test file, check the FSM-001 plan.md and test file, and additionally check the data files, examples, schemas/game-save.schema.json, and test_fsm001_fsm.gd for style. Check scripts/io/config_loader.gd and event_log.gd (skeleton) too. Also check project.godot to verify the main scene and autoloads.
+dsh: reasoning:
+Alright. Next, let me look at FSM-001's plan.md to align with the format, and then also check test_fsm001_fsm.gd to understand the style of the GDScript test harness. I'll also briefly check scripts/io/config_loader.gd and event_log.gd (they're skeletons). And examples/save_v01.json too. Let me read the FSM-001 plan (probably long) — read the first 120 lines. And take a quick look at test_fsm001_fsm.gd to grasp the test structure (assert helpers, PASS markers).
+dsh: reasoning:
+At this point I've got a good enough grasp of the situation. Let me check the remaining lines 121-148 of the FSM-001 plan to understand its structure, and quickly check review.md. Also, should I check the FSM-001 review-api-followup? Not strictly necessary, but the FSM-001 review document is relevant to the ECO-001 plan. Also quickly check scripts/config/runtime_config.gd, and check the class_name occupancy status (grep class_name) too.
+
+Let me also verify that the scripts/economy directory doesn't exist, and confirm the occupied class_names.
+dsh: reasoning:
+With this, everything needed is in place. Also, I should check whether there are any additional constraints regarding ECO-001 in review.md, so I should briefly check the FSM-001 review. Also, I should check whether "EconomyService" or something similar already has class_name occupied — the grep results show 15 class_name entries, and none of them are economy-related. Names like `EconomyCommands`, `EconomyService`, `FishInstanceFactory` are free.
+
+Furthermore, I need to check whether Phase B of ECO-001 includes persistence (atomic save). Per INTERFACES §5, the catch/sale flow includes "atomic save, then publish the result." But SAVE-001 owns SaveService. In ECO-001, the FSM-001 acceptance record in TASKS.md states: "ECO-001 still needs to implement economic transactions," and SAVE-001 implements the SaveService with atomic commit. The ECO-001 ticket says "GameState, idempotent commands, basket-full blocking," and the minimum acceptance is T-ECO-01 through 04 (memory tests). In other words, ECO-001 = in-memory economic transactions; persistence is SAVE-001. Key design: the economic command layer must be separated from persistence — design a transaction interface where the persistence commit is an injected "commit hook" (in ECO-001, in-memory commit; in SAVE-001, SaveService is injected). This respects INTERFACES §5 (atomic delete fish + add gold + record sale ID) while keeping file I/O in SAVE-001. In ECO-001, do not write to user://.
+
+Key invariants:
+- A single GameState is authoritative; economic operations mutate it via a single command queue (serial).
+- commit_catch(catch_event_id, species_id, ...) generates a fish instance with a unique instance_id, snapshots sale_price_at_catch from the catalog's base_price, and records the catch ID in processed_catch_ids; duplicate ID → AlreadyApplied with no change; same ID with different parameters → conflict error (INTERFACES §5: "same event but parameters differ from first processing: return a conflict error and record"). Hmm, but processed ids is just an array of ids — to detect parameter mismatch we need to remember the payload. The GameState schema has only processed_catch_ids as strings. To detect parameter mismatch without schema changes, should the economic layer hold an in-memory ledger (a duplicate dictionary) derived from basket + processed ids? For catch: parameters are species_id, etc. The basket retains fish with source_event_id, so a repeated catch with the same ID but different species is detectable by scanning the basket for source_event_id. But after fish are sold, the source event is no longer in the basket; the mismatch becomes undetectable — this is an acceptable boundary; the in-memory ledger can be rebuilt from the basket for fish still in the basket. For sale: parameters are the set of instance ids + computed gold. Retaining processed_sale_ids only as ids means mismatch detection needs in-memory records. The economic layer can hold in-memory request-fingerprint records (not persisted to the save, no schema change; SAVE-001 may persist later within its own scope). This should be noted as a design decision: keep an in-memory ledger in the economic service (rebuilt on load from basket + processed ids within the possible range), flag mismatches as errors; document the boundaries.
+
+Actually a simpler, schema-compliant approach: the economic layer holds a `Dictionary` mapping catch_event_id → payload fingerprint and sale_id → payload fingerprint in memory. In ECO-001 (memory tests) this is fine. In SAVE-001, persistence of these or the mismatch policy is at their scope-level discretion; FSM-001 has already handed over a "pending candidate payload" for SAVE-001. Record as a risk/handover.
+
+- Sell: sell_fish(sale_event_id, list_of_instance_ids): validate that all instances exist in the basket, no duplicates, gold = sum of sale_price_at_catch (integer, ≥0); atomically remove + add; record sale ID; AlreadyApplied on retry with same ID and identical parameters; mismatch → conflict error. Gold must not go negative (T-ECO-04). Unknown IDs / duplicate instance ids within a request / empty list → error.
+- Basket-full blocks new CASTING — already in the FSM's request_cast; ECO-001 adds the commit side: if basket is full, commit_catch must be rejected (capacity exceeded) → but wait: the FSM blocks casting when full; if catch settlement occurs when the basket became full during the cycle, can commit_catch be rejected for capacity reasons? SDD sequence: "if basket is full → stop in a safe idle state." What if the basket becomes full while a fishing cycle is in progress? Capacity 10, one cycle in progress. request_cast is rejected when basket.size() >= capacity, so at catch commit time, if a commit happens when basket.size() == capacity (can't happen if only catch adds fish and basket was < capacity at request time… but multiple commits could race? Single-threaded serial queue, one FSM). Still, for safety, commit_catch must reject with CAPACITY_EXCEEDED if basket.size() >= capacity — must not silently drop the fish; and the caller (GameController later) has to decide. Per the schema $comment "basket length <= capacity" and "over-capacity, double-grant, missing events are not permitted," define an explicit error code.
+
+- instance_id generation: must be unique. DeterministicRng is available but instance_id should be unique across sessions. Options: derived from catch_event_id + species (e.g., "fish-<catch_event_id>"). Since each catch event produces at most one fish, instance_id = "fish-" + catch_event_id is structurally unique. This is deterministic and testable, no UUID needed. However, the schema requires a non-empty string; no problem. But INTERFACES suggests a "stably generated unique id." Using catch_event_id as the basis guarantees uniqueness and idempotent reconstruction. Document as a design decision (implementation detail, does not alter semantics).
+
+- ECO-001's GameState changes are via methods in scripts/economy; GameState itself (scripts/core) is out of scope — good: economic services hold and mutate the GameState instance (basket array, wallet, processed ids, revision++). GameState is a pure data class; mutating its fields from economic code is fine without modifying scripts/core.
+
+- revision is monotonically increasing: increment revision per each committed transaction.
+
+- Serial queue: "catch and sell operations must be serialized through a queue" — implement a single entry-point command queue inside the economic service (in-order, no re-entrancy). Since it's a single-threaded GDScript RefCounted, "queue" means the service processes one command at a time and the API is synchronous; GameController (UI-001 later) enqueues. Provide `enqueue`/`drain` or simply synchronous methods documented as the sole serial path; keep it minimal.
+
+ECO-001 test matrix (T-ECO-01 through 04):
+- E1: basket-full → FSM request_cast rejection (integration with FSM) + capacity release after sale and cast recovery (T-ECO-01).
+- E2: retry commit_catch with the same catch ID 100 times → exactly one fish, one processed id, basket size increment 1, revision incremented once (T-ECO-02).
+- E3: retry sell with same sale ID 100 times → gold added at most once; sold instance disappears exactly once; basket size unchanged after the first application (T-ECO-03).
+- E4: error matrix (T-ECO-04): duplicate instance ids, non-existent ids, negative/invalid price snapshot rejection, capacity conflict, gold not going negative, empty list, invalid species id.
+- E5: integration full cycle: FSM fishing → produce_catch_candidate → economic commit_catch → basket+1; sale → gold matches the snapshot price; configuration changes to base_price do not affect fish already caught (sale_price_at_catch snapshot).
+- E6: catch with mismatched parameters → conflict error (INTERFACES §5).
+- E7: basket-full commit rejection (capacity) + no partial mutation (all-or-nothing: verify failure leaves state byte-identical).
+- E8: value-lock: assert 20/60/30/10 and prices are unchanged in data vs examples (mirror the runner's preflight).
+- E9: FSM full basket integration regression: full basket from economic commit → FSM.request_cast rejected with BASKET_FULL.
+
+Runner: tests/unit/run_eco001_checks.py mirrors run_fsm001_checks.py: step1 import, step2 test_eco001_economy.gd, step3 CORE smoke, step4 CFG, step5 FSM regression. test_cmd = `python3 -B tests/unit/run_eco001_checks.py` (to be backfilled into queue.json by the scheduler; Phase B does not touch queue.json).
+
+Files to modify (all new):
+- scripts/economy/economy_commands.gd (class_name EconomyCommands? or EconomyService) — name check: no conflict. Use `class_name EconomyService`? INTERFACES calls it the economic command. Use `EconomyCommands`… either is fine; pick `EconomyCommands` and document. Hmm — for simplicity maybe `EconomyService`. The ARCHITECTURE skeleton has scripts/io/save_service.gd with SaveService occupied. `EconomyService` is not occupied. Use scripts/economy/economy_service.gd with class_name EconomyService.
+- Also fish_instance.gd (FishInstance factory / validation)? Keep to 1–2 files: economy_service.gd + fish_instance.gd. FishInstance as a static factory + validator. Good.
+- tests/unit/test_eco001_economy.gd
+- tests/unit/run_eco001_checks.py
+- possibly tests/unit/fixtures/eco001/*.json for malformed save/parameter fixtures — but note: fixtures directory under tests/** is permitted. If we only test the in-memory dictionary API, ECO-001 may not need fixtures. The config gate reuses the existing cfg001 fixtures.
+
+Interfaces and invariants to document:
+
+```
+initialize(catalog: Dictionary, runtime: Dictionary) -> {ok, error_code}
+  # First passes through ConfigGate.can_start_economy; illegal → rejected, no default backfill.
+commit_catch(state: GameState, catch_event_id: String, species_id: String, caught_at_utc: String) -> {ok, code, instance_id?}
+  # Validation: catch_event_id is non-empty and not in processed_catch_ids; species_id is in catalog;
+  # basket.size() < basket_capacity; caught_at_utc is a non-empty string.
+  # Generate instance: instance_id="fish-"+catch_event_id, sale_price_at_catch = catalog's base_price snapshot.
+  # Success: basket += fish, processed_catch_ids += id, revision += 1.
+  # Same id with different parameters re-submitted → CONFLICT_CATCH_PARAMS (not disguised by AlreadyApplied, INTERFACES §5).
+sell_fish(state: GameState, sale_event_id: String, instance_ids: Array) -> {ok, code, gold_added?}
+  # Validation: sale_event_id is a non-empty string; instance_ids is an array of non-empty strings with no duplicates;
+  # all exist in basket; if sale_event_id is in processed_sale_ids with identical parameters → AlreadyApplied (gold 0, no mutation);
+  # gold_added = Σ sale_price_at_catch (integer ≥ 0).
+  # Success: atomically remove fish + wallet_gold += gold_added + processed_sale_ids += id, revision += 1.
+can_settle_catch(state) / capacity check is implicit.
+```
+
+Error codes: NOT_INITIALIZED, NULL_GAME_STATE, BAD_EVENT_ID (empty/non-string), UNKNOWN_SPECIES, BASKET_FULL (capacity), ALREADY_APPLIED, CONFLICT_CATCH_PARAMS, CONFLICT_SALE_PARAMS, UNKNOWN_INSTANCE, DUP_INSTANCE_ID (duplicate within request), BAD_INSTANCE_LIST (non-array/non-string/empty), NEGATIVE_GOLD impossible (price validated ≥0) — assert wallet_gold ≥ 0 always.
+
+Also maintain an in-memory ledger of processed request fingerprints (catch id → species+price, sale id → sorted instance ids + gold) for conflict detection; note as a boundary: in-memory only, SAVE-001 will persist or reconstruct it in its scope; conflict detection after restart is a SAVE-001 handover.
+
+Important: ECO-001 does zero file writes, does not touch user:// (in-memory tests only per the queue minimum "memory tests"). Save integration is SAVE-001.
+
+Acceptance mapping:
+- T-ECO-01 → E1/E9 (full basket blocks cast + recovery after sale)
+- T-ECO-02 → E2 (100 catches, at most 1 fish)
+- T-ECO-03 → E3 (100 sales, at most 1 gold addition, no instance duplication)
+- T-ECO-04 → E4 (duplicate/non-existent/out-of-scope IDs, negative price, capacity conflict, gold non-negative)
+- V01-E01 (finite basket, unique ID, no cast when full)
+- V01-E02 (sale ID idempotent, fish deduction and gold addition)
+- SDD-172
+- sale_price_at_catch snapshot (SDD 2026-11-11 adjudication)
+- Single authority for GameState (SDD other prerequisites)
+- No double grant, no missing events (TASKS ECO-001+SAVE-001 core security requirements)
+- FSM-001/CORE/CFG non-regression.
+
+Risks and rollback:
+- All new files → rollback = delete the new files (untracked); no git clean -fdx; do not touch _runner.
+- D-1 style deviation: none — the scripts/economy directory is newly created, consistent with the permitted scope.
+- R: GameState is in scripts/core (out of scope) — economic service mutates its fields via reference; GameState itself is unmodified (pure data, already documented). Good.
+- R: `revision` semantics — increment per each commit; SAVE-001's atomic save wraps commit: economic commit is "derive next_state + validate" then "commit"; in ECO-001, commit = immediate in-memory apply; SAVE-001 inserts a persistence gate. Design must be structured so SAVE-001 can wrap it without changing ECO's semantics: e.g., economic service exposes validate → derive → commit, or returns a derived next-state and a callback/persistence hook. Keep it simple: provide `stage_catch/stage_sale` that returns a candidate result and a `commit` that applies to GameState, so SAVE-001 can persist before publishing. Hmm, simpler: economic service methods take a `persistence_gate: Callable` (default = always success). When SAVE-001 injects SaveService's atomic commit, the service: validates → derives new state → calls the gate with the derived payload → applies in memory only if the gate is ok → returns AlreadyApplied/conflict on failure. The default gate returns ok (in-memory tests). This cleanly satisfies INTERFACES §6 and lets SAVE-001 plug in without changing the economy. A Callable parameter with defaults is idiomatic Godot 4. Good.
+
+- R: unique instance_id — deterministic "fish-"+catch id; boundary: catch IDs are generated by the FSM as "catch-<int>-<int>" from the LCG — across different seeds, theoretically catch_event_id can collide (LCG cycle). Both IDs derive from the same RNG stream; across sessions, a catch event could re-emerge with the same id, if… request_cast generates "catch-%d-%d" from two next_int calls; the RNG state continues from the restored snapshot (SAVE-001 persists the RNG state). If the RNG state is not persisted, a new session with the same seed generates a duplicate id — but the processed ids ledger prevents double-application. So a duplicate id from a new roll with the same seed is treated as AlreadyApplied → fish missing? Edge case: if the seed is restored to the same seed after restart and the basket is not full… this is the existing FSM design (FSM-001 handed over RNG continuation to SAVE-001). Record as a handover risk to SAVE-001: persist RNG snapshot to prevent duplicate catch event ids across sessions. ECO-001 tests use a fixed seed in a single session — no problem.
+
+- Gold overflow: int64; realistic maximum for wallet_gold is small; assert gold is integer ≥ 0 and reject on overflow? Simply: sum of int, in tests each ≤ 32 × 10; document that the schema's minimum 0 is enforced by validation.
+
+- Test command and exit codes: runner exits 0/1; Godot step exits 0 + marker; SCRIPT ERROR is forbidden.
+
+- Scope guard: Phase B modifies only scripts/economy/** and tests/** (new files). data/**, examples/**, schemas/**, scripts/core|io|config|fishing/**, project.godot, docs/**, tasks/** (except evidence), tools/** are unmodified.
+
+- needs_human: queue's needs_human=false; sale_price_at_catch is approved (INTERFACES §2 + CHANGELOG freeze); capacity 10 is a candidate and unchanged; no requirement changes; no destructive operations → no human approval needed → PHASE-A-DONE.
+
+Wait — check R-09 in DEV_LOG: "sale_price_at_catch (capture-time price snapshot) is only a proposed contract; basket_capacity=10 is a candidate value | user confirmation required before ECO-001 begins." Hmm! R-09 says user confirmation is needed before ECO-001 begins. But the later REQUIREMENTS_CHANGELOG (2026-11-11 freeze) states "freeze SDD-v0.1 under delegated review; … fish price is locked at capture time" — a frozen SDD explicitly states "sale_price_at_catch: fish settlement price is snapshotted at capture" as a v0.1 implementation adjudication delegated to review, and INTERFACES_AND_DATA §2 says "this contract was approved for v0.1 by the project owner during the delegated review on 2026-11-11." The CHANGELOG's freeze checklist item "[x] ARCHITECTURE and INTERFACES_AND_DATA reviewed per v0.1 single authoritative state, transaction/save constraints; capture-time price snapshot adopted." Therefore R-09 is effectively closed by the 2026-11-11 delegated freeze: snapshot price adopted and approved via owner delegation; capacity 10 remains a candidate but is not modified — ECO-001 uses it as-is (no adjustment). The project owner explicitly delegated automatic approval/acceptance for the local v0.1 ticket (queue.json non-frozen + TASKS FSM-001 record "Phase B approved under project-owner delegation"). So no additional human approval is needed. Record the R-09 resolution in the plan.
+
+Also check the FSM-001 review.md — to make sure I respect the handover items, briefly check the ECO-related handovers in review.md. The FSM-001 acceptance record already documents the SAVE-001 handover. Quickly ls the FSM-001 evidence directory and skim review.md for ECO-related guidance. Actually, time/context is fine; quickly grep for "ECO-001" in tasks/evidence/FSM-001.
+dsh: reasoning:
+All necessary information is gathered. Next, write plan.md to /Users/rain/DevGame/Fishing/tasks/evidence/ECO-001/plan.md.
+
+Line 1: title. Line 2 (second line): quote a line from AGENTS.md verbatim. The FSM-001 plan used the following: `- \`FishingSystem\` 作为纯业务状态机可在 headless 环境测试；可视化与业务拆分，禁止用每帧计数做捕鱼等待。` — this is line 36 of AGENTS.md. For ECO-001, a more relevant AGENTS line: line 24 of AGENTS.md, "固定业务约束：...满篓不发起新抛竿；一次鱼对应唯一实例 ID；出售按唯一事件/事务 ID 原子扣鱼加币；崩溃重试不重复结算。" — but I have to quote a line from AGENTS.md "原样" (verbatim). I'll decide to use the entire line 24. It's long but it's one line. This directly matches ECO-001.
+
+The second line must be that quoted line as-is. Structure:
+
+Line 1: `# ECO-001 Phase A 计划 — 唯一鱼实例/有限鱼篓/出售与金币（AUTO-001，只读规划）`
+Line 2: `- 固定业务约束：可见桌面 **30 FPS**；自动捕鱼随机上钩等待初始 **20–60 秒**；独立游戏逻辑时钟；约三种鱼可配；鱼篓容量 **10 格仅为候选初值**；满篓不发起新抛竿；一次鱼对应唯一实例 ID；出售按唯一事件/事务 ID 原子扣鱼加币；崩溃重试不重复结算。`
+
+This is line 24 of AGENTS.md verbatim. Good (evidence of rule reading, matches FSM-001 plan's convention where line 2 is a verbatim quote from AGENTS).
+
+Next, write the complete plan: 目标 / 只读实测记录 / 要改动的文件 / 接口与不变量 / 精确测试命令与预期退出码 / 风险与回滚 / 验收条目映射.
+
+Files Phase B will modify (all new, within scope of scripts/economy/**, tests/**):
+- scripts/economy/fish_instance.gd — class_name FishInstance: fish instance factory + validator (instance_id is unique, species is valid, price snapshot is non-negative integer, UTC string non-empty, source_event_id non-empty)
+- scripts/economy/economy_service.gd — class_name EconomyService: commit_catch / sell_fish and error codes, in-memory fingerprint ledger, persistence gate Callable default pass-through
+- tests/unit/test_eco001_economy.gd — SceneTree headless test E1..E10, "ECO001 ECONOMY PASS"/"ECO001 ECONOMY FAIL: <step>"
+- tests/unit/run_eco001_checks.py — runner mirroring run_fsm001_checks.py: step1 import, step2 eco, step3 core regression, step4 cfg regression, step5 fsm regression; isolated tmp copy + HOME; value-lock checks.
+
+test_cmd (for the scheduler to backfill): `python3 -B tests/unit/run_eco001_checks.py` → 0.
+
+Single file vs multiple? Two implementation files is fine.
+
+Interfaces:
+
+```
+class_name EconomyService extends RefCounted
+initialize(catalog: Dictionary, runtime: Dictionary) -> {ok, error_code}
+  # First passes through ConfigGate.can_start_economy; on failure, zero side effects (follows FSM-001 initialize's form)
+set_persistence_gate(gate: Callable) -> {ok, code}  # default is always-ok in-memory gate; SAVE-001 injects the real atomic save
+commit_catch(state: GameState, catch_event_id: String, species_id: String, caught_at_utc: String) -> {ok, code, instance_id, gold_delta=0}
+sell_fish(state: GameState, sale_event_id: String, instance_ids: Array) -> {ok, code, gold_added}
+processed_catch_count(state) / processed_sale_count(state) / snapshot_ledger() -> Dictionary (in-memory fingerprint ledger, for tests and SAVE-001)
+```
+
+Error codes (stable strings):
+NOT_INITIALIZED, NULL_GAME_STATE, BAD_EVENT_ID, UNKNOWN_SPECIES, BASKET_FULL, ALREADY_APPLIED, CONFLICT_CATCH_PARAMS, CONFLICT_SALE_PARAMS, UNKNOWN_INSTANCE, BAD_INSTANCE_LIST (non-array / empty array / non-string element / empty string), DUP_INSTANCE_IN_REQUEST, BAD_TIMESTAMP, BAD_PRICE_SNAPSHOT (catalog price invalid — but ConfigGate already prevents this, as a secondary defense line).
+
+Invariants:
+- Pure RefCounted data layer, no Node/_process, no user://, no file writes (ECO-001's in-memory tests are the minimum acceptance criterion; save writes are SAVE-001).
+- GameState is the single authority: economy is the only module allowed to write wallet_gold/basket/processed_*_ids/revision (this ticket); FSM/UI only read.
+- All commands "validate first → construct new state → (persistence gate) → bulk commit": failure paths have zero side effects (basket/gold/revision/processed ids all unchanged).
+- Idempotency: same catch_event_id/sale_event_id + same parameters → ALREADY_APPLIED, state changes at most once; same ID with different parameters → CONFLICT_* and logged in in-memory log (INTERFACES §5, don't cover it up).
+- instance_id = "fish-" + catch_event_id (each catch event settles at most 1 fish → structurally unique; reproducible in deterministic tests; doesn't depend on UUID randomness).
+- sale_price_at_catch is snapshotted at commit_catch from the current catalog's base_price; subsequent changes to catalog/gold do not retroactively apply.
+- wallet_gold is always a non-negative integer; gold_added = Σ instance.sale_price_at_catch (first dedupe per request then sum, duplicates within a request → DUP_INSTANCE_IN_REQUEST reject).
+- Each successful commit does revision += 1 (monotonic).
+- Full basket: commit_catch rejects with BASKET_FULL when basket.size() >= capacity (double insurance: FSM request_cast already has a gate; if a settlement arrives after the basket became full, explicit reject, don't lose fish, don't exceed capacity — schema $comment basket ≤ capacity).
+- Serial: EconomyService's methods are synchronous, single-threaded, one command at a time; UI/Controller (later ticket) must go through this service as the sole booking entry, no concurrent writes to GameState.
+- Don't change economic parameters: 20/60/30/10 and prices/weights are read-only; runner has value-lock re-check.
+- Class names are new: FishInstance/EconomyService are unused (measured: 15 class_name).
+
+Test matrix E1–E10:
+- E1 Full-basket cast block + post-sale recovery (FSM integration): basket with 9 fish → request_cast ok → commit 1 fish → basket 10 → request_cast rejected with BASKET_FULL (no RNG consumption) → sell 1 fish → request_cast ok again (T-ECO-01)
+- E2 catch idempotency: retry same catch_event_id 100 times → exactly 1 fish enters basket, processed_catch_ids has exactly 1 entry, revision increases by exactly 1 (T-ECO-02)
+- E3 sale idempotency: retry same sale_event_id 100 times → gold increases exactly once, sold instances don't re-appear, basket count is stable (T-ECO-03)
+- E4 Error matrix (T-ECO-04): sell with non-existent instance id; duplicate instance id within same request; sell with empty array; non-string elements; catch with invalid species_id; empty/invalid event id; catch after full; all return stable codes and zero state change; assert wallet_gold >= 0 and never negative throughout
+- E5 Same-ID different-params conflict: 2nd commit_catch with same catch_event_id but different species → CONFLICT_CATCH_PARAMS, gold/basket unchanged, in-memory log recorded; same for 2nd sell with different instance list → CONFLICT_SALE_PARAMS (INTERFACES §5)
+- E6 Price snapshot: after committing 1 fish, change catalog's base_price copy → sell still adds gold at sale_price_at_catch (SDD 2026-11-11 ruling)
+- E7 Failure-path zero side effects: for each error code in E4/E5, snapshot GameState (deep-copy compare) before and after → match field-by-field
+- E8 Integration: FSM full cycle → produce_catch_candidate → commit_catch(species, event id) → 1 fish in basket, source_event_id=event_id, instance_id="fish-"+id; ack_settlement→IDLE→re-cast (V01-E01/E02, FSM R-3 handover re-check)
+- E9 Value-lock: assert data==examples value-match + config 20/60/30/10 + 3 fish prices 8/16/32 unchanged (R-4 precedent)
+- E10 persistence-gate failure path: inject an always-false gate → commit_catch/sell_fish return PERSIST_FAILED and GameState unchanged (advance booking for SAVE-001's "only publish after save succeeds", this ticket does not write to disk)
+
+Expected exit codes: runner 0 (pass) / 1 (fail); each Godot step 0; markers.
+
+Also §2 read-only measured records table (commands + exit codes actually run in this session): git status (0), git log (0), Godot --version (0), ls scripts/tests (0), scripts/economy missing, class_name grep (0), file reads, python3 --version 0, queue.json ECO-001 entry (status ready, deps FSM-001 done, allowed files, test_cmd empty, needs_human false).
+
+Risks and rollback:
+- All new files are untracked → rollback = delete 4 new files + fixtures (if any); don't touch tracked files; forbidden to use git clean -fdx (it would ripple into _runner); baseline HEAD 52ab254.
+- D-1: none — scripts/economy directory is newly created, no deviation from allowed list.
+- R-1: GameState (scripts/core) is out of scope → economy modifies its fields via reference, doesn't modify its source; GameState comments themselves say transactions belong to ECO-001 (consistent).
+- R-2: cross-session catch ID collision risk (LCG same-seed resampling) → SAVE-001 needs to persist RNG snapshot (already a handover item from FSM-001); this ticket's fingerprint ledger is in-memory, after restart rebuildable within basket/processed-ids limits, full cross-crash conflict detection is SAVE-001's scope (its allowed scope is scripts/save/** + tests/**).
+- R-3: runner gate misfires (.godot cache/icon.svg.import gets regenerated by headless) → record as-is in report, don't git restore/commit/kill user processes (FSM-001 R-5 precedent; Godot editor may be resident).
+- R-4: mis-modification of economic parameters → both tests+runner value-lock; any adjustment requires user approval.
+- R-5: 65536 output/long-context risk (OPEN-005) → split this ticket's deliverables into small files, test file < 600 lines.
+- No requirement changes / no destructive ops / no economic parameter adjustments / no privacy-network features; R-09 (sale_price_at_catch, capacity 10) has been closed by 2026-11-11 delegated freeze: SDD §「委托审查的 v0.1 实施裁定」adopted snapshot price; capacity 10 is read-only in this ticket, not adjusted; queue needs_human=false → no human approval needed.
+
+Acceptance mapping table.
+
+Also mention the exact test commands:
+1. `python3 -B tests/unit/run_eco001_checks.py` → 0 (recommended backfill into test_cmd)
+2. Single step: `.../Godot --headless --path /Users/rain/DevGame/Fishing --script res://tests/unit/test_eco001_economy.gd` → 0 + "ECO001 ECONOMY PASS". But note: run_fsm001_checks.py forbids running Godot directly against the main project (a resident editor exists). The FSM plan's §5 listed the single-step command against the main path, but the runner uses an isolated copy. Phase B should follow the runner; the runner's docstring says "禁止直接对主工程跑 Godot" — because the user's Godot editor is open, running --path against the main project would write to .godot cache (already gitignored, mostly fine, but the FSM review required isolation). Keep the main gate = runner, and note that single-step commands are only for diagnostics inside an isolated copy; primary gate = runner.
+
+Also expected `git status --porcelain`: new files are only scripts/economy/*.gd (+ .uid is ignored) and tests/unit/test_eco001_economy.gd, tests/unit/run_eco001_checks.py; _runner's state unchanged.
+
+Now — line-2 constraint: "plan.md 第二行必须原样引用 AGENTS.md 中的一行规则". My line 1 is a title, line 2 must be the quote. Verify the quote is verbatim: line 24 of AGENTS.md:
+
+`固定业务约束：可见桌面 **30 FPS**；自动捕鱼随机上钩等待初始 **20–60 秒**；独立游戏逻辑时钟；约三种鱼可配；鱼篓容量 **10 格仅为候选初值**；满篓不发起新抛竿；一次鱼对应唯一实例 ID；出售按唯一事件/事务 ID 原子扣鱼加币；崩溃重试不重复结算。`
+
+I'll prefix with "- " to match FSM-001 style — hmm, "原样引用一行" — the FSM-001 plan's line 2 was `- \`FishingSystem\` 作为纯业务状态机...` with a "- " bullet prefix. That's a quote with a bullet. To be safe, I'll do the same style as the accepted FSM-001 plan (quote line with "- " prefix). That precedent was accepted, so it's fine. Actually to be even safer I could include a marker of the source line: the FSM plan just put the raw rule line as line 2. Do the same: `- 固定业务约束：可见桌面 **30 FPS**；...` verbatim from the content of line 24.
+
+Next, confirm the write: writing to tasks/evidence/ECO-001/plan.md is the only allowed write. The directory already exists (empty).
+
+Should I also quickly verify test_fsm001's middle sections? Not necessary.
+
+One more check: runtime_config.gd full (load_config) — already checked enough. And ConfigGate requires runtime config to have exactly 5 keys, catalog ok. EconomyService.initialize uses the same gate.
+
+Note: commit_catch needs caught_at_utc — a real UTC timestamp for save schema's format date-time. But for in-memory determinism, tests pass fixed strings. Where does caught_at_utc come from at runtime? SDD timing says catch settlement; FSM provides caught_at_clock (virtual). The real wall-clock UTC is… hmm. In FSM-001, produce_catch_candidate returns caught_at_clock (virtual). GameState's fish requires caught_at_utc (RFC3339). This is a real design point: commit_catch should receive a caller-supplied caught_at_utc string; to keep tests deterministic, the caller (GameController/SAVE-001 later) supplies time.Time.get_datetime_string_from_utc… Godot: Time.get_datetime_string_from_system(true)? For test determinism, tests pass fixed "2026-11-11T00:00:00Z". Validation: non-empty string; regex for a loose date-time check. Document: production callers derive UTC from Time.get_datetime_string_from_system(true) — but that's outside this ticket's scope (wiring is UI/SAVE); EconomyService just validates the format. Also record the virtual clock vs UTC distinction: fish.sale price snapshot + event id are deterministic; timestamp is informational and doesn't enter economic computation.
+
+Loose date-time validation regex: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$ — accept that subset. Stable code BAD_TIMESTAMP.
+
+Also sell_fish parameter: instance_ids is Array; dedup semantics: if duplicate IDs are included in one request → reject with DUP_INSTANCE_IN_REQUEST (clear error rather than silently dedup, INTERFACES says 按 ID 去重计算整数金币 — hmm INTERFACES §5: "按 ID 去重计算整数金币" means dedupe then compute. So duplicates within a request should be silently deduped? "售鱼请求重复/不存在/越权 ID ... 均有明确错误" — T-ECO-04 says 重复 → 明确错误. Ambiguity: INTERFACES says dedup+compute, ACCEPTANCE says duplicate → error. Reading them together: T-ECO-04's "重复" probably means duplicate sale requests (same ID twice), whereas the in-request duplicate-instance-id dedupe is INTERFACES's "按 ID 去重". To satisfy both: duplicate instance id within one request → dedupe (per INTERFACES) and log a warning entry; duplicate sale_event_id request → AlreadyApplied; nonexistent id → UNKNOWN_INSTANCE error. Hmm, but T-ECO-04 "售鱼请求重复/不存在/越权 ID、负价格、容量冲突均有明确错误" — "重复" probably refers to repeated requests. Implement in-request duplicates → explicit error code DUP_INSTANCE_IN_REQUEST. That's the "明确错误" for duplicates. INTERFACES's "按 ID 去重计算整数金币" means don't double-count the same id — rejecting duplicate requests also avoids double-counting. Both interpretations prevent double-counting; choosing explicit reject is a stricter, testable reading; document that INTERFACES's dedupe intent is satisfied (no double-counting). State this decision in the plan with reasoning.
+
+OK. Also add an "接口与不变量" section that reflects pseudo-interfaces from INTERFACES §5.
+
+Plan file length: keep reasonable (~120 lines). Now let me write it.
+dsh: reasoning:
+Verify line 2 of plan.md and cross-check it word-for-word against line 24 of AGENTS.md, then confirm that no other files have been written to (git status should show only plan.md as a new file, plus there should be the existing _runner entry).
+dsh: reasoning:
+Verification: The second line matches the 24th line of AGENTS.md verbatim (with only the leading "- " bullet-point marker, following the approved precedent from FSM-001). git status: only `?? tasks/evidence/ECO-001/` (plan.md) is new from this session. The _runner entry is pre-existing (already confirmed in the pre-write Phase A check).
+
+Update the todos, and do the final summary with PHASE-A-DONE. No blockers: needs_human=false, the delegated freeze has resolved R-09, no requirement changes, no destructive operations.
+dsh: reasoning:
+Done. Final summary.
