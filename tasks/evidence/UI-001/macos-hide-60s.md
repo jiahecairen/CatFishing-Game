@@ -37,7 +37,7 @@ The project has the six planned display settings plus `display/window/per_pixel_
 
 The current UI runner includes a deterministic `DesktopWindow` input-policy case. It verifies that a delivered short click emits one boat-click signal, the native-drag path requests OS drag on press and still classifies an unmoved release as a click, and manual movement records window geometry without emitting a click. The latest `python3 -B tests/unit/run_ui001_checks.py` run passed all steps in an isolated copy. This exercises the controller policy; it does **not** prove macOS mouse pass-through or replace GUI checks G-UI-1/G-UI-2.
 
-One OS-coordinate click attempt was inconclusive and may have reached the active background application; it was not counted as a pass. A follow-up controlled attempt was stopped when a clean underlay could not be established. Remaining GUI items are G-UI-1, G-UI-2, G-UI-3, and G-UI-5 through G-UI-8; G-UI-4 is the hide/resume observation documented above.
+An earlier OS-coordinate click attempt was inconclusive and was not counted as a pass. A later controlled attempt used an isolated Godot process and an opaque helper window underneath it. Window metadata confirmed both windows shared bounds `(818, 39, 110, 80)`, with Godot above the helper. Clicks at a transparent test point and the boat point produced neither the helper's marker nor the isolated game's click diagnostic, so the input result remains inconclusive. The helper covered both test points; no screenshot was taken, and no user project or save was used. The isolated processes were closed afterward. Remaining GUI items are G-UI-1, G-UI-2, G-UI-3, and G-UI-5 through G-UI-8; G-UI-4 is the hide/resume observation documented above.
 
 ## Visual render check
 
