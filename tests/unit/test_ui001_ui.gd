@@ -4,8 +4,46 @@ const SessionScript := preload("res://scripts/ui/fishing_session.gd")
 const BasketMenuScript := preload("res://scripts/ui/basket_menu.gd")
 const HudScript := preload("res://scripts/ui/fishing_status_hud.gd")
 const ControllerScript := preload("res://scripts/core/game_controller.gd")
+const DesktopScript := preload("res://scripts/platform/desktop_window.gd")
 const SAVE_NAME := "game_state.json"
 const UTC := "2026-11-11T00:00:00Z"
+
+class TestPlatform extends "res://scripts/platform/platform_adapter.gd":
+	var cursor := Vector2i(100, 100)
+	var native_drag := false
+
+	func mouse_position() -> Vector2i:
+		return cursor
+
+	func start_native_drag(_window: Window) -> bool:
+		return native_drag
+
+	func clamp_window_position(position: Vector2i, _window_size: Vector2i) -> Vector2i:
+		return position
+
+	func current_display_hint() -> Variant:
+		return 0
+
+
+class TestSession extends "res://scripts/ui/fishing_session.gd":
+	var drag_starts := 0
+	var drag_ends := 0
+	var geometry_updates: Array = []
+
+	func notify_drag_start() -> void:
+		drag_starts += 1
+
+	func notify_drag_end() -> void:
+		drag_ends += 1
+
+	func fps_target() -> int:
+		return 30
+
+	func update_window_geometry(x: Variant, y: Variant, width: Variant, height: Variant,
+			display_hint: Variant = null) -> Dictionary:
+		geometry_updates.append([x, y, width, height, display_hint])
+		return {"ok": true, "code": ""}
+
 
 var _dirs: Array[String] = []
 var _dir_seq := 0
@@ -16,7 +54,8 @@ func _initialize() -> void:
 			"UI transparency must allow per-pixel alpha"):
 		return
 	await process_frame
-	for step in [_test_basket_selection_survives_new_catch, _test_hide_control_and_reactivation,
+	for step in [_test_basket_selection_survives_new_catch, _test_click_vs_drag_policy,
+			_test_hide_control_and_reactivation,
 			_test_boot_fail_closed,
 			_test_catch_and_crash_recovery, _test_sales_and_price_snapshot,
 			_test_save_failure_retry, _test_full_basket_and_fps, _test_hide_and_window_checkpoint]:
@@ -81,6 +120,72 @@ func _test_hide_control_and_reactivation() -> bool:
 	return _check(restores_hidden_window and restores_window_focus and waits_until_window_is_restored
 			and ignores_hide_transition and ignores_focus_out and keeps_visible_window,
 			"U-hide app focus restores minimized window; window focus waits for OS unminimize")
+
+
+func _test_click_vs_drag_policy() -> bool:
+	var click_window := Window.new()
+	click_window.position = Vector2i(80, 80)
+	click_window.size = Vector2i(220, 160)
+	var click_platform := TestPlatform.new()
+	var click_session := TestSession.new()
+	var click_policy = DesktopScript.new()
+	click_policy._window = click_window
+	click_policy._platform = click_platform
+	click_policy._session = click_session
+	var click_count := [0]
+	click_policy.boat_clicked.connect(func(): click_count[0] += 1)
+	var pressed := InputEventMouseButton.new()
+	pressed.button_index = MOUSE_BUTTON_LEFT
+	pressed.pressed = true
+	var released := InputEventMouseButton.new()
+	released.button_index = MOUSE_BUTTON_LEFT
+	released.pressed = false
+	click_policy.handle_boat_input(pressed)
+	click_policy.handle_boat_input(released)
+	var click_emitted: bool = click_count[0] == 1 and click_session.drag_ends == 1
+	click_window.free()
+
+	var native_window := Window.new()
+	native_window.position = Vector2i(80, 80)
+	native_window.size = Vector2i(220, 160)
+	var native_platform := TestPlatform.new()
+	native_platform.native_drag = true
+	var native_session := TestSession.new()
+	var native_policy = DesktopScript.new()
+	native_policy._window = native_window
+	native_policy._platform = native_platform
+	native_policy._session = native_session
+	var native_click_count := [0]
+	native_policy.boat_clicked.connect(func(): native_click_count[0] += 1)
+	native_policy.handle_boat_input(pressed)
+	var native_drag_started_on_press := native_session.drag_starts == 1
+	native_policy.handle_boat_input(released)
+	var native_click_emitted: bool = native_drag_started_on_press and native_click_count[0] == 1 \
+			and native_session.drag_ends == 1 and native_session.geometry_updates.is_empty()
+	native_window.free()
+
+	var drag_window := Window.new()
+	drag_window.position = Vector2i(80, 80)
+	drag_window.size = Vector2i(220, 160)
+	var drag_platform := TestPlatform.new()
+	var drag_session := TestSession.new()
+	var drag_policy = DesktopScript.new()
+	drag_policy._window = drag_window
+	drag_policy._platform = drag_platform
+	drag_policy._session = drag_session
+	var drag_click_count := [0]
+	drag_policy.boat_clicked.connect(func(): drag_click_count[0] += 1)
+	drag_policy.handle_boat_input(pressed)
+	drag_platform.cursor = Vector2i(111, 100)
+	var motion := InputEventMouseMotion.new()
+	drag_policy.handle_boat_input(motion)
+	drag_policy.handle_boat_input(released)
+	var drag_recorded: bool = drag_click_count[0] == 0 and drag_session.drag_starts == 1 \
+			and drag_session.drag_ends == 1 \
+			and drag_session.geometry_updates == [[91, 80, 220, 160, 0]]
+	drag_window.free()
+	return _check(click_emitted and native_click_emitted and drag_recorded,
+			"U-window click emits boat click, native drag starts on press, and movement saves geometry")
 
 
 func _test_boot_fail_closed() -> bool:
