@@ -21,6 +21,15 @@ const WINDOW_PROPERTIES: PackedStringArray = [
 
 func _ready() -> void:
 	var headless := DisplayServer.get_name() == "headless"
+	# SPIKE-001-FIX-002 §9.5 前提检查：实测本构建 ClassDB 无 class_has_property()（T1 真实输出）
+	# → 用 Input.get_property_list() 扫描存在性，Input.get 字符串访问取当前值（编译期不依赖属性存在）。
+	var accum_supported := false
+	var accum_value: Variant = null
+	for p in Input.get_property_list():
+		if str(p.get("name", "")) == "use_accumulated_input":
+			accum_supported = true
+			accum_value = Input.get("use_accumulated_input")
+			break
 	var report := {
 		"engine_version": str(Engine.get_version_info().get("string", "unknown")),
 		"display_server": DisplayServer.get_name(),
@@ -37,6 +46,14 @@ func _ready() -> void:
 			"window_start_drag": ClassDB.class_has_method("DisplayServer", "window_start_drag"),
 			"get_display_safe_area": ClassDB.class_has_method("DisplayServer", "get_display_safe_area"),
 		},
+		# SPIKE-001-FIX-002 最小化追加：§3.1 窗口 ID 获取方式 + §9.5 输入积累实验前提（只探测，不改行为）。
+		"window_methods": {
+			"get_window_id": ClassDB.class_has_method("Window", "get_window_id"),
+		},
+		"input_properties": {
+			"use_accumulated_input": accum_supported,
+		},
+		"input_accumulated_input_value": accum_value,
 		"mouse_get_position_value": null,
 		"ts_utc": Time.get_datetime_string_from_system(true, true),
 	}

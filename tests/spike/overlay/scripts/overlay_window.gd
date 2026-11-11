@@ -11,6 +11,11 @@ const STATE_PATH := "res://report/observed_state.json"
 const MATRIX_PATH := "res://report/variant_matrix.json"
 const EVIDENCE_DIR := "res://evidence"
 const DRAG_THRESHOLD_PX := 6.0
+# SPIKE-001-FIX-002 方案 B 子模式常量（§9.1 人工审核优先于计划 §3.2 的默认值）：
+#   "on_press"     = 主路径：在左键按下事件中调用 DisplayServer.window_start_drag()
+#                    （官方文档语义「Call this method when handling a mouse button being pressed」）。
+#   "on_threshold" = 实验性时机：位移达 6px 后才调用；不得假定该时机一定有效，GUI 人工判定。
+const DRAG_B_MODE := "on_press"
 const DEFAULT_POS := Vector2i(120, 120)
 const FPS_WINDOW_MS := 1000
 const FPS_SAMPLES_KEPT := 120
@@ -37,6 +42,14 @@ var _mouse_pos_supported := false
 var _drag_unsupported_logged := false
 var _drag_samples: Array = []
 var _drag_sample_count := 0
+# SPIKE-001-FIX-002：拖动模式 A/B、方案 B（原生拖动）状态与轨迹采样、§9.5 输入积累实验探测。
+var _drag_mode := "A"
+var _window_start_drag_supported := false
+var _window_get_window_id_supported := false
+var _native_drag_active := false
+var _native_drag_samples: Array = []
+var _native_drag_sample_count := 0
+var _accum_input_supported := false
 var _fps_window_start_ms := 0
 var _fps_window_frames := 0
 var _fps_last := 0.0
@@ -59,6 +72,12 @@ func _ready() -> void:
 	}
 	_mouse_pos_supported = ClassDB.class_has_method("DisplayServer", "mouse_get_position")
 	_variant_api["displayserver_mouse_get_position"] = _mouse_pos_supported
+	# SPIKE-001-FIX-002：运行时探测（§3.1/§9.5），缺失记 unsupported 并走 §3.1 兜底，绝不调用未证实 API。
+	# 实测：本构建 ClassDB 无 class_has_property()（T1 真实输出）→ 用 Input.get_property_list() 扫描 +
+	# Input.get/set 字符串访问，编译期不依赖属性存在性。
+	_window_start_drag_supported = ClassDB.class_has_method("DisplayServer", "window_start_drag")
+	_window_get_window_id_supported = ClassDB.class_has_method("Window", "get_window_id")
+	_accum_input_supported = _has_input_prop("use_accumulated_input")
 	# 运行时兜底：即使 project 设置缺失/未生效，也尝试在代码里置透明与无边框。
 	if _variant_api["transparent"]:
 		_win.set("transparent", true)
@@ -77,6 +96,15 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	if _native_drag_active:
+		# SPIKE-001-FIX-002 §3.2：OS 可能吞掉 release 事件 → 左键 mask 轮询兜底结束拖动；
+		# 同时按 §3.4 每帧采集 [t_ms, win_x, win_y, mouse_x, mouse_y] 轨迹（上限 400 点/次拖动）。
+		if Input.get_mouse_button_mask() & MOUSE_BUTTON_MASK_LEFT == 0:
+			_end_native_drag()
+		elif _native_drag_sample_count < DRAG_SAMPLE_CAP:
+			_native_drag_sample_count += 1
+			var mp := DisplayServer.mouse_get_position() if _mouse_pos_supported else Vector2i(-1, -1)
+			_native_drag_samples.append([Time.get_ticks_msec(), _win.position.x, _win.position.y, mp.x, mp.y])
 	_fps_window_frames += 1
 	var now := Time.get_ticks_msec()
 	var elapsed := now - _fps_window_start_ms
@@ -100,6 +128,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			_set_variant("polygon")
 		KEY_3:
 			_set_variant("off")
+		KEY_4:
+			_set_drag_mode("A")
+		KEY_5:
+			_set_drag_mode("B")
+		KEY_6:
+			_toggle_accumulated_input()
+		KEY_7:
+			_toggle_fps_cap()
 		KEY_9:
 			_take_screenshot()
 		KEY_Q, KEY_ESCAPE:
@@ -183,7 +219,17 @@ func _on_ship_gui_input(event: InputEvent) -> void:
 			_drag_start_win = _win.position
 			_drag_samples = []
 			_drag_sample_count = 0
+			_native_drag_samples = []
+			_native_drag_sample_count = 0
+			# SPIKE-001-FIX-002 方案 B · on_press（§9.1 主路径）：按下事件中即交予 OS 窗口服务器。
+			# API 缺失时 _start_native_drag 记 drag_b_unsupported 并退回方案 A 行为（§3.1，不静默降级）。
+			if _drag_mode == "B" and DRAG_B_MODE == "on_press":
+				_start_native_drag("on_press")
 		else:
+			if _native_drag_active:
+				# SPIKE-001-FIX-002 方案 B：原生拖动会话内松手 → 事后 6px 判定 + 保存（§9.2，README 明示）。
+				_end_native_drag()
+				return
 			if _drag_pending and not _dragging:
 				# 位移未达阈值 → 判定为点击，不误判为拖动（G-002a）。
 				_ship_clicks += 1
@@ -197,6 +243,19 @@ func _on_ship_gui_input(event: InputEvent) -> void:
 			_dragging = false
 			_update_status()
 	elif event is InputEventMouseMotion and _drag_pending:
+		if _drag_mode == "B" and DRAG_B_MODE == "on_threshold" and not _native_drag_active:
+			# SPIKE-001-FIX-002 实验性子模式（§9.1：不得假定该时机有效，GUI 人工判定）：
+			# 位移 ≥6px 且左键仍按住时才调用 window_start_drag()，此后窗口移动交给 OS。
+			if _window_start_drag_supported and _mouse_pos_supported:
+				var cur_d := DisplayServer.mouse_get_position()
+				if Vector2(cur_d - _drag_start_cursor).length() >= DRAG_THRESHOLD_PX:
+					_start_native_drag("on_threshold")
+				return
+			if not _drag_unsupported_logged:
+				_drag_unsupported_logged = true
+				_log_event("drag_b_unsupported:window_start_drag_or_mouse_get_position")
+		if _native_drag_active:
+			return  # OS 已在移动窗口，禁止再手动设置 _win.position（§3.2）。
 		# 修正 B：位移 = 当前屏幕坐标 − 按下时屏幕坐标；坐标源不随窗口移动，无自我反馈 → 无抖动。
 		# 禁止 event.global_position 计算位移；禁止 Input.capture_mouse（非 Godot 4 API）。
 		if not _mouse_pos_supported:
@@ -218,6 +277,81 @@ func _on_ship_gui_input(event: InputEvent) -> void:
 			_drag_sample_count += 1
 			if _drag_samples.size() < DRAG_SAMPLE_CAP:
 				_drag_samples.append([Time.get_ticks_msec(), d.x, d.y])
+
+
+# ---------- SPIKE-001-FIX-002：拖动模式 A/B（键 4/5）、方案 B 原生拖动、FPS 对照（键 7）、输入积累（键 6） ----------
+
+func _set_drag_mode(mode: String) -> void:
+	_drag_mode = mode
+	# 切换瞬间复位拖动状态（§3.1），保证 A/B 可在同一 GUI 会话独立测试（§9.3）。
+	_drag_pending = false
+	_dragging = false
+	_native_drag_active = false
+	_log_event("drag_mode:%s" % ("a" if mode == "A" else "b"))
+	_update_status()
+
+
+func _toggle_fps_cap() -> void:
+	# SDD-175：启动恒 30（_ready 写死）；键 7 仅提供单次 GUI 会话的 60 运行时对照，不写任何项目设置。
+	Engine.max_fps = 60 if Engine.max_fps != 60 else 30
+	_log_event("fps_cap_toggle:%d" % Engine.max_fps)
+	_update_status()
+
+
+func _toggle_accumulated_input() -> void:
+	# §9.5 实验：Input.use_accumulated_input（引擎默认 true）按帧合并鼠标 motion 事件
+	# → 30 FPS 下方案 A 窗口位移每帧最多更新一次（GUI 实测 ≈26.8 Hz）；关闭后逐个 motion 事件派发。
+	# 仅运行时实验，不改变 30 FPS 正式默认值。
+	if not _accum_input_supported:
+		_log_event("accum_input_unsupported:Input.use_accumulated_input")
+		_update_status()
+		return
+	var newv := not bool(Input.get("use_accumulated_input"))
+	Input.set("use_accumulated_input", newv)
+	_log_event("accum_input:%s" % ("on" if newv else "off"))
+	_update_status()
+
+
+func _start_native_drag(note: String) -> void:
+	if not _window_start_drag_supported:
+		# §3.1：API 缺失 → 如实记事件并按方案 A 行为继续处理，不静默降级。
+		if not _drag_unsupported_logged:
+			_drag_unsupported_logged = true
+			_log_event("drag_b_unsupported:DisplayServer.window_start_drag")
+		return
+	var wid := 0
+	if _window_get_window_id_supported:
+		wid = int(_win.call("get_window_id"))
+	else:
+		# 探测式兜底（§3.1，与 R-03 一致）：Window.get_window_id 缺失时传 0（主窗口）并记事件。
+		_log_event("drag_b_window_id_fallback:0")
+	DisplayServer.window_start_drag(wid)
+	_native_drag_active = true
+	_drag_pending = false
+	_dragging = false
+	_native_drag_samples = []
+	_native_drag_sample_count = 0
+	_log_event("native_drag_start:%s" % note)
+	_update_status()
+
+
+func _end_native_drag() -> void:
+	if not _native_drag_active:
+		return
+	_native_drag_active = false
+	_drag_pending = false
+	_dragging = false
+	# §9.2 语义差异（README §2 矩阵 G-002e 明示，不静默改变交互语义）：
+	# 方案 B 的 6px 为「拖动结束后按窗口净位移事后判定」——
+	# 净位移 <6px 记为点击（ship_clicks+1），≥6px 记为拖动；方案 A 仍是「达 6px 才开始拖动」。
+	var net := Vector2(_win.position - _drag_start_win).length()
+	if net < DRAG_THRESHOLD_PX:
+		_ship_clicks += 1
+		_log_event("ship_click")
+	_log_event("native_drag_end:samples=%d:net_px=%.1f" % [_native_drag_sample_count, net])
+	_save_position()
+	_write_reports()
+	_update_status()
 
 
 # ---------- 位置持久化（临时探针几何，非业务存档） ----------
@@ -305,6 +439,16 @@ func _write_reports() -> void:
 		"mouse_get_position_supported": _mouse_pos_supported,
 		"last_drag_sample_count": _drag_sample_count,
 		"last_drag_samples": _drag_samples,
+		# SPIKE-001-FIX-002 §3.4 追加字段（既有字段语义不变；流畅性判定权归 GUI 人工）。
+		"drag_mode": _drag_mode,
+		"drag_b_mode": DRAG_B_MODE,
+		"window_start_drag_supported": _window_start_drag_supported,
+		"window_get_window_id_supported": _window_get_window_id_supported,
+		"native_drag_samples": _native_drag_samples,
+		"native_drag_sample_count": _native_drag_sample_count,
+		"fps_cap_default": 30,
+		"input_accumulated_input_supported": _accum_input_supported,
+		"input_accumulated_input": (Input.get("use_accumulated_input") if _accum_input_supported else null),
 		"window_position": [_win.position.x, _win.position.y],
 		"window_size": [_win.size.x, _win.size.y],
 		"max_fps": Engine.max_fps,
@@ -323,9 +467,12 @@ func _update_status() -> void:
 	var label := get_node_or_null("Status") as Label
 	if label == null:
 		return
-	var state := "DRAG" if _dragging else ("HOLD" if _drag_pending else "IDLE")
-	label.text = "SPIKE-001 variant=%s %s fps=%.1f pos=(%d,%d) clicks=%d\n[1]=整窗穿透 [2]=船体多边形(默认) [3]=全拦截 [9]=截图 [Q]=退出" % [
-		_variant, state, _fps_last, _win.position.x, _win.position.y, _ship_clicks
+	var state := "NDRAG" if _native_drag_active else ("DRAG" if _dragging else ("HOLD" if _drag_pending else "IDLE"))
+	var accum := "?"
+	if _accum_input_supported:
+		accum = "on" if bool(Input.get("use_accumulated_input")) else "off"
+	label.text = "SPIKE-001 variant=%s drag=%s %s fps=%d/%.1f pos=(%d,%d) clicks=%d accum=%s\n[1]穿透全 [2]船体多边形(默认) [3]全拦截 [4]拖动A [5]拖动B [6]输入积累 [7]30/60对照 [9]截图 [Q]退出" % [
+		_variant, _drag_mode, state, Engine.max_fps, _fps_last, _win.position.x, _win.position.y, _ship_clicks, accum
 	]
 
 
@@ -337,6 +484,13 @@ func _log_event(ev: String) -> void:
 
 func _has_prop(prop: StringName) -> bool:
 	for p in _win.get_property_list():
+		if str(p.get("name", "")) == prop:
+			return true
+	return false
+
+
+func _has_input_prop(prop: String) -> bool:
+	for p in Input.get_property_list():
 		if str(p.get("name", "")) == prop:
 			return true
 	return false

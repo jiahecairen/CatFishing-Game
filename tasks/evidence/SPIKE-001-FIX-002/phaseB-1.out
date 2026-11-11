@@ -1,0 +1,989 @@
+## SPIKE-001-FIX-002 Phase B 完成摘要
+
+**实现**（全部限于 `tests/spike/overlay/**`，6 文件 +253/−31）：
+- `overlay_window.gd`：拖动模式 A/B（键 4/5，启动默认 A，方案 A 逻辑逐行保留）；方案 B 原生拖动按 §9.1 以 `on_press` 为默认（按下事件中调用 `DisplayServer.window_start_drag(get_window().get_window_id())`，运行时探测缺失则记事件并按 A 行为兜底），`on_threshold` 保留为实验常量选项；`_process` 左键 mask 轮询兜底 B 拖动结束并保存位置；键 7 = 运行时 30↔60 FPS 对照（启动恒 30，project.godot 零改动）；键 6 = `Input.use_accumulated_input` 运行时实验（§9.5）；§3.4 报告字段全部追加。
+- `capability_probe.gd`：最小化追加 `window_methods.get_window_id` 与 `input_properties.use_accumulated_input` 探测。
+- `README.md`：键位表 4/5/6/7 + 矩阵 G-002d/e/f、G-004b + §4 明示 B 的 6px「事后判定」语义差异（§9.2，非静默）。
+
+**测试（真实退出码）**：T0=0（4.7.2.stable.official.ed1daf0bf）；T1a/T1b 首跑真实暴露 `ClassDB.class_has_property()` 在本构建不存在（SCRIPT ERROR，判失败）→ 修复后复跑 0/0；T2（调度器 test_cmd）=0、T3a=0、T3b=0，均无 SCRIPT ERROR；T4=1（无残留进程）；T5=0/0/0（三份 JSON 合法、新字段齐全、`max_fps=30`）；T6=0/0（改动范围仅 allowed_files，无 queue.json）。
+
+**如实上报的两点**：① B 模式 6px 为拖动结束后的净位移事后判定，与 A 语义不同，是否符合工单条目 4 交人工裁定；② 原生拖动在透明无边框窗口上的实际手感/点击语义/位置保存只能由用户 GUI 实测（README C3-GUI 矩阵）判定，headless exit 0 不代表其通过。用户 22:36–22:47 GUI 证据已由调度器保全于备份提交 `d535e55`，本会话仅只读验证。
+
+证据：`tasks/evidence/SPIKE-001-FIX-002/report.md`。未 commit/push，未触碰审批账本，全程单会话串行、无委派/后台任务。
+
+PHASE-B-DONE
+
+---STDERR---
+dsh: reasoning:
+Let me start by reading the plan and understanding the task. First, let me look at the evidence directory and the plan.md file, plus the AGENTS.md file (already injected as context, but should I verify it just in case — it says that if the context is auto-injected I should also verify compliance, and AGENTS.md is included in the system reminder).
+
+First I'll read the plan.md file. I'll also check the relevant skills: godot-overlay and godot-validation are project skills. The instructions say to enumerate the skills and read the guides as needed. The task is a Godot overlay fix + verification. According to AGENTS.md section 5, I should load the godot-overlay and godot-validation skills. Let me load the skills first, and read the plan.
+
+Plan:
+1. Read plan.md.
+2. Read the files under tests/spike/overlay.
+3. Load skills godot-overlay and godot-validation (project skills are in .dsh/skills, and the skill tool enumerates them).
+4. Implement.
+5. Run tests and record the exit code.
+6. Write report.md.
+
+Constraints: no sub-agents, no background jobs, no git operations, no reading APPROVALS.md.
+dsh: reasoning:
+Now I'll read plan.md and check the spike directory structure.
+dsh: reasoning:
+Watch out for §9 item 4 of the plan: "The coding Agent in Phase B must not modify tasks/evidence/** on its own. Past GUI reports will be backed up by the user or by an approved scheduler." — However, the ticket instructions for this Phase B (the user's direct instructions) state that writing to the evidence directory /Users/rain/DevGame/Fishing/tasks/evidence/SPIKE-001-FIX-002 is permitted ("additionally, writing files within the evidence directory ... is permitted"), and step 4 requires writing report.md there. The plan's §6 risk 3 says that in the first step of Phase B, the current 3 report JSONs should be archived to the evidence directory. However, §9 item 4 (the human review supplement, which takes precedence over conflicting details) states that the Phase B agent must not modify tasks/evidence/**, and that backups of past GUI reports will be handled by the user or an approved scheduler.
+
+Direct user instructions take precedence: the user has explicitly permitted writing to the evidence directory, and step 4 says to write report.md there. Therefore writing report.md is fine. As for the archiving of the report JSONs in §6 risk 3: §9.4 states that the backup of past GUI reports is the responsibility of the user or an approved scheduler, not the Phase B agent. Hmm, but wait — if we run the headless test, report/*.json will be overwritten, destroying the user's uncommitted GUI evidence (the drag samples from 22:36–22:47). §9.4 states that the Phase B agent must not modify tasks/evidence/** — meaning the archiving is not done by me; the scheduler/user handles the backup.
+
+But this creates a conflict: step 3 of my instructions explicitly requires running the headless test in the project root. If that overwrites the user's GUI evidence... §9.4 states that backups are done by the user or an approved scheduler — meaning it is presumed that either the backup has already been done, or the scheduler will handle it. The dispatcher stated "the human approval record has been confirmed by the scheduler after passing verification," and §9.4 says the backup of past GUI reports is backed up by the user or approved scheduler (i.e., not my responsibility). The direct user instructions say to run the test. I should follow the direct user instructions: run the test. But should I first check whether a backup of the report JSONs exists somewhere within the evidence directory? The evidence directory contains only phaseA.out, phaseA.session.v4.jsonl.zstd, and plan.md. There is no snapshot of the backup.
+
+Hmm, this is a real concern: running the headless test will overwrite tests/spike/overlay/report/*.json, which are the user's uncommitted manual GUI evidence (git status shows them as modified against HEAD). But they are in git — HEAD contains committed versions (the pre-GUI-run versions). The currently modified versions are the GUI-run evidence. If I overwrite them with the headless run, unless the scheduler has backed them up elsewhere, the uncommitted GUI evidence will be destroyed. §9.4 explicitly states that such backups are the responsibility of the user/scheduler, and the dispatcher has approved the execution of the test command (step 3 is explicit and mandatory). The direct user instructions take precedence: "Run the test in the project root: ...". Therefore I must run it.
+
+However, can I take a copy of the evidence for safety? Would that count as "modifying tasks/evidence/**"? Per the user's instructions, writes to the evidence directory are permitted ("additionally, writing files within the evidence directory is permitted"). §9.4 says the Phase B agent must not modify tasks/evidence/** on its own and that backups are handled by the user/scheduler — that was a human review supplement to the plan. But the current direct user instructions take precedence: they permit writes to the evidence directory and mandate the execution of the test. Writing a snapshot copy there is permitted by the user's instructions and is protective. But §9.4 explicitly forbids me from doing the backup ("backups are backed up by the user or an approved scheduler"). Contradiction: the user's direct instructions (highest priority) permit writing files to the evidence directory. They do not order me to take a backup, but they do order me to run a test that overwrites the GUI evidence.
+
+Let's check: is the headless run actually going to overwrite report/*.json? I need to read the script and verify. It's possible the headless run writes the report to a different location, or that it writes only under some condition. Let's first read all the source files.
+
+Also, the git state might tell me whether the GUI evidence has already been committed. Phase A §7 recorded the following: tracked changes are only the 3 report JSONs (evidence of the user's GUI run), untracked is only tasks/evidence/_runner/. The plan's HEAD is 417f74d. The scheduler may have committed them since then. Let's verify the current git state.
+
+Also, regarding whether a backup exists: tasks/evidence/_runner/ was untracked — that may be a copy of the runner. Let's check the current git status and whether the report JSONs are still modified.
+
+Plan:
+1. Read the source files: overlay_window.gd, capability_probe.gd, main.tscn, project.godot, README.md.
+2. Check git status/HEAD.
+3. Decide about the archiving issue: per the user's direct instructions, writes to the evidence directory are permitted. §9.4 says backups are not my job. The safest interpretation is: the dispatcher/user has handled the backups (the dispatcher stated the approval was confirmed; the evidence directory contains phaseA's output). But no backup of the report JSONs exists. If I run the test and the GUI evidence is destroyed, that is destructive. The plan §6 risk 3 says the first step of Phase B is to archive to the evidence directory; §9.4 overrides that: the Phase B agent must not modify tasks/evidence/** on its own... hmm, wait, let me re-read §9.4: "The coding Agent in Phase B must not modify tasks/evidence/** on its own. Backups of past GUI reports are done by the user or an approved scheduler." This says: do not modify tasks/evidence/** on your own; backups of past GUI reports are [the responsibility of] the user or an approved scheduler.
+
+But my direct user instructions explicitly permit writing to the evidence directory (for report.md). So writes there are no longer "on my own" — they are approved by the ticket. Given the conflict between "run the test" (which destroys the uncommitted GUI evidence) and "don't let it be destroyed" — the human supplement said the backups are done by the user/scheduler, not by me. That means the human anticipated the possibility of the evidence being overwritten and took responsibility. I should not take it upon myself to do the backup... but doing a backup would be protective and is explicitly permitted by the current user instructions ("writing files within the evidence directory is permitted"). §9.4 was written in Phase A for Phase B's agent; the current direct user instructions (highest priority, "top-level constraints") permit writes to the evidence directory and mandate running the test.
+
+Hmm. But does the headless run even overwrite the reports in the first place? Let's first read the script. Perhaps the headless run writes the report with a different name, or overwrites it. Let's read.
+
+Also, first check git status — the scheduler may have already committed the GUI evidence (the plan says the dispatcher commits after verification). Let's verify.
+dsh: reasoning:
+Git state: HEAD = d16e5a3 "Human approve SPIKE-001-FIX-002 Phase B". Working tree: tracked changes = none! The 3 report JSONs (user's GUI trail) have apparently been committed by the scheduler (git status doesn't show any tracked file changes — only untracked directories tasks/evidence/SPIKE-001-FIX-002/ and tasks/evidence/_runner/). That means the user's GUI trail is now committed to git — even if the headless run overwrites report/*.json, the trail is preserved in git history. So the risk in §6-3 is resolved: the scheduler committed them (the dispatcher said "the scheduler commits them together after the check passes"). And §9.4 states that backups of past GUI reports are done by the user or an approved scheduler — indeed they're included in the commit history. So it's fine to run the tests; no need to manually archive (furthermore §9.4 forbids me from touching tasks/evidence except where my ticket explicitly permits report.md).
+
+Wait — is the trail actually in HEAD? Let me verify that the committed report files contain the GUI trail (headless=false). Quick check: git show HEAD:tests/spike/overlay/report/observed_state.json | head. Or git log against the report files. Actually, the plan said at HEAD 417f74d that tracked changes were only the 3 report JSONs. Now git status shows no tracked file changes at all, so those 3 JSONs were committed somewhere between 417f74d and d16e5a3 (probably be73469→0248319 "Record FIX-002 Phase A completion" or d16e5a3). Good — the trail is preserved in git. Overwriting via the headless run can be reverted from git. Note this in the report.
+
+Next, read the remaining files: capability_probe.gd, main.tscn, project.godot, README.md.
+dsh: reasoning:
+I'll read the README.md and the report's JSON (to check the current state and the fields). Let me read the README first.
+dsh: reasoning:
+Interesting — the currently committed report JSON has headless=True and ts 22:32:16, meaning the user's GUI evidence (headless=false) was… wait, in the plan at the Phase A point the report JSON was in a modified state as GUI evidence. Currently git status is clean and the file shows headless=true 22:32:16. So the GUI evidence was either committed in a different location, or possibly reverted/committed. Let me check the git log for these files and confirm whether the GUI evidence is preserved in the history. Actually, the current file on disk says headless=true — meaning the on-disk version is not the GUI run result. Perhaps the scheduler committed the GUI evidence at 0248319 or d16e5a3, and then… no, if it had been committed the on-disk version should show headless=false. Hmm — unless the scheduler committed the GUI evidence and then… no, that's not it. Let me check the git log for these files.
+
+Wait, actually — maybe the "modified" JSON in Phase A was the headless run result from 22:32? No — the plan §7 said "observed_state.json (user manually ran at 22:36–22:47) display_server=macOS, headless=false, 74 events." The current file says headless=true, ts=22:32:16. So the current on-disk file is an older headless run result. Did the scheduler run `git checkout -- tests/spike/overlay/` and revert it? Or commit the GUI version and then check it out? Let me check the git history of these files and confirm that the GUI evidence remains in the history.
+
+Let me verify: `git log --oneline -- tests/spike/overlay/report/` and `git show <commit>:...` to see which commit has headless=false. If the GUI evidence is in the history, no problem — the overwrite is recoverable. If it wasn't committed and was discarded… then it was the scheduler's doing, not mine. My job is: run the headless test, which will regenerate the report anyway.
+
+Also, the plan's §9.4 says the history GUI report is backed up by the user/scheduler, so it's not my concern. I'll just document the current state.
+
+Let me quickly check the git log of the report files, and then implement the changes.
+dsh: reasoning:
+There's a stash-like commit `d535e55 "On main: Preserve FIX-002 GUI reports"` — this is the scheduler's backup of the GUI report (the `git stash` format "On main:" prefix). Let's verify whether it contains the GUI evidence (headless=false).
+dsh: reasoning:
+Confirmed: the scheduler saved the user's GUI evidence to commit d535e55 ("On main: Preserve FIX-002 GUI reports" — stash format). The on-disk report JSONs are the already-committed headless run (4 events) at 22:32, and these can be restored from git (417f74d etc.). The overwrite by Phase B's headless is safe and recoverable from git. §9.4's backup obligation is satisfied by the scheduler. I myself do not write anything into tasks/evidence other than my own report.md (permitted by the ticket).
+
+OK, implementation per plan §3:
+
+overlay_window.gd changes:
+1. Add drag-mode state:
+   - `const DRAG_B_MODE := "on_threshold"` (with a comment; alternative is "on_press")
+   - `var _drag_mode := "A"`
+   - `var _native_drag_active := false`
+   - `var _window_start_drag_supported := ClassDB.class_has_method("DisplayServer", "window_start_drag")` (computed in _ready)
+   - `_native_drag_samples: Array = []`, with count, cap 400.
+2. Keys in _unhandled_input:
+   - KEY_4 → _set_drag_mode("A")
+   - KEY_5 → _set_drag_mode("B")
+   - KEY_7 → toggle Engine.max_fps between 30↔60, log "fps_cap_toggle:30|60", update status.
+   - Keys 1/2/3/9/Q are unchanged.
+3. `_set_drag_mode(mode)`: reset `_drag_pending/_dragging/_native_drag_active`, log "drag_mode:a|b" (lowercase a/b per plan: `_log_event("drag_mode:a|b")`), `_update_status()`.
+4. Plan §3.1: log "drag_b_unsupported" and fall back to A's behavior if window_start_drag is missing.
+   §3.1 window ID: prefer `DisplayServer.window_start_drag(get_window().get_window_id())`; if `Window.get_window_id` is missing at runtime, pass 0 and log the event. So probe `ClassDB.class_has_method("Window", "get_window_id")`.
+5. Scheme B flow (§3.2):
+   - B-default ("on_threshold"): press → `_drag_pending=true`, freeze `_drag_start_cursor/_drag_start_win`; on motion, if displacement ≥6px while left button is held → call `window_start_drag()` once, set `_native_drag_active=true`, then do not set `_win.position` manually.
+   - B-fallback ("on_press"): call window_start_drag() immediately on press; 6px becomes a post-hoc judgment — on drag end, if net window displacement is <6px → count as click.
+   
+   §9.1 (human review, overriding): "DisplayServer.window_start_drag() should be called preferentially inside the InputEventMouseButton press event. Implementations that call it only after exceeding 6px can only be regarded as experimental, and its validity at that timing must not be assumed to be guaranteed."
+   
+   Hmm, §9.1 says it should be preferred to call it in the button press event; the "call only after exceeding 6px" implementation is merely experimental, and one must not assume it works at that timing. Plan §3.2 said B-default = on_threshold (call on threshold crossing), B-fallback = on_press. But §9.1 says: "preferentially call inside InputEventMouseButton press event; calling only after exceeding 6px is only experimental and its validity must not be assumed."
+
+   §9 says: "The following requirements take precedence over conflicting implementation details in the preceding text" (the following requirements take precedence over conflicting implementation details in the preceding text). Therefore §9.1 conflicts with plan §3.2's "B-default (test first): on_threshold". Per §9.1, on_press (calling in press event) is the preferred/primary approach, and on_threshold is experimental. So the default constant should be "on_press" (call on press — matches the official docs "Call this method when handling a mouse button being pressed"), and on_threshold should be kept as a documented experimental alternative.
+
+   Hmm, but then what about the 6px threshold under on_press? §3.2's B-fallback: the threshold degrades into a post-hoc check: at drag end, if net window displacement <6px → count as click. §9.2: "Scheme B must, if it cannot preserve the exact same threshold, explicitly document this in the README and the test report, and must not silently change the interaction semantics." So with the on_press default, the 6px threshold semantics degrade in B mode to post-hoc click judgment — this must be documented explicitly (not silently). This is an accepted tradeoff under §9.2's explicit-documentation clause.
+
+   Wait — but with the on_press approach, if the user clicks on the ship without moving, the OS native drag still fires: on macOS, calling window_start_drag while the button is held initiates a native title-bar-like drag; if the mouse hasn't moved, macOS cancels the drag on release and no window movement occurs (the click still hits the app? In fact, in a borderless window without a title bar, the window_start_drag call at press time… Godot's macOS implementation invokes performWindowDragWithEvent, which starts a modal session; if the mouse hasn't moved, the OS ends the drag and the press/release events… Godot docs: "Starts an interactive drag operation of the OS window using the current mouse position. Call this method when handling a mouse button being pressed (e.g., in _input or _gui_input). Implemented on Linux (X11/Wayland), macOS, and Windows."
+
+   Behavior details are for GUI humans to judge (per §9.6: whether the native drag is smoother, whether it can preserve click semantics, and whether it saves the window position properly are all accepted manually via GUI). So the code just implements the mechanism + evidence and reports honestly.
+
+   Therefore, the §9.1-override design:
+   - Constant `DRAG_B_MODE := "on_press"` (primary per §9.1) — hmm, but plan §3.2 says "Phase B default is on_threshold". §9.1 conflicts with it → §9 takes precedence. Set the constant to "on_press", and clearly document the rationale (human review §9.1 overrides plan default; the official docs also say to call on button press). And "on_threshold" is preserved as an experimental mode switchable by a constant.
+   
+   Actually, let's re-read §9.1: "DisplayServer.window_start_drag() should be called preferentially inside the InputEventMouseButton press event. Implementations that call it only after exceeding 6px can only be regarded as experimental, and its validity at that timing must not be assumed to be guaranteed." — right: prefer calling in the press event; calling after exceeding 6px is only experimental and its validity must not be assumed. So the default B mode = "on_press" (call on press event), and on_threshold is experimental.
+
+   Implementation of both modes via the constant:
+   - `DRAG_B_MODE = "on_press"` (default): on left press over the ship → immediately call `window_start_drag()`; set `_native_drag_active=true`; on release: post-hoc judgment — if net window displacement since press ≥6px → `native_drag_end` (drag), otherwise `ship_click` (click). Wait, but under on_press, while the OS drag is active Godot may not reliably receive the release event (§3.2's B: "_process detects release via the Input.get_mouse_button_mask() mask"). The plan already anticipated that mask-polling fallback.
+   - `DRAG_B_MODE = "on_threshold"` (experimental): on motion, displacement ≥6px while button is held → call window_start_drag() once.
+
+   Also per plan: in B mode after native drag starts, "thereafter do not set _win.position manually (delegate to OS)" and sample the trajectory: `native_drag_samples` every frame during B-mode native drag `[t_ms, win_x, win_y, mouse_x, mouse_y]`, cap 400. §3.4 says "native_drag_samples (during B mode each frame…)" — per-frame sampling during the B-mode native drag. Where? _process: if `_native_drag_active`, append a sample every frame (cap 400 per drag episode? "cap same as 400 points" — per episode, reset on press like _drag_samples).
+
+   Hmm, "during B mode each frame" could also mean per-frame whenever B mode is active… but that would sample forever even when not dragging. More reasonable: sample while a B-mode drag episode is in progress (_native_drag_active). Plan §3.2: "B-mode drag end detection and trajectory sampling" — sampling is for the drag. Sample while _native_drag_active is true, reset per press, cap 400.
+
+6. B drag end (§3.2): in `_process`, if `_native_drag_active` and `Input.get_mouse_button_mask() & MOUSE_BUTTON_MASK_LEFT == 0` → log `native_drag_end`, `_save_position()`, `_write_reports()`; clear _native_drag_active/_drag_pending/_dragging. Exit fallback keeps the existing `_write_final_reports()` → `_save_position()`.
+
+   Also handle the release event of the normal gui_input path in B mode (if release arrives as a gui_input event before _process polling): the release branch of _on_ship_gui_input already handles `_drag_pending` → save + write. In on_press mode, the click-vs-drag judgment needs the post-hoc check: if `_native_drag_active` (B mode), on end compute net displacement = |current win pos − _drag_start_win|; if < DRAG_THRESHOLD_PX → ship_click + native_drag_end? Per §3.2's B-fallback: "on drag end, if net window displacement <6px, count as click (ship_clicks+1)".
+
+   End handling design (single function `_end_b_drag()` called from both release event and mask polling):
+   - if `_native_drag_active`:
+     - net = Vector2(_win.position - _drag_start_win).length()
+     - if net < DRAG_THRESHOLD_PX: `_ship_clicks += 1`, log "ship_click" (post-hoc judgment in B mode)
+     - log "native_drag_end:samples=%d:net=%d" and `_save_position()`, `_write_reports()`
+     - reset flags.
+   
+   However, note: in on_press mode, macOS's performWindowDragWithEvent enters a modal native drag session; during the modal session Godot's main loop is paused (does _process keep running? performWindowDragWithEvent on macOS runs a modal event loop; Godot may not tick _process during the modal session — in fact during that modal loop the OS handles it and Godot is blocked in the display server call. Hmm, that's engine-internal detail; in Godot 4's macOS implementation: `window_start_drag` → sets an internal flag and next mouse-moved event calls `[view performWindowDragWithEvent:event]`… let's not over-engineer: implement per plan, add mask-polling fallback, and honestly note the runtime behavior in the GUI report.
+
+   Also under the modal drag, the release event may never arrive to Godot — hence the _process mask poll. If _process doesn't run during the modal session, then it will end after the session ends, and the next poll will catch mask==0 → end it. No issue.
+
+7. Mode interaction: if `_drag_mode == "A"` during a drag → the existing A logic is unchanged. If `_drag_mode == "B"`:
+   - Press: `_drag_pending = true`; freeze `_drag_start_cursor` (still useful for on_threshold) and `_drag_start_win`; reset `_drag_samples`, `_native_drag_samples`, count; if `DRAG_B_MODE == "on_press"` and `_window_start_drag_supported` → call `_start_native_drag()` (log "native_drag_start:on_press"). If unsupported → log "drag_b_unsupported" once and fall through to A behavior ("auto-handle with scheme A behavior, no silent degradation" — log and process).
+   - Motion while `_drag_pending`:
+     - If mode B and on_press and supported: OS handles movement, no manual movement; append native sample in _process; do nothing here (or just update samples; skip manual move).
+     - If mode B and on_threshold: compute d as in A; if not yet started and d ≥ 6: call `_start_native_drag()` (log "native_drag_start:on_threshold"), set `_native_drag_active=true`; thereafter do not move manually.
+     - If mode A (or unsupported B fallback): the existing A code is unchanged.
+
+   `_start_native_drag()`: 
+   ```
+   if not _window_start_drag_supported: log drag_b_unsupported once; return false
+   var wid := 0
+   if ClassDB.class_has_method("Window", "get_window_id"):
+       wid = _win.call("get_window_id")
+   else:
+       _log_event("drag_b_window_id_fallback:0")
+   DisplayServer.window_start_drag(wid)
+   _native_drag_active = true
+   ```
+   Note: DisplayServer.window_start_drag is a static method; can be called directly if it exists in ClassDB. But the script compiles against the engine itself (same 4.7.2), and the probe confirmed existence, so a direct call is safe. But for extra safety with the "never call an unverified API" spirit: use `DisplayServer.window_start_drag(...)` directly — it exists in this build (the capability probe reports it as true, and the script is run under the same engine). The plan says: probe at runtime before calling scheme B ClassDB.class_has_method(...) … when missing, _log_event("drag_b_unsupported") and auto-handle with scheme A behavior. So guard by a flag, direct call. OK.
+
+8. Status label: plan §5 says display "drag=A/B" in the label. Add " drag=A|B" and possibly fps-cap. Keep within reasonable bounds: `"... drag=%s ..."` plus [4]=A-mode drag [5]=B-mode drag [7]=FPS toggle.
+
+9. Report fields (§3.4): `drag_mode`, `window_start_drag_supported`, `drag_b_mode`, `native_drag_samples`, `fps_cap_default: 30`. Add to the state dict in _write_reports (which writes both STATE_PATH and MATRIX_PATH).
+
+10. §9.5: "Add an extra check for whether Input.use_accumulated_input affects scheme A's drag response frequency. If experimenting, preserve the 30 FPS canonical defaults." — Input.use_accumulated_input: in Godot 4, Input.use_accumulated_input = true (default) causes InputEventMouseMotion events to be accumulated per frame; setting to false dispatches motion events at OS rate (more frequent motion events, but _process still at 30fps — however, gui_input motion events are dispatched per OS event? Actually accumulated input merges multiple motion events into one per frame; setting use_accumulated_input=false makes each motion event dispatched individually, so _win.position gets updated at OS input rate, not just once per frame).
+
+    Wait — does that matter? In scheme A, position is set inside _on_ship_gui_input (event-driven, not _process). With use_accumulated_input=true (default), motion events are accumulated → one merged motion event per frame → window moves at ≤30Hz. Setting to false dispatches each motion event individually → window position updates at OS mouse rate (e.g., 125Hz+) even at 30FPS rendering. This is a big potential improvement to A mode smoothness!
+
+    §9.5 says: "Add a check for whether Input.use_accumulated_input affects scheme A's drag response frequency. If experimenting, preserve the 30 FPS canonical default." So should: verify/probe its existence and expose it in reports. "If experimenting" — add as a hotkey for experiments? The plan §3.1 hotkeys don't include one for it. Hmm — §9.5 says "extra check" (additional check). Options: (a) probe its existence and current value in reports; (b) add an experiment that toggles it. Minimal compliant approach: probe (does ClassDB's class_has_method not apply to properties — Input is a singleton; use `Input.get_property_list()` or ClassDB.class_has_property("Input","use_accumulated_input")). And optionally a hotkey for A mode. §9.5 says "if experimenting, preserve the 30 FPS canonical defaults" — experimenting is allowed, but the 30 FPS default must be preserved.
+
+    Cleanest: add to reports `input_accumulated_input` (current value) + probe existence via ClassDB.class_has_property("Input", "use_accumulated_input"). And add a hotkey? The plan's key table is 4/5/7 only. §9.5's "extra check" is about checking whether it affects A's drag frequency. A/B comparison in GUI + fps=60 control separates frame rate; accumulated input is the other half of that story. Adding key 6/8 is outside the plan's scope, but within the spirit of §9.5? Overreach is dangerous. Better: include the current value in reports, and mention in README/report that `Input.use_accumulated_input=true` (default, per-frame accumulation) caps scheme A's event-driven window movement at the frame rate (30Hz), and that an experimental toggle is possible. Actually — a simpler, safer way: log the value and existence as a report field. For "extra check… whether it affects", it suffices to record the value + explain in the README that the default is true (motion events are accumulated per frame → A mode's window-position updates are capped at frame rate; this is §1.1's ~26.8Hz observation). That satisfies the check without adding a new hotkey… but "if experimenting" suggests experimenting is permitted. To keep changes within scope, do not add a hotkey for it; document instead. Hmm, but "extra check … whether it affects" — a probe + honest analysis is enough. Actually, should I add a hotkey for A mode? Let's re-read: "5. Add extra check whether Input.use_accumulated_input affects scheme A's drag response frequency. If experimenting, preserve the 30 FPS canonical default."
+
+    Interpretation: in Phase B, check whether use_accumulated_input affects A's drag frequency. If we want to experiment with it, we must preserve 30 FPS as the default. Add a hotkey for toggle — key 8? Not defined in the plan; inventing keys not in the plan could be seen as scope creep. But this is a required "extra check" from human review, and the only way to test "whether it affects drag response frequency" in a headless GUI is a toggle. Since the GUI human judges (§9.6), giving them a toggle key is the practical implementation of §9.5. Add KEY_6? Hmm… plan uses 4/5 (drag mode) and 7 (fps). Natural adjacency: 6 = A-mode input accumulation toggle. Hmm, but wait — maybe a simpler alternative: set `Input.use_accumulated_input = false` at startup? No — that silently changes default A behavior; plan invariant §3.3-3 says A's drag logic is preserved row-for-row, and behavior and defaults are unchanged (§1.1). A hotkey is the experimental path.
+
+    Decision: add KEY_6 that toggles `Input.use_accumulated_input` (runtime-only; default at startup is the engine default = true, i.e., don't touch at startup), log "accum_input:on|off", report field `input_accumulated_input` = current value + `input_accumulated_supported` existence check. Document in README/report that this is an experiment per §9.5, and that 30 FPS default is not touched. This directly satisfies the "extra check … if experimenting" clause while preserving defaults.
+
+    Hmm, actually let's re-verify the Godot 4 API: `Input.use_accumulated_input` is a property on the Input singleton (bool, default true). In 4.x, the property `use_accumulated_input` exists on the Input singleton (since 4.1). The 4.7.2 build certainly has it. Probe with `ClassDB.class_has_property("Input", "use_accumulated_input")`… wait, ClassDB.class_has_property(class, name) — is that the 4.x name? In Godot 4 it's `ClassDB.class_has_property(class: StringName, property: StringName) -> bool`. Yes. Or check Input.get_property_list(). Use ClassDB.class_has_property.
+
+    Also note: does the Input singleton in headless have the property? Yes, Input exists in headless.
+
+11. Also KEY_7 toggle: `Engine.max_fps = 60 if Engine.max_fps == 30 else 30`? Plan: "Key 7: Engine.max_fps runtime-toggles between 30↔60, _log_event("fps_cap_toggle:30|60"); at startup always Engine.max_fps = 30". So if currently 30 → set to 60 and log "fps_cap_toggle:60"; otherwise set to 30 and log "fps_cap_toggle:30". Log the new value.
+
+12. _set_drag_mode resets _drag_pending/_dragging/_native_drag_active per §3.1, log "drag_mode:a|b".
+
+Also per §3.2: "afterward do not set _win.position manually (delegate to OS)" — ensure that the motion handler in B mode never manually sets position. And A mode is unchanged (unchanged row-for-row) — the existing A code path is unchanged (just gated by mode).
+
+Structure of _on_ship_gui_input (minimal diff):
+- Press branch: existing lines preserved; then B handling: if `_drag_mode == "B"`:
+  - if `DRAG_B_MODE == "on_press"` → attempt `_start_native_drag()`; if unsupported → fall back to A behavior (already logged).
+- Release branch: if `_native_drag_active`: call `_end_native_drag()` (does post-hoc click judgment per §9.2), skip A's release logic? A's release logic: if _drag_pending and not _dragging → click. In on_press B mode, `_dragging` stays false (never manually moved) → A logic counts every release as a click, which is wrong. So the release branch must branch: if `_native_drag_active`: `_end_native_drag()` (post-hoc judgment per §9.2), otherwise: existing A logic.
+- Motion branch: if `_native_drag_active`: return (OS moves the window; sampling is done in _process). If mode is B and on_threshold: threshold → start native; if started, skip manual move. Else A path unchanged.
+
+Let's write the code carefully with tabs for GDScript indentation (file uses tabs).
+
+Also update _process: FPS window (unchanged) + add B-mode release polling + native sampling.
+
+Code:
+
+```gdscript
+const DRAG_B_MODES: String? — no. Use:
+# SPIKE-001-FIX-002 scheme B sub-mode constant: "on_press" (primary per §9.1: call inside button press event)
+# or "on_threshold" (experimental: call only after exceeding 6px, validity at that timing must not be assumed).
+const DRAG_B_MODE := "on_press"
+```
+
+Vars:
+```gdscript
+var _drag_mode := "A"
+var _window_start_drag_supported := false
+var _window_get_window_id_supported := false
+var _native_drag_active := false
+var _native_drag_start_logged := false
+var _native_drag_samples: Array = []
+var _native_drag_sample_count := 0
+var _accum_input_supported := false
+```
+
+_ready additions (after _mouse_pos_supported line):
+```gdscript
+	_window_start_drag_supported = ClassDB.class_has_method("DisplayServer", "window_start_drag")
+	_window_get_window_id_supported = ClassDB.class_has_method("Window", "get_window_id")
+	_accum_input_supported = ClassDB.class_has_property("Input", "use_accumulated_input")
+```
+Engine.max_fps = 30 already exists at startup.
+
+_unhandled_input additions:
+```gdscript
+		KEY_4:
+			_set_drag_mode("A")
+		KEY_5:
+			_set_drag_mode("B")
+		KEY_6:
+			_toggle_accumulated_input()
+		KEY_7:
+			_toggle_fps_cap()
+```
+
+Functions:
+```gdscript
+# ---------- SPIKE-001-FIX-002: drag mode (key 4=A / key 5=B), FPS control (key 7), input accumulation (key 6) ----------
+
+func _set_drag_mode(mode: String) -> void:
+	_drag_mode = mode
+	# On switch, reset drag state to avoid cross-mode residue (§3.1).
+	_drag_pending = false
+	_dragging = false
+	_native_drag_active = false
+	_log_event("drag_mode:%s" % ("a" if mode == "A" else "b"))
+	_update_status()
+
+
+func _toggle_fps_cap() -> void:
+	# SDD-175: the canonical default is 30; key 7 only provides a runtime 60 control for a single GUI session, does not change after restart.
+	Engine.max_fps = 60 if Engine.max_fps != 60 else 30
+	_log_event("fps_cap_toggle:%d" % Engine.max_fps)
+	_update_status()
+
+
+func _toggle_accumulated_input() -> void:
+	# §9.5 experiment: use_accumulated_input=true (engine default) merges mouse motion per frame → A-mode window position update is capped by frame rate.
+	if not _accum_input_supported:
+		_log_event("accum_input_unsupported:Input.use_accumulated_input")
+		return
+	Input.use_accumulated_input = not Input.use_accumulated_input
+	_log_event("accum_input:%s" % ("on" if Input.use_accumulated_input else "off"))
+	_update_status()
+```
+
+_start_native_drag:
+```gdscript
+func _start_native_drag(note: String) -> bool:
+	if not _window_start_drag_supported:
+		if not _drag_unsupported_logged:
+			_drag_unsupported_logged = true
+			_log_event("drag_b_unsupported:DisplayServer.window_start_drag")
+		return false
+	var wid := 0
+	if _window_get_window_id_supported:
+		wid = int(_win.call("get_window_id"))
+	else:
+		# §3.1 probe-based fallback: if Window.get_window_id is missing, pass 0 (main window) and log honestly.
+		_log_event("drag_b_window_id_fallback:0")
+	DisplayServer.window_start_drag(wid)
+	_native_drag_active = true
+	_drag_pending = false
+	_dragging = false
+	_native_drag_samples = []
+	_native_drag_sample_count = 0
+	_log_event("native_drag_start:%s" % note)
+	_update_status()
+	return true
+```
+
+Hmm wait — on fallback to A in B mode: plan says "when missing, _log_event("drag_b_unsupported") and auto-handle with scheme A behavior, no silent degradation". So in B mode if unsupported: fall through to A behavior (manual move). _drag_unsupported_logged is reused (reset in press branch). Good.
+
+_end_native_drag:
+```gdscript
+func _end_native_drag() -> void:
+	if not _native_drag_active:
+		return
+	var net := Vector2(_win.position - _drag_start_win).length()
+	if net < DRAG_THRESHOLD_PX:
+		# §9.2 B-mode post-hoc threshold judgment: net displacement <6px → count as click (README documents the semantic difference explicitly).
+		_ship_clicks += 1
+		_log_event("ship_click:native_b_postcheck")
+	_log_event("native_drag_end:samples=%d:net_px=%.1f" % [_native_drag_sample_count, net])
+	_native_drag_active = false
+	_save_position()
+	_write_reports()
+	_update_status()
+```
+
+Hmm wait — event names: plan §3.2 says "log native_drag_end". Plan B-fallback: "on drag end, if net window displacement <6px, count as click (ship_clicks+1)". My event "ship_click:native_b_postcheck" — A-mode event is exactly "ship_click". To keep event parsing consistent, log "ship_click" and then "native_drag_end:...". Let's log "ship_click" and "native_drag_end:samples=%d:net_px=%d" separately. Cleaner.
+
+_on_ship_gui_input release branch fix:
+```gdscript
+		else:
+			if _native_drag_active:
+				# SPIKE-001-FIX-002 scheme B: release inside a native drag session → post-hoc threshold judgment + save.
+				_end_native_drag()
+				return? (then _drag_pending is already false; but A's release logic below checks _drag_pending)
+			if _drag_pending and not _dragging:
+			...
+```
+Note: in _start_native_drag I set `_drag_pending=false`. Then A's release logic `if _drag_pending and not _dragging` does not fire — good, no double click. And `if _drag_pending: _save_position()` is also skipped — but _end_native_drag saves. Good. Actually wait: should we set _drag_pending=false in _start_native_drag? §3.1 says to reset on mode switch. During a B drag, the release branch of gui_input may arrive while _native_drag_active is true — handled by the _end_native_drag check first. The mask poll also handles it. Keep _drag_pending=false after native start to avoid the A path saving twice. No problem.
+
+Motion branch fix:
+```gdscript
+	elif event is InputEventMouseMotion and _drag_pending:
+		if _native_drag_active:
+			return  # OS is already moving the window, no manual move (§3.2)
+		if _drag_mode == "B" and _window_start_drag_supported and DRAG_B_MODE == "on_threshold":
+			# Experimental sub-mode: only after reaching 6px do we hand off to the OS; validity at that timing is judged manually in GUI (§9.1)
+			if not _mouse_pos_supported: ... hmm, on_threshold needs a mouse position for distance measurement
+```
+Hmm, the on_threshold sub-mode needs a frozen cursor reference for displacement. If _mouse_pos_supported is false, on_threshold can't judge → log drag_b_unsupported? Edge case; this build has mouse_get_position (probe is true). Handle it: on_threshold requires _mouse_pos_supported; if false, fall through to A behavior (which itself early-returns with unsupported log). Simpler: on_threshold sub-mode:
+
+```gdscript
+		if _drag_mode == "B" and DRAG_B_MODE == "on_threshold" and _window_start_drag_supported and _mouse_pos_supported:
+			var cur2 := DisplayServer.mouse_get_position()
+			var d2 := Vector2(cur2 - _drag_start_cursor)
+			if d2.length() >= DRAG_THRESHOLD_PX:
+				_start_native_drag("on_threshold")
+			return
+		# —— scheme A (row-for-row preserved) ——
+		if not _mouse_pos_supported:
+			...
+```
+
+Press branch:
+```gdscript
+		if event.pressed:
+			_drag_pending = true
+			_dragging = false
+			_drag_unsupported_logged = false
+			# Fix B: ... (unchanged)
+			if _mouse_pos_supported:
+				_drag_start_cursor = DisplayServer.mouse_get_position()
+			_drag_start_win = _win.position
+			_drag_samples = []
+			_drag_sample_count = 0
+			_native_drag_samples = []
+			_native_drag_sample_count = 0
+			# SPIKE-001-FIX-002 scheme B on_press (§9.1): hand off to the OS directly in the button press event.
+			if _drag_mode == "B" and DRAG_B_MODE == "on_press" and _window_start_drag_supported:
+				_start_native_drag("on_press")
+```
+(If _window_start_drag_supported is false in B mode: motion handler falls to A path; the A path logs drag_unsupported for missing mouse_get_position, but not for missing window_start_drag. We need a "drag_b_unsupported" log per §3.1. My _start_native_drag logs it, but under on_press mode it isn't called on press? No — it is called; the condition is `if _drag_mode == "B" and DRAG_B_MODE == "on_press" and _window_start_drag_supported: _start_native_drag(...)` — if unsupported, _start_native_drag isn't called, so no log. Fix: when in B mode and unsupported, call `_start_native_drag("...")` unconditionally and log drag_b_unsupported and return false, and A behavior continues via motion path. Let's restructure: in press branch:
+```gdscript
+			if _drag_mode == "B":
+				if DRAG_B_MODE == "on_press":
+					_start_native_drag("on_press")   # logs drag_b_unsupported internally and returns false when API missing
+```
+And in motion branch:
+```gdscript
+		if _drag_mode == "B" and DRAG_B_MODE == "on_threshold" and not _native_drag_active:
+			if _start_native_drag("on_threshold") ... but only on threshold
+```
+But _start_native_drag unconditionally starts; the threshold check is needed first. And the unsupported log should only happen once — _drag_unsupported_logged guards it. In the on_threshold motion:
+```gdscript
+		if _drag_mode == "B" and DRAG_B_MODE == "on_threshold":
+			if _window_start_drag_supported and _mouse_pos_supported:
+				var cur := DisplayServer.mouse_get_position()
+				var d := Vector2(cur - _drag_start_cursor)
+				if d.length() >= DRAG_THRESHOLD_PX:
+					_start_native_drag("on_threshold")
+				return
+			# Missing prerequisite → degrade to scheme A and log honestly (§3.1, no silent handling)
+			if not _drag_unsupported_logged:
+				_drag_unsupported_logged = true
+				_log_event("drag_b_unsupported:DisplayServer.window_start_drag_or_mouse_get_position")
+```
+And _start_native_drag also logs drag_b_unsupported when unsupported (the on_press path). Keep the guard inside _start_native_drag, and use the same guard on the motion path. OK.
+
+_process addition:
+```gdscript
+func _process(_delta: float) -> void:
+	if _native_drag_active:
+		# §3.2: the OS may swallow the release event → left-button mask polling fallback; also collect per-frame trajectory samples (§3.4).
+		if Input.get_mouse_button_mask() & MOUSE_BUTTON_MASK_LEFT == 0:
+			_end_native_drag()
+		elif _native_drag_sample_count < DRAG_SAMPLE_CAP:
+			_native_drag_sample_count += 1
+			var mp := DisplayServer.mouse_get_position() if _mouse_pos_supported else Vector2i(-1, -1)
+			_native_drag_samples.append([Time.get_ticks_msec(), _win.position.x, _win.position.y, mp.x, mp.y])
+	_fps_window_frames += 1
+	...
+```
+Hmm, plan: native_drag_samples is `[t_ms, win_x, win_y, mouse_x, mouse_y]` during B mode, cap 400. Sampling with mouse_get_position every frame in _process (existence already probed). If missing, use -1 sentinel — fine, logged honestly (mouse_get_position_supported field is in the report).
+
+_update_status: add drag mode display and keys. Per plan §5 mapping, the label should show `drag=A/B`. Update text:
+```gdscript
+	var state := "DRAG" if _dragging else ("NDRAW"? ...)
+```
+Keep: state = "DRAG" if _dragging else ("HOLD" if _drag_pending else ("NDRAG" if _native_drag_active else "IDLE")). Label line:
+```
+"SPIKE-001 variant=%s drag=%s %s fps=%d/%d fps=%.1f pos=(%d,%d) clicks=%d\n[1]pen full [2]pen ship(default) [3]pen off [4]dragA [5]dragB [6]accum %s [7]FPS ctrl [9]capture [Q]exit"
+```
+Keep concise and ASCII-ish; existing label is in Chinese. Draft:
+```gdscript
+	label.text = "SPIKE-001 variant=%s drag=%s%s fps=%.1f pos=(%d,%d) clicks=%d\n[1]full [2]poly(default) [3]off [4]drag=A [5]drag=B [6]accum=%s [7]fps30/60 [9]png [Q]exit" % [...]
+```
+Wait, plan: "display drag=A/B in label". Keep the fps window display. Also fps cap: `Engine.max_fps` to show the 30/60 state. And accum state. Fine.
+
+_write_reports additions (§3.4):
+```gdscript
+		"drag_mode": _drag_mode,
+		"drag_b_mode": DRAG_B_MODE,
+		"window_start_drag_supported": _window_start_drag_supported,
+		"window_get_window_id_supported": _window_get_window_id_supported,
+		"native_drag_samples": _native_drag_samples,
+		"native_drag_sample_count": _native_drag_sample_count,
+		"fps_cap_default": 30,
+		"input_accumulated_supported": _accum_input_supported,
+		"input_accumulated_input": (Input.use_accumulated_input if _accum_input_supported else null),
+```
+§3.4 enumerates: drag_mode, window_start_drag_supported, drag_b_mode, native_drag_samples, fps_cap_default:30. Add the accum-related fields as §9.5 checks. OK.
+
+Note: existing fields are unchanged.
+
+Now README changes:
+- Key table: add rows for 4/5/6/7 (6 is the accum experiment per §9.5).
+- Manual acceptance matrix: add G-002d (A/B smoothness comparison), G-002e (B-mode click/threshold semantics judgment — including semantic difference of on_press post-hoc 6px judgment), G-002f (position restore after B drag on restart), G-004b (must restore 30 after 60 FPS control).
+- §4 known boundaries: record scheme B semantics (on_press primary per §9.1, on_threshold experimental; 6px semantics degradation explanation: B-mode post-hoc judgment; OS may swallow release → mask polling fallback; crash may leave final drag position unsaved).
+- Document §9.5 use_accumulated_input analysis.
+
+Also document the §9.2 obligation: "scheme B must, if it cannot preserve the exact same threshold, explicitly document this in the README and the test report" — the README matrix and my report.md must document this explicitly.
+
+capability_probe.gd: plan says "in principle no changes in this ticket; if Phase B needs to add a Window.get_window_id existence probe, keep it minimal". §3.1 mentions probing Window.get_window_id. Adding it to capability.json makes GUI evidence machine-readable. Minimal addition:
+```gdscript
+		"display_server_methods": { ... existing ... },
+		"window_methods": {
+			"get_window_id": ClassDB.class_has_method("Window", "get_window_id"),
+		},
+		"input_properties": {
+			"use_accumulated_input": ClassDB.class_has_property("Input", "use_accumulated_input"),
+		},
+```
+Hmm, "only if needed… minimal addition". Useful for GUI evidence. The Input accum check (§9.5) also benefits from a probe. Keep both to minimal additions. Actually, watch scope creep — plan §2 table says capability_probe.gd is "only if needed" (only when needed). Needed? The report fields inside observed_state already cover drag_mode etc. For the §9.5 "extra check" (Input.use_accumulated_input), a machine-readable probe is the evidence of that check. And get_window_id is probed in observed_state.json via window_get_window_id_supported. Adding input_properties.use_accumulated_input + current value to capability_probe is a small, honest addition that supports §9.5. Add minimally:
+
+```gdscript
+		# SPIKE-001-FIX-002: §9.5 extra check — existence and current value of Input.use_accumulated_input (affects A-mode motion event frequency).
+		"input_accumulated_input_supported": ClassDB.class_has_property("Input", "use_accumulated_input"),
+		"input_accumulated_input_value": bool(Input.use_accumulated_input) if ClassDB.class_has_property("Input", "use_accumulated_input") else null,
+```
+
+Wait, GDScript's ternary with null: `(Input.use_accumulated_input if cond else null)` — type Variant, fine.
+
+Also window get_window_id: add to display_server_methods? That's a Window-class method, not a DisplayServer method. Add "window_methods": {"get_window_id": ...}. Keep minimal.
+
+Now — does ClassDB.class_has_method("DisplayServer", "window_start_drag") exist as a static? Yes, already used in this file. ClassDB.class_has_property — Godot 4 name: `class_has_property(class: StringName, property: StringName) -> bool`. Yes.
+
+One risk: in 4.7 (fictional future version), `Window.get_window_id` — plan §3.1 says probe at runtime, fallback 0. My _start_native_drag handles both. Direct call `DisplayServer.window_start_drag(wid)` compiles only if the method exists in the compiled engine — same build 4.7.2 where the probe reported true, so compile OK. If it didn't exist, script compile would fail (SCRIPT ERROR) — headless T1a catches that. Fine.
+
+Also `Input.get_mouse_button_mask()` exists in Godot 4 (returns int). MOUSE_BUTTON_MASK_LEFT constant exists. Good.
+
+Also `_notification` fallback is already there → exit via _write_final_reports → _save_position + _write_reports. Good, covers §3.2 exit fallback.
+
+Also §3.3 invariants: don't write 60 into project.godot; don't touch keys 1/2/3; keep DRAG_THRESHOLD_PX 6.0.
+
+Another detail — key handling: `event.keycode` for KEY_4/5/6/7 — no issue.
+
+Also B on_press: on ship press → immediately start native drag. On macOS, performWindowDragWithEvent… actually in Godot 4's macOS implementation: `DisplayServer::window_start_drag` → `[view performWindowDragWithEvent:event]` needs an NSEvent; Godot's mm_mouse_down handling in Godot macOS: sets `_window_utils->set_window_order`… Godot 4's MacosDisplayServer::window_start_drag(p_window) — signature takes an int window ID. Implementation: `OS.get_main_loop()->call_deferred...` actually, per official docs (cited in plan §7): "Starts an interactive drag operation of the OS window using the current mouse position. Call this method when handling a mouse button being pressed." Signature: `window_start_drag(window: int)`. Good — my call with get_window_id() matches the actual signature (macOS implementation ignores it / uses it). OK.
+
+Also, if on_press B mode and OS cancels the drag on a click without movement: on release, does Godot receive the release gui_input? If the release gui_input arrives, the release branch fires with _native_drag_active → _end_native_drag → net≈0 → ship_click. If release is swallowed, the _process mask poll fires. Either way handled.
+
+Edge: on_press mode, mask poll on the next _process tick may fire before release (during drag, button is held → mask non-zero → sample). But race: between the press gui_input and the first _process, the button is… the press event arrives during input dispatch before the frame's _process? Godot order: _process then flush key/mouse? Godot main-loop order is: input events processed → physics → idle (_process). During a mouse-button-down frame, _process may run after input processing; button is still held → mask contains LEFT → no false end. Good. But if the user clicked super-fast (press+release within one frame)? gui_input release arrives before next _process; the release branch handles it (native_drag_active is true → end). OK.
+
+Edge: in B on_press mode, does the ship still receive gui_input events during a native drag? Possibly not (modal session). Not a problem.
+
+Now _update_status also needs `_drag_mode` and the accum state. Let's write the final code.
+
+Also — invariant "scheme A drag logic … preserved row-for-row": my press/motion additions are gated by _drag_mode=="B"; A path text is unchanged. Press branch additions are additive lines under `if _drag_mode == "B":`. Motion branch: new branch inserted before A logic, guarded by `_drag_mode == "B"`, with `return` for B. A path is unchanged. Release branch: insert `if _native_drag_active: _end_native_drag()` before A logic. _native_drag_active is only set in B mode, so A is unchanged.
+
+Now let's write the file. Use the edit tool to create overlay_window.gd.
+
+Edit plan for overlay_window.gd:
+
+Edit 1 — constants block: after `const DRAG_THRESHOLD_PX := 6.0` line, add:
+```
+# SPIKE-001-FIX-002 scheme B sub-mode constant (§9.1 takes precedence over plan §3.2's B-default default value):
+#   "on_press"    = primary: call window_start_drag() inside the left button press event (official docs semantics).
+#   "on_threshold"= experimental: call only after reaching 6px threshold; must not assume validity at that timing, GUI manual judgment.
+const DRAG_B_MODE := "on_press"
+```
+
+Edit 2 — vars: after `var _drag_sample_count := 0` (line 39) add:
+```
+# SPIKE-001-FIX-002: scheme B (native drag) state and trajectory samples; §9.5 input accumulation experiment.
+var _drag_mode := "A"
+var _window_start_drag_supported := false
+var _window_get_window_id_supported := false
+var _native_drag_active := false
+var _native_drag_samples: Array = []
+var _native_drag_sample_count := 0
+var _accum_input_supported := false
+```
+
+Edit 3 — _ready: after the line `_variant_api["displayserver_mouse_get_position"] = _mouse_pos_supported` add:
+```
+	# SPIKE-001-FIX-002: runtime API existence probes (§3.1, §9.5). Never call unverified APIs.
+	_window_start_drag_supported = ClassDB.class_has_method("DisplayServer", "window_start_drag")
+	_window_get_window_id_supported = ClassDB.class_has_method("Window", "get_window_id")
+	_accum_input_supported = ClassDB.class_has_property("Input", "use_accumulated_input")
+```
+
+Edit 4 — _process: prepend inside function:
+```
+	if _native_drag_active:
+		# §3.2: the OS may swallow the release → left-button mask polling fallback; §3.4 collect per-frame trajectory samples (cap 400).
+		if Input.get_mouse_button_mask() & MOUSE_BUTTON_MASK_LEFT == 0:
+			_end_native_drag()
+		elif _native_drag_sample_count < DRAG_SAMPLE_CAP:
+			_native_drag_sample_count += 1
+			var mp := DisplayServer.mouse_get_position() if _mouse_pos_supported else Vector2i(-1, -1)
+			_native_drag_samples.append([Time.get_ticks_msec(), _win.position.x, _win.position.y, mp.x, mp.y])
+```
+Note: `var mp := ... if ... else ...` with type inference — ternary of Vector2i/Vector2i → Vector2i, fine.
+
+Edit 5 — _unhandled_input: add KEY_4/5/6/7 before KEY_9:
+```
+		KEY_4:
+			_set_drag_mode("A")
+		KEY_5:
+			_set_drag_mode("B")
+		KEY_6:
+			_toggle_accumulated_input()
+		KEY_7:
+			_toggle_fps_cap()
+```
+
+Edit 6 — press branch: after `_drag_sample_count = 0` add:
+```
+			_native_drag_samples = []
+			_native_drag_sample_count = 0
+			# SPIKE-001-FIX-002 scheme B · on_press (§9.1): hand off to the OS window server directly in the button press event.
+			if _drag_mode == "B" and DRAG_B_MODE == "on_press":
+				_start_native_drag("on_press")
+```
+(When API missing, _start_native_drag logs drag_b_unsupported and returns; _native_drag_active stays false → subsequent motion events go through scheme A behavior, not silent.)
+
+Edit 7 — release branch: prepend:
+```
+			if _native_drag_active:
+				# SPIKE-001-FIX-002 scheme B: release inside a native drag session → post-hoc 6px judgment + save (§9.2 semantics difference, README documents explicitly).
+				_end_native_drag()
+				return
+```
+Hmm — but A's release logic also does `_update_status()`. _end_native_drag calls _update_status. Return skips A logic (in B native, _drag_pending is false anyway, so even without the return A logic does nothing; but the return is explicit). Wait: after _start_native_drag, _drag_pending=false. So A's release logic does nothing. But if _end_native_drag returns without setting _drag_pending (it's already false)… for safety, _end_native_drag also sets `_drag_pending = false; _dragging = false`.
+
+Edit 8 — motion branch: prepend inside elif body:
+```
+		if _drag_mode == "B" and DRAG_B_MODE == "on_threshold" and not _native_drag_active:
+			# Experimental sub-mode (§9.1: must not assume validity at this timing, GUI manual judgment): only after reaching 6px, hand off to the OS.
+			if _window_start_drag_supported and _mouse_pos_supported:
+				var cur_d := DisplayServer.mouse_get_position()
+				if Vector2(cur_d - _drag_start_cursor).length() >= DRAG_THRESHOLD_PX:
+					_start_native_drag("on_threshold")
+				return
+			if not _drag_unsupported_logged:
+				_drag_unsupported_logged = true
+				_log_event("drag_b_unsupported:window_start_drag_or_mouse_get_position")
+		if _native_drag_active:
+			return  # OS is moving the window, no manual move (§3.2)
+```
+And A logic continues unchanged below.
+
+Wait, order: if _drag_mode=="B" and on_press mode (default) and native is active → motion events (if any arrive) fall to the A path and would set _win.position manually! The `if _native_drag_active: return` guard must come before the A path — yes, I put it after the on_threshold branch. And if on_threshold's branch `return`s, we're fine. In on_press with native not active (API missing → B degrades to A) → falls to A path. Good.
+
+But note: in on_press mode after _start_native_drag sets _drag_pending=false → the motion branch's `elif event is InputEventMouseMotion and _drag_pending` won't fire at all (pending is false). So in on_press B, the motion guard is moot but harmless. In on_threshold, pending stays true until native starts, then false. Hmm — I set _drag_pending=false in _start_native_drag; then post-start motion events are skipped. OK.
+
+But wait: in B mode after native drag has started, release event: `_drag_pending` is false → `else:` release branch of the gui_input press/release: my new `if _native_drag_active: _end_native_drag(); return` is inside the release `else:` branch before the _drag_pending check — fires regardless of pending. Good.
+
+Edit 9 — new functions after the drag section (after _on_ship_gui_input, before the "---------- position persistence" section):
+```gdscript
+# ---------- SPIKE-001-FIX-002: drag mode A/B and scheme B native drag ----------
+
+func _set_drag_mode(mode: String) -> void:
+	_drag_mode = mode
+	# Immediately reset drag state on switch (§3.1), so A/B can be tested independently (§9.3).
+	_drag_pending = false
+	_dragging = false
+	_native_drag_active = false
+	_log_event("drag_mode:%s" % ("a" if mode == "A" else "b"))
+	_update_status()
+
+
+func _toggle_fps_cap() -> void:
+	# SDD-175: at startup always 30 (in _ready); key 7 only provides a 60 control for a single GUI session, not written into project settings.
+	Engine.max_fps = 60 if Engine.max_fps != 60 else 30
+	_log_event("fps_cap_toggle:%d" % Engine.max_fps)
+	_update_status()
+
+
+func _toggle_accumulated_input() -> void:
+	# §9.5 experiment: use_accumulated_input (engine default true) merges mouse motions per frame
+	# → under 30 FPS, A-mode window position update is capped at about 26.8Hz; turning off dispatches each motion event separately.
+	if not _accum_input_supported:
+		_log_event("accum_input_unsupported:Input.use_accumulated_input")
+		return
+	Input.use_accumulated_input = not Input.use_accumulated_input
+	_log_event("accum_input:%s" % ("on" if Input.use_accumulated_input else "off"))
+	_update_status()
+
+
+func _start_native_drag(note: String) -> void:
+	if not _window_start_drag_supported:
+		# §3.1: when API is missing, honestly log and auto-handle with scheme A behavior, no silent degradation.
+		if not _drag_unsupported_logged:
+			_drag_unsupported_logged = true
+			_log_event("drag_b_unsupported:DisplayServer.window_start_drag")
+		return
+	var wid := 0
+	if _window_get_window_id_supported:
+		wid = int(_win.call("get_window_id"))
+	else:
+		# Probe-based fallback (§3.1): if Window.get_window_id is missing, pass 0 (main window) and log honestly.
+		_log_event("drag_b_window_id_fallback:0")
+	DisplayServer.window_start_drag(wid)
+	_native_drag_active = true
+	_drag_pending = false
+	_dragging = false
+	_native_drag_samples = []
+	_native_drag_sample_count = 0
+	_log_event("native_drag_start:%s" % note)
+	_update_status()
+
+
+func _end_native_drag() -> void:
+	if not _native_drag_active:
+		return
+	_native_drag_active = false
+	_drag_pending = false
+	_dragging = false
+	# §9.2 semantics difference (README §2 matrix G-002e documents this explicitly): scheme B's 6px threshold degrades to post-hoc judgment ——
+	# net window displacement since press <6px is counted as a click; ≥6px is counted as a drag.
+	var net := Vector2(_win.position - _drag_start_win).length()
+	if net < DRAG_THRESHOLD_PX:
+		_ship_clicks += 1
+		_log_event("ship_click")
+	_log_event("native_drag_end:samples=%d:net_px=%.1f" % [_native_drag_sample_count, net])
+	_save_position()
+	_write_reports()
+	_update_status()
+```
+
+Hmm, in on_press mode, if the OS doesn't actually drag (e.g., unsupported in this build → but we only call when supported) — the post-hoc judgment is fine either way.
+
+Edit 10 — _write_reports: after "mouse_get_position_supported" line add:
+```
+		"drag_mode": _drag_mode,
+		"drag_b_mode": DRAG_B_MODE,
+		"window_start_drag_supported": _window_start_drag_supported,
+		"window_get_window_id_supported": _window_get_window_id_supported,
+		"native_drag_samples": _native_drag_samples,
+		"native_drag_sample_count": _native_drag_sample_count,
+		"fps_cap_default": 30,
+		"input_accumulated_input_supported": _accum_input_supported,
+		"input_accumulated_input": (Input.use_accumulated_input if _accum_input_supported else null),
+```
+
+Edit 11 — _update_status label:
+```gdscript
+	var state := "NDRAG" if _native_drag_active else ("DRAG" if _dragging else ("HOLD" if _drag_pending else "IDLE"))
+	var accum := "?"
+	if _accum_input_supported:
+		accum = "on" if Input.use_accumulated_input else "off"
+	label.text = "SPIKE-001 variant=%s drag=%s %s fps=%d/%.1f pos=(%d,%d) clicks=%d accum=%s\n[1]full [2]poly(default) [3]off [4]dragA [5]dragB [6]accum [7]30/60 [9]png [Q]exit" % [
+		_variant, _drag_mode, state, Engine.max_fps, _fps_last, _win.position.x, _win.position.y, _ship_clicks, accum
+	]
+```
+
+Also, GDScript ternary: `(Input.use_accumulated_input if _accum_input_supported else null)` — assignment to a dict value (Variant) is fine.
+
+Type inference `var mp := DisplayServer.mouse_get_position() if _mouse_pos_supported else Vector2i(-1, -1)` — ternary of Vector2i and Vector2i → OK.
+
+`"net_px=%.1f" % net` net is float — OK.
+
+Also `"drag_mode:%s" % ("a" if mode == "A" else "b")` is fine.
+
+Now README edits:
+1. Key table: add rows:
+```
+| 4 | Drag mode A: scheme A manual drag (screen coordinate frozen baseline, **default at startup**, FIX-001 behavior preserved) |
+| 5 | Drag mode B: macOS native drag `DisplayServer.window_start_drag()` (OS window server tracking, not limited by 30 FPS frame loop) |
+| 6 | (SPIKE-001-FIX-002 §9.5 experiment) Toggle `Input.use_accumulated_input` (engine default=true merges motions per frame) → affects A-mode drag response frequency |
+| 7 | (SPIKE-001-FIX-002) Runtime 30↔60 FPS control hotkey; **canonical default and restart are always 30 (SDD-175)**, 60 exists only in a single GUI session |
+```
+2. Matrix: add G-002d/e/f, G-004b:
+```
+| G-002d | Press 4/5 to switch to A/B, press the ship in each mode and drag quickly, then release | B (native drag) is noticeably smoother than A, or honestly record the gap; `observed_state.json`'s `native_drag_samples` [t_ms,win_x,win_y,mouse_x,mouse_y] should show window position update frequency exceeding 30Hz (A mode ≈26.8Hz) | |
+| G-002e | Lightly click the ship (<6px) in B mode, then release | Click semantics: `ship_clicks+1` under B-mode post-hoc judgment; **B mode's 6px is "net displacement judgment after drag end", not A mode's "start drag when reaching 6px" —— semantic difference is documented explicitly, manual judgment** | |
+| G-002f | Release after B-mode drag ≥6px, exit and restart | Window at post-drag position (B mode also goes through `_save_position()`, position persistence is mode-independent) | |
+| G-004b | After key 7 switches to 60, exit and restart | Label and report `max_fps` revert to 30 after restart; 60 must not persist across sessions | |
+```
+3. §4 known boundaries: add bullet block for SPIKE-001-FIX-002:
+```
+- SPIKE-001-FIX-002 scheme B (native drag) semantics and known boundaries:
+  - Per §9.1 (human review takes precedence), the `DRAG_B_MODE` constant default is `"on_press"`: call `window_start_drag()` inside the button press event;
+    `"on_threshold"` (call only after exceeding 6px) is only an experimental timing, validity is judged manually in GUI, and must not be assumed valid by default.
+  - Scheme B cannot preserve the exact same 6px threshold semantics (§9.2 explicit documentation obligation): A mode = "only start drag when displacement reaches 6px";
+    B mode = "OS immediately takes over on press, on end judge click (net displacement <6px) or drag by net displacement". In both modes the constant `DRAG_THRESHOLD_PX=6.0` is unchanged.
+  - The OS may swallow the release event → `_process`'s left-button mask polling fallback (`native_drag_end` + position save + report write); on crash, the final drag position may not be saved, honest record.
+  - If in GUI measurement scheme B does not take over the window, or produces focus/occlusion anomalies: keep scheme A (A/B are independent, key 4 can always be switched back, §9.3), the judgment of "native drag is incompatible" is submitted to manual, no silent scheme change or requirement degradation.
+  - §9.5: `Input.use_accumulated_input` (default true) merges mouse motions per frame, is one cause capping A-mode window position update at 30Hz; key 6 toggles for experiments,
+    and the 30 FPS canonical default is not touched at all (key 7 only affects runtime FPS control).
+  - Headless exit=0 only proves that the script/scene can be loaded without error; whether the native drag is smoother, whether click semantics is preserved, whether position saves normally is all manually accepted in GUI (§9.6).
+```
+
+capability_probe.gd: minimal addition inside the report dict:
+```gdscript
+		# SPIKE-001-FIX-002: §3.1 window ID acquisition method + §9.5 mouse motion accumulation experiment prerequisites (probe only, don't change behavior).
+		"window_methods": {
+			"get_window_id": ClassDB.class_has_method("Window", "get_window_id"),
+		},
+		"input_properties": {
+			"use_accumulated_input": ClassDB.class_has_property("Input", "use_accumulated_input"),
+		},
+```
+Also record current value of use_accumulated_input:
+```gdscript
+		"input_accumulated_input_value": null,
+```
+Then after report construction: `if ClassDB.class_has_property("Input", "use_accumulated_input"): report["input_accumulated_input_value"] = Input.use_accumulated_input`. Simpler inline via ternary in the dict. GDScript ternary: `"input_accumulated_input_value": (Input.use_accumulated_input if ClassDB.class_has_property("Input", "use_accumulated_input") else null),` — fine.
+
+Then run the tests (plan §4 T0–T6):
+- T0: --version → expect 0, 4.7.2…
+- T1a: --check-only --script res://scripts/overlay_window.gd
+- T1b: --check-only --script res://scripts/capability_probe.gd
+- T2: plain headless run (test_cmd)
+- T3a/T3b: renderer variants
+- T4: pgrep -l Godot (expect 1)
+- T5: python3 -m json.tool on the 3 reports + check for new fields
+- T6: git status --porcelain + git diff --stat — changes are only tests/spike/overlay/**, no queue.json.
+
+Note: --check-only --script: Godot exit code 0 with "Script is ok"? Fine.
+
+Note: T2 headless run overwrites report/*.json (currently the committed headless state; the GUI evidence is preserved at d535e55 by the scheduler — verified above). No problem, per plan risk 3 (§9.4) the backup was the scheduler's job and is done.
+
+Also the headless run writes the report with the new fields — T5 verifies the presence of the new fields.
+
+Note: sandbox is workspace-write under /Users/rain/DevGame/Fishing — writing reports there is fine. Godot writes user:// to ~/Library — may be blocked by sandbox? plan §4 says "under agent sandbox user:// unwritable (err=12) and user://logs warning, exit code unaffected, as usual". _save_position → _write_json → push_warning on failure, doesn't crash, exit code 0. OK.
+
+Also — one more: does _process run in headless? Yes. _native_drag_active is false → skipped. Good.
+
+Godot run timeouts: plain headless run self-quits. --check-only is fast. Use a perl alarm wrapper with 180 for T2/T3? plan suggests it for timeout. The headless run self-quits; risk of hang if the window creation blocks in headless? Historically it has worked (FIX-001). Just in case, wrap T2/T3 in a perl alarm 120 guard — per plan §4, no timeout command; use a perl wrapper. perl alarm sends SIGALRM to exec'd Godot → non-zero exit code even on clean quit. Use it and note that; if the alarm fires, exit code 142 and report honestly as a timeout. Better: run without a timeout but in a background job with a cap? Simpler: `perl -e 'alarm shift @ARGV; exec @ARGV or die $!' 120 /Applications/Godot.app/Contents/MacOS/Godot --headless ...` — per FIX-001's verified pattern. If alarm fires, exit 142 → report as timeout honestly. Godot headless self-quits within seconds, so it's fine.
+
+Make a todo list, then edit.
+
+Actually one more check — GDScript ternary in dict in _write_reports: `null` is Variant; dict literal is Variant — fine.
+
+Also `"drag_mode:%s" % (...)` OK.
+
+One concern: `KEY_6` etc. are int constants; match on event.keycode — fine.
+
+Also `_toggle_fps_cap`'s doc: Engine.max_fps = 60 if Engine.max_fps != 60 else 30 — plan says "toggle between 30↔60". If someone… only 30/60 are possible via the key. OK.
+
+Edge: _on_visibility_changed disables _process when hidden — mask polling pauses while hidden; fine.
+
+Now let me write the edits.
+
+我已经审阅了全部证据链：GUI 证据安全地存在于调度器的备份提交 `d535e55 "On main: Preserve FIX-002 GUI reports"`（headless=false，74 个事件，93 个样本）中，而磁盘上已提交的报告是 22:32 的无头运行，可以重新生成。计划 §9 中的人工审查覆盖项已经明确：B 模式默认使用 `on_press` 调用（§9.1 优先于 §3.2 中的 on_threshold 默认值），并且 B 的 6px 语义降级需要明确记录在案（§9.2）。
+dsh: reasoning:
+The following are the edits to be made to overlay_window.gd.
+dsh: reasoning:
+Next, regarding the edits to the _process polling, hotkeys, and drag handler:
+dsh: reasoning:
+I need to investigate this further. Let me check the details.
+
+Next, the drag handler branches (press / release / motion) — the code for Approach A stays as-is, unchanged, and I just gate the new B branch in front of it:
+dsh: reasoning:
+Next, add a new function for drag mode / FPS / input accumulation, and extend the report and status labels:
+dsh: reasoning:
+Also, update the header comment at the top of overlay_window.gd — the line "# SPIKE-001 GUI behavior probe: transparent/see-through variants, drag threshold, position persistence, 30FPS sliding window, self-screenshot." — maybe it's fine to leave it as-is. Not required.
+
+Also, the header's # Constraints contains Engine.max_fps = 30 — keep it.
+
+Next, minimal additions to capability_probe.gd.
+dsh: reasoning:
+Next, editing README.md: key table + matrix + §4.
+dsh: reasoning:
+Regarding the bullet points for the SPIKE-001-FIX-002 boundary in README §4. The last bullet point in the existing §4 mentions "the candidate proposal is window_start_drag (must obtain manual approval before activation)" — the FIX-002 ticket IS that approval (the scheduler has already confirmed the manual approval). Add a new block after the FIX-001 bullet points.
+dsh: reasoning:
+Also, update the sentence in the previous FIX-001 bullet list that says "备选方案为 DisplayServer.window_start_drag() 原生拖动（capability.json 已探测其存在性；启用前须人工批准）" (The alternative is DisplayServer.window_start_drag()'s native drag (capability.json has already detected its existence; human approval is required before enabling it)) — currently FIX-002 has been approved and is implemented. That bullet list is historical context, and it's clarified by the new bullet list I just added. It's fine to leave it as is, but the phrasing "启用前须人工批准 (human approval is required before enabling)" is still correct (approval was obtained via FIX-002). Leave it as is.
+
+Alright, now let me run the tests. First, review the complete edited script and double-check the syntax.
+dsh: reasoning:
+The script looks fine. One point to verify: `var mp := DisplayServer.mouse_get_position() if _mouse_pos_supported else Vector2i(-1, -1)` — GDScript's type inference `:=` against a ternary of two Vector2i values → OK.
+
+Line 104: ternary operator syntax `x() if cond else y` — valid GDScript.
+
+Next, run the tests. Order is T0–T6. Use perl's alarm wrapper for T2/T3, which could potentially hang. Each one runs serially and records the exit code.
+dsh: reasoning:
+T0 = 0, matches expected value 4.7.2.stable.official.ed1daf0bf.
+
+T1a/T1b: --check-only --script.end
+dsh: reasoning:
+Important real finding: `ClassDB.class_has_property` does not exist in this 4.7.2 build (the actual API name might be `ClassDB.class_has_property` in Godot 3, but in Godot 4 it's also `ClassDB.class_has_property(class, name)`... but in this build it says "Static function class_has_property() not found". The Godot 4 ClassDB singleton has the following methods: class_exists, class_has_method, class_has_signal, class_get_api_method... For properties: does Godot 4's `ClassDB.class_has_property(class: StringName, property: StringName)` exist? Hmm — apparently the actual Godot 4 API for properties is `ClassDB.class_has_property`... let me check the actual Godot 4 ClassDB docs: methods: can_instantiate, class_has_api_method(?), class_has_method, class_has_signal, class_has_property... Actually, I recall that Godot 4's ClassDB doesn't have class_has_property! What it has is `class_get_property_list`, `class_get_property_class`... let me verify: Godot 4.x ClassDB methods include:
+- class_exists
+- can_instantiate
+- get_direct_class_count, class_get_direct_class_list...
+- get_property_list(class, no_inheritance=false)
+- class_get_property_info(class, property)
+- class_get_property_default_value
+- object_get_class...
+- class_has_method(class, method, no_inheritance=false)
+- class_has_signal
+- class_has_property — hmm. I think `class_get_property_class` exists, but... not 100% sure.
+
+The engine told us definitively: `class_has_property()` is not found in GDScriptNativeClass — meaning a static with that name doesn't exist on ClassDB in this build. This is exactly the "only call APIs verified to exist" rule: my code assumed an API that doesn't exist. Honest fix proposal: don't use ClassDB.class_has_property, and instead check via `Input.get_property_list()` (the same pattern as the _has_prop helper this file already uses for Window properties!). The existing _has_prop helper scans `_win.get_property_list()`. For the Input singleton, we can scan `Input.get_property_list()` for a property named "use_accumulated_input".
+
+Wait — but T1a/T1b exited with code 0 despite the SCRIPT ERROR? Interesting: --check-only... exit 0 with SCRIPT ERROR. Hmm, the plan's T1 success criteria: "no SCRIPT ERROR" — and there IS a SCRIPT ERROR. So even though the exit code is 0, T1a/T1b have failed by the plan's success criteria. I must fix the script and rerun. (Godot --check-only sometimes returns 0 on parse errors? Whatever — the success criteria is no SCRIPT ERROR, and I must be honest about this point.)
+
+Fix: replace the `ClassDB.class_has_property("Input", "use_accumulated_input")` call with a scan of Input's property list:
+
+In overlay_window.gd:
+```gdscript
+_accum_input_supported = _has_input_prop("use_accumulated_input")
+```
+and the helper:
+```gdscript
+func _has_input_prop(prop: String) -> bool:
+	for p in Input.get_property_list():
+		if str(p.get("name", "")) == prop:
+			return true
+	return false
+```
+
+In capability_probe.gd:
+```gdscript
+"input_properties": {
+	"use_accumulated_input": _has_input_prop("use_accumulated_input"),
+},
+"input_accumulated_input_value": ...
+```
+Value: if it exists, `Input.get("use_accumulated_input")`, otherwise null. Use:
+```gdscript
+var accum_supported := false
+for p in Input.get_property_list():
+	if str(p.get("name", "")) == "use_accumulated_input":
+		accum_supported = true
+		break
+```
+But this is inside a big dictionary literal. Easier: compute it before the dict inside _ready. Let me restructure: in capability_probe._ready, before the report dict:
+
+```gdscript
+	var accum_supported := false
+	var accum_value: Variant = null
+	for p in Input.get_property_list():
+		if str(p.get("name", "")) == "use_accumulated_input":
+			accum_supported = true
+			accum_value = Input.get("use_accumulated_input")
+			break
+```
+And in the dict:
+```gdscript
+		"input_properties": {
+			"use_accumulated_input": accum_supported,
+		},
+		"input_accumulated_input_value": accum_value,
+```
+And for window_methods get_window_id: ClassDB.class_has_method exists (it's already used elsewhere in the file) — keep it.
+
+Note: `Input.get(...)` on Input's singleton — Input is a GDScriptNativeClass object; `Input.get("use_accumulated_input")` works at runtime (Object::get on a singleton instance? Input is an Object-derived singleton; GDScript's `Input.get("prop")`... does the Input singleton support get via the Object.get method? In GDScript `Input.get("use_accumulated_input")` — hmm, `Input` inside a script is a singleton instance of the Input class, and `.get(property)` is an Object method that returns Variant. It should work. Alternatively, since it exists, just use `Input.use_accumulated_input` directly. But if it doesn't exist, direct access will fail to parse! Note: GDScript parses `Input.use_accumulated_input` at parse time — if the property doesn't exist at parse time, that's a parse error. The engine's GDScript compiler checks static types: Input singleton — if the property is unknown at compile time → parse error "Cannot find property". So the runtime-safe approach is to use Object.get with a string. In this 4.7.2 build, does Input have use_accumulated_input? Unknown until runtime — but headless execution will tell us via the report. And my overlay_window.gd has a ternary `(Input.use_accumulated_input if ...)` — a direct property access parsed at compile time! If the property doesn't exist in this build → parse error again. Also `Input.use_accumulated_input = not Input.use_accumulated_input` is a direct access.
+
+Hmm. But wait — can GDScript compile `Input.use_accumulated_input` even if it doesn't exist? The GDScript analyzer resolves `Input` as an autoload/singleton of the native class Input; property access on a native class is checked at compile time → error if unknown. So to be robust and follow "never call an unverified API", avoid the direct property access: use `Input.get("use_accumulated_input")` / `Input.set("use_accumulated_input", value)`. Object.get/set with a string are always compilable, and fail gracefully at runtime (get returns null, set emits an error but continues? set on a non-existent property emits "Can't set a nonexisting property"? Actually Object::set returns ERR_INVALID_PARAMETER and doesn't emit an error message? Maybe it pushes an error. Guard with the existence flag.)
+
+Similarly `DisplayServer.window_start_drag(wid)` — is this statically checked at parse time? DisplayServer.window_start_drag: according to the class_has_method probe, the method exists in this build (capability.json GUI reports true) → will compile. T1a's parse passed that (the parse error was only for class_has_property) — actually the parse error aborts on the first error, but it did list only the line with class_has_property, so window_start_drag, get_mouse_button_mask, MOUSE_BUTTON_MASK_LEFT all parsed successfully.
+
+Therefore, fix both files to use the property list scan + Input.get/Input.set.
+
+In overlay_window.gd:
+- `_accum_input_supported = _has_input_prop("use_accumulated_input")`
+- _toggle_accumulated_input:
+```gdscript
+	var cur: Variant = Input.get("use_accumulated_input")
+	Input.set("use_accumulated_input", not bool(cur))
+	_log_event("accum_input:%s" % ("on" if not bool(cur) else "off"))
+```
+Wait, the logged value should be the new value: new = not cur.
+```gdscript
+	var newv := not bool(cur)
+	Input.set("use_accumulated_input", newv)
+	_log_event("accum_input:%s" % ("on" if newv else "off"))
+```
+- _write_reports: `"input_accumulated_input": (Input.get("use_accumulated_input") if _accum_input_supported else null),`
+- _update_status: `accum = "on" if bool(Input.get("use_accumulated_input")) else "off"`
+
+Add a _has_input_prop helper near _has_prop.
+
+capability_probe.gd: scan and replace.
+
+After that, rerun T1a/T1b and verify there's no SCRIPT ERROR.
+
+重要发现（来自实际执行）：在此 4.7.2 版本的构建中，`ClassDB.class_has_property()` 并不存在——尽管退出码为 0，但 T1a/T1b 违反了"无 SCRIPT ERROR"（无 SCRIPT ERROR）的判定标准。根据项目的"只调用已证实存在的 API（只调用已确认存在的 API）"规则，需改为对 `Input` 的属性列表进行运行时扫描，并改用 `Input.get/set`（字符串访问，在编译期安全）：
+dsh: reasoning:
+Next, please fix `capability_probe.gd` using the same compile-safe pattern:
+dsh: reasoning:
+Please re-run T1a and T1b.
+dsh: reasoning:
+T1a/T1b currently: exit code 0, no SCRIPT ERROR (the user://logs error is known sandbox noise documented in plan §4 — it's not a script failure. The exit code remains 0).
+
+Next, T2: plain headless run of the scheduler test_cmd. Just to be safe, I'll wrap it with a perl alarm for 180 seconds following the plan's pattern.
+
+T1a/T1b 目前运行正常（退出码为 0，无 SCRIPT ERROR。`user://logs` 错误是已记录在案的沙箱噪音，符合计划 §4 的规定）。接下来是 T2（调度器的 test_cmd）以及 T3a/T3b 渲染器变体：
+dsh: reasoning:
+T2 = 0, no SCRIPT ERROR. The `user://` err=12 warning is the known sandbox noise documented in plan §4 (user:// is not writable under the agent sandbox; no impact on the exit code).
+
+Next, I'll do T3a/T3b with the metal/opengl3 rendering drivers.
+dsh: reasoning:
+I need to investigate further. Let me check the details.
+
+T3a/T3b = 0 (both drivers are loaded. SCRIPT ERROR / Failed to load is not in the grep output). Note: I used `grep -E` and PIPESTATUS — the exit code is from the perl/Godot pipeline, so that's fine.
+
+Next, T4 (leftover Godot process from pgrep), T5 (JSON validation + new fields), T6 (checking the git scope).
+dsh: reasoning:
+T4=1 (no residual processes, as expected). T5: all three JSONs are valid, all the new fields from §3.4 are present, and the runtime probe in this build confirmed that window_start_drag=true, Window.get_window_id=true, and Input.use_accumulated_input=true (it exists, and the default is true — this is the check in §9.5: the fact that it's true means that in this build, motion events are accumulated per frame, which supports the 30Hz upper bound analysis in §1.1. In GUI experiments it can be toggled with key 6).
+
+T6: git status --porcelain + git diff --stat — only tests/spike/overlay/** must be modified, and queue.json must not be included.
+dsh: reasoning:
+T6 PASS: All tracked changes are within `tests/spike/overlay/**`. The untracked `tasks/evidence/**` is the dispatcher's evidence directory (protocol-authorized location; I only write report.md there). `tools/auto/queue.json` is unchanged. No git write operations have been performed.
+
+Also, I'll verify the diff of the report JSON to confirm that the GUI evidence hasn't been destroyed (the committed version at HEAD was a 22:32 headless run. The current one is the 00:09 headless run — a new headless run overwrote the old headless run, but the GUI evidence remains intact in the scheduler's backup commit d535e55).
+
+One more check regarding the diff of observed_state.json — it went from 4 events to 4 events. No problem.
+
+Next, I'll re-check the diff of the scripts to make sure there are no changes outside the permitted scope, and after that write report.md to the evidence directory (authorized: "另允许在证据目录 ... 内写文件" + step 4 mandates report.md).
+
+Also, I'll run a simple diff review of the two scripts to include in the report (line counts: overlay_window.gd +160, capability_probe.gd +17, README +26).
+
+Now let's write report.md. Contents to include:
+- List of changed files (with diff stat)
+- Executed commands and actual exit codes (T0–T6 + T1 re-run notes + fix notes regarding class_has_property)
+- Test output summary
+- Covered acceptance items (mapping to ticket items)
+- Residual risks
+- Compliance declaration (scope, no sub-agents, no APPROVALS.md reading, no git writes, serial)
+- Explicit statement of the semantic difference of §9.2, and that §9.1 has been implemented as on_press by default.
+
+One more detail: T0's expected version matches. T2/T3 used perl's alarm wrapper (documented as known noise: user:// err=12, user://logs error — exit codes not affected).
+
+Note: T3a/T3b exit codes are via PIPESTATUS — report the exit codes 0/0 of the wrapped commands.
+
+Note regarding risk: The report JSON was regenerated by headless (timestamps are 00:08–00:09) — the previous committed headless versions are in HEAD. The user's GUI evidence (22:36–22:47) is in the scheduler's backup commit d535e55 (verified: headless=false, 74 events, 93 samples) — per plan §9.4, the backup was performed by the scheduler, so there is no evidence loss due to Phase B.
+
+Now I'll write report.md.
+dsh: reasoning:
+Final verification: re-run the scheduler's exact test_cmd one more time to confirm that the final state of the file passes (already done in T2 — the current file hasn't been changed since then. Wait, hold on: was T2 run after the last edit to overlay_window.gd? Let me check the timeline:
+
+1. First edit to overlay_window.gd + capability_probe.gd (v1 containing class_has_property)
+2. T1a/T1b first run → SCRIPT ERROR detected
+3. Fixes to both files (v2)
+4. T1a/T1b re-run → clean
+5. T2, T3a, T3b → clean, report JSON regenerated
+6. T4/T5/T6 → passed
+7. report.md written
+
+No code edits after T2 — good, the tested state = the final state. ✓
+
+Final check: update the todo, and do one final quick re-check of git status to confirm nothing has changed since T6 (report.md is in the already-untracked evidence directory). Also verify that the README renders properly (quickly check the final README diff). Actually, let me quickly check the final diff of README + capability_probe to make sure there's nothing unintended, then wrap up.
+dsh: reasoning:
+Everything is in its final state: the code hasn't been modified since the T2/T3/T5 tests were run against the exact same code; report.md has been written; scope is clean.
+
+Mark the TODO as complete and present the final summary ending with PHASE-B-DONE.
+dsh: reasoning:
+Understood. I'll use the current structured task action and return only the output relevant to the task.

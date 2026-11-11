@@ -1,38 +1,45 @@
 {
   "display_server": "headless",
+  "drag_b_mode": "on_press",
+  "drag_mode": "A",
   "drag_threshold_px": 6.0,
   "events": [
     [
-      294,
-      "2026-11-10 22:32:16",
+      218,
+      "2026-11-11 00:11:48",
       "position_restored_from_saved"
     ],
     [
-      294,
-      "2026-11-10 22:32:16",
+      218,
+      "2026-11-11 00:11:48",
       "variant:polygon"
     ],
     [
-      294,
-      "2026-11-10 22:32:16",
+      219,
+      "2026-11-11 00:11:48",
       "ready"
     ],
     [
-      313,
-      "2026-11-10 22:32:16",
+      238,
+      "2026-11-11 00:11:48",
       "position_saved"
     ]
   ],
+  "fps_cap_default": 30,
   "fps_last_window": 0.0,
   "fps_samples": [],
   "headless": true,
   "hidden": false,
+  "input_accumulated_input": true,
+  "input_accumulated_input_supported": true,
   "last_drag_sample_count": 0,
   "last_drag_samples": [],
   "max_fps": 30,
   "mouse_get_position_supported": true,
+  "native_drag_sample_count": 0,
+  "native_drag_samples": [],
   "ship_clicks": 0,
-  "ts_utc": "2026-11-10 22:32:16",
+  "ts_utc": "2026-11-11 00:11:48",
   "variant": "polygon",
   "variant_api": {
     "always_on_top": true,
@@ -47,7 +54,7 @@
   "variant_log": [
     {
       "applied": true,
-      "at_utc": "2026-11-10 22:32:16",
+      "at_utc": "2026-11-11 00:11:48",
       "effective_mouse_passthrough": false,
       "effective_mouse_passthrough_polygon": [
         [
@@ -74,12 +81,14 @@
       "variant": "polygon"
     }
   ],
+  "window_get_window_id_supported": true,
   "window_position": [
-    734,
-    1118
+    1006,
+    896
   ],
   "window_size": [
     64,
     64
-  ]
+  ],
+  "window_start_drag_supported": true
 }
