@@ -38,6 +38,18 @@
 - 故障注入：临时文件写失败、重命名失败、崩溃、旧版本/损坏存档；保存失败须暂停不安全经济操作，不可删除坏档掩盖。
 - 对同时接近结算的捕获与售鱼按单一命令队列串行处理，不允许超容量、双发、丢事件。
 
+## SAVE-001（原子存档、版本兼容与故障注入）
+
+**Phase A 计划范围**：先审查 `scripts/io/save_service.gd` 骨架、`schemas/game-save.schema.json`、`GameState`、ECO ledger、FSM RNG/Clock 和 pending candidate 接口；只新增 `tasks/evidence/SAVE-001/plan.md`。Phase B 允许范围候选为 `scripts/save/**`、`schemas/game-save.schema.json`、`examples/save_v01.json`、`tests/**`，须经计划审查后确定。
+
+**必须完整持久化**：一个原子文档必须覆盖完整经济 `GameState`、`EconomyService.snapshot_ledger()`、`DeterministicRng.snapshot_state()`、`VirtualClock.snapshot_state()`、FSM checkpoint 与未确认的 pending candidate。经济持久化门只有在整个文档成功提交后才返回 `true`，不得先发布金币/鱼篓再异步写盘。
+
+**版本与迁移**：现有 schema v1 没有 ledger、RNG/Clock 快照和候选 payload。计划必须提出显式新版本及 v1→新版本策略；当 v1 的已处理 ID 缺少指纹、无法准确恢复幂等语义时，必须安全拒绝并保留原档或仅迁移可证明安全的状态，禁止静默丢弃/编造交易数据。未来未知版本和损坏主档不得覆盖或删除；恢复/备份结果须可审计。
+
+**原子性与测试**：同目录临时文件，逐项检查写入、flush、备份及原子替换；任一故障不得改变已确认内存态。故障注入覆盖临时写入、flush、备份、rename 与发布边界，重启后只允许完整旧态或完整新态；覆盖跨服务重启 catch/sale 重试、ledger 冲突识别、RNG/Clock/候选精确续跑、备份恢复及坏档保留。测试使用独立临时目录和隔离 HOME，在临时工程副本中先导入，再串行回归 ECO/CORE/CFG/FSM；禁止对真实工程路径启动 Godot。
+
+**不包含**：UI/售鱼面板、日志系统、经济数值调节、联网/云同步、产品范围变更。若计划发现必须改 `GameState`、FSM 或调用端接口才能保证事务安全，应先在审查中列出最小接口变更和证据，再确定批准范围。
+
 ## SIM-001（平衡统计，不可自行改数值）
 
 - 至少多组固定种子（建议首次 20 组）、虚拟时间模拟 1h、4h、8h，区分不售直到满篮、定期出售循环。

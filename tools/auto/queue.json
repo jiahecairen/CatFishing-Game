@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-11T09:11:26+00:00",
+  "updated": "2026-11-11T09:16:14+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -102,17 +102,19 @@
     {
       "id": "SAVE-001",
       "title": "原子存档 + 版本 + 故障注入",
-      "status": "held",
+      "status": "ready",
       "deps": [
         "ECO-001"
       ],
       "allowed_files": [
         "scripts/save/**",
+        "schemas/game-save.schema.json",
+        "examples/save_v01.json",
         "tests/**"
       ],
       "test_cmd": "",
       "needs_human": false,
-      "brief": "见 tasks/TASKS.md。"
+      "brief": "按 tasks/TASKS.md 的 SAVE-001 章节和 docs/INTERFACES_AND_DATA.md、docs/ACCEPTANCE_TESTS.md 实施计划。Phase A 只写 tasks/evidence/SAVE-001/plan.md 并审查现有 SaveService 骨架、schema v1、GameState、ECO ledger、FSM RNG/Clock/pending candidate API。强制计划原子提交完整 GameState + EconomyService ledger + DeterministicRng/VirtualClock snapshots + pending candidate；保存成功后才允许经济门发布；同目录临时写、flush、原子替换、备份/恢复、坏档保留、未来版本拒绝。必须提出无静默丢失的 v1→新版本迁移，明确 v1 已处理事务无指纹账本时的安全处置；不得猜造幂等数据。Phase B 候选范围仅 scripts/save/**、schemas/game-save.schema.json、examples/save_v01.json、tests/**；若计划认为还需修改其他运行时模块，先指出接口缺口并在独立审查中决定，不得自行越界。测试需临时目录/隔离 HOME，故障注入写入/flush/备份/rename/发布边界，恢复只允许完整旧态或完整新态，并回归 ECO/CORE/CFG/FSM；所有 Godot 命令仅在隔离副本运行。不得改经济参数、UI、日志或 SDD 产品范围。"
     },
     {
       "id": "UI-001",

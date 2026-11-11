@@ -130,3 +130,9 @@ B/60 > B/30 > A/60 > A/30
 - `python3 -B tools/auto/runner.py selftest` passed 40/40, including tracked-queue tamper protection, icon import ownership, import-before-smoke, exact whitelist commit, and concurrent import freeze behavior.
 - Accepted ECO-001 under the project owner's recorded delegation. Review fix commit: `29032fd`; detailed evidence: `tasks/evidence/ECO-001/acceptance.md`.
 - No active global freeze was changed. The runner log and queue state are included in this acceptance checkpoint so the tracked worktree state is preserved.
+
+## 2026-11-11 — SAVE-001 queued for Phase A
+
+- ECO-001 is Accepted; SAVE-001 dependencies are satisfied. Queue status is `ready` for a read-only planning session only; no Phase B approval exists yet.
+- Local Qwen model gate is live and passed `python3 -B tools/auto/runner.py check`; queue reported `paused=False`, `frozen=None`.
+- The task requires a safe version/migration design for the schema v1 gaps: ECO fingerprint ledger, RNG/Clock continuation, and pending catch candidate. Phase B scope is limited to save code, the save schema/example, and tests, subject to independent plan review.
