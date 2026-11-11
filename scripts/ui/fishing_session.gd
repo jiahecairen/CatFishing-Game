@@ -302,7 +302,7 @@ func update_window_geometry(x: Variant, y: Variant, width: Variant, height: Vari
 		return {"ok": false, "code": CODE_NOT_READY}
 	if not (x is int) or not (y is int) or not (width is int) or not (height is int) \
 			or int(x) < 0 or int(y) < 0 or int(width) < 1 or int(height) < 1 \
-			or not (display_hint == null or display_hint is String):
+			or not (display_hint == null or (display_hint is int and int(display_hint) >= 0)):
 		return {"ok": false, "code": CODE_BAD_PAYLOAD}
 	_state.desktop_window = {"x": int(x), "y": int(y), "width": int(width), "height": int(height),
 			"display_hint": display_hint}
@@ -480,7 +480,7 @@ func _replay_pending_candidate(candidate: Dictionary) -> Dictionary:
 		return staged
 	var commit := _economy.commit_catch(_state, candidate["catch_event_id"],
 			candidate["species_id"], caught_at_utc)
-	var ok := commit.get("ok") == true \
+	var ok: bool = commit.get("ok") == true \
 			and (String(commit.get("code", "")) == "" or String(commit.get("code", "")) == CODE_ALREADY_APPLIED)
 	if not ok:
 		return commit
@@ -527,7 +527,7 @@ func _finish_settlement(keep_pending := false) -> Dictionary:
 			return staged
 	var commit := _economy.commit_catch(_state, _settlement["catch_event_id"],
 			_settlement["species_id"], _settlement["caught_at_utc"])
-	var ok := commit.get("ok") == true \
+	var ok: bool = commit.get("ok") == true \
 			and (String(commit.get("code", "")) == "" or String(commit.get("code", "")) == CODE_ALREADY_APPLIED)
 	if not ok:
 		if String(commit.get("code", "")) == CODE_PERSIST_FAILED:

@@ -244,6 +244,8 @@ def main():
             for name, path, marker, fail_marker in REGRESSIONS:
                 steps.append((name, godot_base + ["--script", "res://" + path], marker, fail_marker))
             for name, command, marker, fail_marker in steps:
+                if name != "step1-import":
+                    command.extend(["--quit-after", "3600"])
                 if not _run_step(name, command, project_root, env, marker, fail_marker):
                     print("UI001 RUNNER FAIL (" + name + ")")
                     return 1
