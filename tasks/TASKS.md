@@ -1,6 +1,6 @@
 # v0.1 原子开发工单 / Backlog
 
-**状态：SPIKE-001 系列 = Accepted（桌面 GUI 验收有记录，多显示器未测）；CORE-001 = Accepted；CFG-001 = Accepted；FSM-001 = Ready；其余状态以 `tools/auto/queue.json` 为准。** 逐票证据见下方工单记录与 `docs/DEV_LOG.md`。**严格串行**，只使用一个本地 Flash。若前置测试失败，不得将依赖工单标记完成。
+**状态：SPIKE-001 系列 = Accepted（桌面 GUI 验收有记录，多显示器未测）；CORE-001 = Accepted；CFG-001 = Accepted；FSM-001 = Accepted；其余状态以 `tools/auto/queue.json` 为准。** 逐票证据见下方工单记录与 `docs/DEV_LOG.md`。**严格串行**，只使用一个本地 Flash。若前置测试失败，不得将依赖工单标记完成。
 
 | ID | 标题 | 前置 | 主要交付 | 最小验收 |
 |---|---|---|---|---|
@@ -208,4 +208,17 @@ Executed commands + exit codes: test_cmd=python3 -B tests/unit/run_fsm001_checks
 Test result & evidence: tasks/evidence/FSM-001/ (会话归档+日志+diff)
 Risks & unresolved decisions: 见 tasks/evidence/FSM-001/phaseA.out 与 report.md
 Recorded by AUTO-001 at 2026-11-11T07:10:17+00:00
+```
+
+```text
+ID: FSM-001
+Status: Accepted（项目所有者委托 Codex 独立验收）
+Owner: Codex delegated reviewer; Phase B implementation by single local Qwen session
+Scope / Dependencies / Allowed files: CFG-001 Accepted；scripts/fishing/**、tests/**。
+Interface & invariants: request_cast 内部门禁、确定性 RNG/虚拟时钟、可恢复 checkpoint、待结算候选幂等；表现阶段可选时长参数；不改经济代码、配置值或 schema。
+Executed commands + exit codes: `python3 -B tools/auto/runner.py selftest` -> 0（40 项全过）；`python3 -B tests/unit/run_fsm001_checks.py` -> 0（隔离 import/FSM/CORE/CFG 全过）。
+Test result & evidence: `tasks/evidence/_runner/auto001-selftest-20261111.txt`、`tasks/evidence/FSM-001/review-stage-durations.log`、`report.md`、`review-api-followup.md`。
+Git diff / commit: FSM 实现 `8732c8f`、API 补齐 `2d859aa`；AUTO-001 门禁修复 `0a35a20`。
+Risks & unresolved decisions: RNG/Clock continuation 与 pending candidate 的持久化由 SAVE-001 承接；ECO-001 仍需实现经济事务。
+Owner approval: 2026-11-11 项目所有者持续执行委托；本地 v0.1 范围内 Codex 审查并验收。
 ```

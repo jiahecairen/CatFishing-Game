@@ -1,0 +1,43 @@
+AUTO-001 selftest 2026-11-11 07:14:04 +0000
+PASS T1a 越界文件被识别
+PASS T1b APPROVALS.md 改动永远越界
+PASS T8a runner 更新 tracked queue 不触发越界
+PASS T8b 会话改写 tracked queue 必被拦截
+PASS T8c tools/auto 其他文件仍受范围门禁保护
+PASS T8d untracked queue 被会话改写也必拦截
+PASS T9a icon.svg.import 随允许的 icon.svg 归属
+PASS T9b 其他 import 文件不因旁车规则获豁免
+PASS T10a CORE 先在隔离副本导入，再执行 smoke
+PASS T10a2 CORE 测试结束后删除临时副本
+PASS T10b 缺少 CORE001 SMOKE PASS 即失败
+PASS T10c 有 SCRIPT ERROR 即失败，即使退出码为零
+PASS T10d 导入阶段脚本错误时不执行 smoke
+PASS T11a 自动提交只含白名单及 icon 对应导入旁车
+PASS T11b 越界预暂存文件保留且未混入 commit
+PASS T12 并发改写导入旁车时冻结且不 commit
+PASS T13 解冻元数据如实记录 actor/原因
+PASS T2a 示例占位不算批准
+PASS T2b 人工批准记录通过解析
+PASS T2c 错票号不通过
+PASS T3a 无批准 exit 65 且不启动会话
+PASS T3b 零代码改动
+PASS T3c 工单仍为 exec_ready（未被自动批准）
+PASS T4a 模型不可达 exit 60
+PASS T4b 队列被冻结
+PASS T4c 未发起任何会话
+PASS T5a 成功路径 exit 0
+PASS T5b 代码文件由会话写出
+PASS T5c 自动 commit 生成
+PASS T5d TASKS.md 含 AUTO-001 记录
+PASS T5e 状态 in_review
+PASS T5f 证据齐全(test/session-tag/out)
+PASS T6a 重试耗尽后 exit 66
+PASS T6b 共 3 次尝试(首跑+2 重试)
+PASS T6c 无自动 commit 失败代码
+PASS T6d 队列冻结
+PASS T6e BLOCK_REPORT 与 diff 证据保留
+PASS T7a 篡改账本 → Blocked+冻结
+PASS T7b 冻结原因含伪造
+PASS T7c 不 commit 任何内容
+
+ALL PASS (40 checks, 12.5s)
