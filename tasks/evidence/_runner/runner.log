@@ -135,3 +135,7 @@
 [2026-11-11T15:42:41+00:00] UI-001 test attempt 3 exit=2
 [2026-11-11T15:42:41+00:00] UI-001 attempt 3 失败 test_rc=2 session_rc=-9 越界=[]
 [2026-11-11T15:42:41+00:00] FROZEN: UI-001: 重试 2 次后仍失败；证据在 /Users/rain/DevGame/Fishing/tasks/evidence/UI-001/，未 commit 任何代码
+[2026-11-11T20:09:11+00:00] model gate PASS: health ok; model listed
+[2026-11-11T20:09:11+00:00] launch headless session tag=phaseA
+[2026-11-11T20:22:13+00:00] session done tag=phaseA rc=0 archived=True
+[2026-11-11T20:22:13+00:00] SIM-001: plan 完成 → awaiting_approval（人工批准: 编辑 APPROVALS.md 后把 status 改为 exec_ready）

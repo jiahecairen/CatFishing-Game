@@ -104,3 +104,11 @@ date: 2026-11-11
 scope: scenes/**, scripts/ui/**, scripts/core/game_controller.gd, scripts/platform/desktop_window.gd, scripts/platform/platform_adapter.gd, scripts/presentation/cat_presenter.gd, project.godot, tests/**
 notes: 委托目标授权自动审批；计划独立审查通过，范围与隔离验收命令已核对；GUI验收保留人工证据。
 END-APPROVAL
+
+BEGIN-APPROVAL ID=SIM-001 PHASE=B
+APPROVED
+by: Codex delegated reviewer
+date: 2026-11-11
+scope: tools/sim/**, tasks/evidence/SIM-001/**
+notes: 项目所有者在持续执行目标中明确委托自动审批并完成本地 v0.1。按 tasks/evidence/SIM-001/plan.md 与 review.md 实施；复用既有 FSM/RNG/Clock/ECO/Save 故障注入接口，生成 20 seeds × 两场景 × 1/4/8 小时虚拟报告；固定 20–60s、30 FPS、鱼种权重/价格与候选容量，任何产品数值不得更改。Godot 仅在临时工程副本和隔离 HOME 运行，报表记录 120 个独立 run 与真实故障注入结果。Phase B 不得修改 scripts/**、data/**、tests/**、queue/runner、产品文档或审批账本。
+END-APPROVAL

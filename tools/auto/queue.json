@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-11T18:40:33+00:00",
+  "updated": "2026-11-11T20:27:33+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -161,7 +161,7 @@
     {
       "id": "SIM-001",
       "title": "多随机种子虚拟时间模拟报告",
-      "status": "held",
+      "status": "exec_ready",
       "deps": [
         "FSM-001",
         "ECO-001",
@@ -171,7 +171,7 @@
         "tools/sim/**",
         "tasks/evidence/SIM-001/**"
       ],
-      "test_cmd": "",
+      "test_cmd": "python3 -B tools/sim/run_sim001_checks.py",
       "needs_human": false,
       "brief": "见 tasks/TASKS.md；数值调节必须人工批准。"
     },
@@ -230,11 +230,7 @@
   ],
   "unfrozen": {
     "actor": "Codex (delegated by project owner)",
-    "at": "2026-11-11T04:21:24+00:00",
-    "reason": "AUTO-001 scope and Godot smoke gates repaired; resume delegated CORE-001 validation"
-  },
-  "frozen": {
-    "reason": "UI-001: 重试 2 次后仍失败；证据在 /Users/rain/DevGame/Fishing/tasks/evidence/UI-001/，未 commit 任何代码",
-    "at": "2026-11-11T15:42:41+00:00"
+    "at": "2026-11-11T20:08:57+00:00",
+    "reason": "项目所有者在持续执行目标中明确委托自动审批并完成本地 v0.1；UI-001 修复已提交，保留其 GUI 验收阻塞状态；恢复队列以推进依赖已满足的 SIM-001。"
   }
 }
