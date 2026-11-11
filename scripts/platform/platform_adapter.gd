@@ -136,20 +136,25 @@ func _connector_rects(first: Rect2, second: Rect2) -> Array[Rect2]:
 	var overlap_right := minf(first.end.x, second.end.x)
 	var overlap_top := maxf(first.position.y, second.position.y)
 	var overlap_bottom := minf(first.end.y, second.end.y)
+	# Join separated hit regions with a one-pixel path so the intervening desktop stays pass-through.
 	if overlap_right > overlap_left:
+		var bridge_x := (overlap_left + overlap_right) * 0.5
+		var bridge_width := minf(1.0, overlap_right - overlap_left)
 		if first.end.y < second.position.y:
-			return [Rect2(Vector2(overlap_left, first.end.y),
-				Vector2(overlap_right - overlap_left, second.position.y - first.end.y))]
+			return [Rect2(Vector2(bridge_x - bridge_width * 0.5, first.end.y - 0.5),
+				Vector2(bridge_width, second.position.y - first.end.y + 1.0))]
 		if second.end.y < first.position.y:
-			return [Rect2(Vector2(overlap_left, second.end.y),
-				Vector2(overlap_right - overlap_left, first.position.y - second.end.y))]
+			return [Rect2(Vector2(bridge_x - bridge_width * 0.5, second.end.y - 0.5),
+				Vector2(bridge_width, first.position.y - second.end.y + 1.0))]
 	if overlap_bottom > overlap_top:
+		var bridge_y := (overlap_top + overlap_bottom) * 0.5
+		var bridge_height := minf(1.0, overlap_bottom - overlap_top)
 		if first.end.x < second.position.x:
-			return [Rect2(Vector2(first.end.x, overlap_top),
-				Vector2(second.position.x - first.end.x, overlap_bottom - overlap_top))]
+			return [Rect2(Vector2(first.end.x - 0.5, bridge_y - bridge_height * 0.5),
+				Vector2(second.position.x - first.end.x + 1.0, bridge_height))]
 		if second.end.x < first.position.x:
-			return [Rect2(Vector2(second.end.x, overlap_top),
-				Vector2(first.position.x - second.end.x, overlap_bottom - overlap_top))]
+			return [Rect2(Vector2(second.end.x - 0.5, bridge_y - bridge_height * 0.5),
+				Vector2(first.position.x - second.end.x + 1.0, bridge_height))]
 
 	# Diagonally separated rectangles need a minimal one-pixel L-shaped bridge.
 	var first_center := first.get_center()

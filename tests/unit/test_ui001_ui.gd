@@ -139,6 +139,7 @@ func _test_mouse_passthrough_polygon_winding() -> bool:
 			and Geometry2D.is_point_in_polygon(Vector2(100, 100), polygon) \
 			and Geometry2D.is_point_in_polygon(Vector2(190, 45), polygon) \
 			and Geometry2D.is_point_in_polygon(Vector2(176, 68), polygon) \
+			and not Geometry2D.is_point_in_polygon(Vector2(178, 68), polygon) \
 			and not Geometry2D.is_point_in_polygon(Vector2(100, 65), polygon) \
 			and not Geometry2D.is_point_in_polygon(Vector2(206, 20), polygon)
 	var basket_regions := regions.duplicate()
@@ -168,7 +169,21 @@ func _test_mouse_passthrough_polygon_winding() -> bool:
 			and Geometry2D.is_point_in_polygon(Vector2(60, 60), diagonal_polygon) \
 			and not Geometry2D.is_point_in_polygon(Vector2(40, 20), diagonal_polygon)
 	diagonal_window.free()
-	return _check(diagonal_correct, "U-region joins diagonal controls with a narrow bridge")
+	if not _check(diagonal_correct, "U-region joins diagonal controls with a narrow bridge"):
+		return false
+
+	var horizontal_window := Window.new()
+	horizontal_window.size = Vector2i(100, 100)
+	var horizontal_applied := platform.apply_mouse_regions(horizontal_window, [
+		Rect2(Vector2(10, 10), Vector2(20, 20)),
+		Rect2(Vector2(50, 15), Vector2(20, 10)),
+	])
+	var horizontal_polygon := horizontal_window.mouse_passthrough_polygon
+	var horizontal_correct := horizontal_applied and not horizontal_window.mouse_passthrough \
+			and Geometry2D.is_point_in_polygon(Vector2(40, 20), horizontal_polygon) \
+			and not Geometry2D.is_point_in_polygon(Vector2(40, 22), horizontal_polygon)
+	horizontal_window.free()
+	return _check(horizontal_correct, "U-region keeps horizontal bridge narrow so gap passes through")
 
 
 func _polygon_signed_area(polygon: PackedVector2Array) -> float:
