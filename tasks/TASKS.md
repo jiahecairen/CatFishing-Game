@@ -175,3 +175,17 @@ Git diff / commit: `1283e5e`, `1cc44a1`；审查记录见 `tasks/evidence/CFG-00
 Risks & unresolved decisions: 篮容量 10 仍是候选初值，不作为已批准平衡结论。
 Owner approval: 2026-11-11 持续执行委托。
 ```
+
+
+```text
+ID: FSM-001
+Status: Phase A reviewed; Phase B approved under project-owner delegation
+Owner: Local Qwen Flash (single serial session) + Codex reviewer
+Scope / Dependencies / Allowed files: CFG-001 Accepted; scripts/fishing/**, tests/**.
+Interface & invariants: See tasks/evidence/FSM-001/plan.md and review.md; no economy/save/UI implementation.
+Executed commands + exit codes: Phase A runner session exit 0; model gate PASS.
+Test result & evidence: Phase A plan and independent review are committed before Phase B.
+Git diff / commit: recorded in current progress commit.
+Risks & unresolved decisions: SAVE-001 must persist deterministic RNG continuation and pending-candidate payload; schema update belongs to its reviewed scope.
+Owner approval: `tasks/APPROVALS.md`, Codex delegated Phase B approval, 2026-11-11.
+```

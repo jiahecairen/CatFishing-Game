@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-11T05:16:45+00:00",
+  "updated": "2026-11-11T05:33:00+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -70,7 +70,7 @@
     {
       "id": "FSM-001",
       "title": "捕鱼 FSM + 可控 RNG/虚拟时钟",
-      "status": "ready",
+      "status": "exec_ready",
       "deps": [
         "CFG-001"
       ],
@@ -78,9 +78,9 @@
         "scripts/fishing/**",
         "tests/**"
       ],
-      "test_cmd": "",
+      "test_cmd": "python3 -B tests/unit/run_fsm001_checks.py",
       "needs_human": false,
-      "brief": "见 tasks/TASKS.md。"
+      "brief": "按 tasks/evidence/FSM-001/plan.md 实施，并严格满足 tasks/evidence/FSM-001/review.md 的 5 项必做审查条件。测试驱动必须在临时副本执行 Godot 导入/FSM/CORE/CFG，禁止与用户 GUI 并发导入。allowed_files 仅 scripts/fishing/**、tests/**；不得修改经济值、schemas、GameState、窗口 UI。"
     },
     {
       "id": "ECO-001",

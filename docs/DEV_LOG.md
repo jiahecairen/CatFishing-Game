@@ -115,3 +115,10 @@ B/60 > B/30 > A/60 > A/30
 - Accepted CORE-001 (`e807f15`) and CFG-001 (`1283e5e`, follow-up hardening `1cc44a1`) under the project owner's recorded delegation. Queue now records both `done`; FSM-001 is `ready` for Phase A. No ticket code was started in this state transition.
 - Public GitHub `main` push of `1cc44a1` verified at remote SHA `1cc44a1566f3cf04286b57c0cfbc7caca41a0b49`.
 - Existing `tasks/evidence/_runner/runner.log` is retained and tracked for audit continuity; multi-display remains explicitly NOT RUN.
+
+
+## 2026-11-11 — FSM-001 plan review and delegated approval
+
+- Local Qwen Flash Phase A completed with exit 0; plan is in `tasks/evidence/FSM-001/plan.md`.
+- Independent review required: current GameState passed into cast gating; exact threshold/backlog semantics; deterministic RNG and idempotent candidate restoration; malformed checkpoint fail-closed; Godot tests run only in an isolated temporary project copy because the main GUI editor remains open.
+- Phase B approved under the explicit owner delegation; approval and exact test command are committed in the FSM progress commit.

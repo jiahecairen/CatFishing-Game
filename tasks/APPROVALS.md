@@ -70,3 +70,12 @@ date: 2026-11-11
 scope: data/**, scripts/config/**, tests/**
 notes: 项目所有者在持续执行授权中明确委托 Codex 审查并批准本地 v0.1。按 tasks/evidence/CFG-001/review.md 实施：不改任何配置平衡值；畸形 JSON 使用 JSON.new().parse(text) 并检查返回错误码；tests/unit/run_cfg001_checks.py 必须先执行 Godot 导入，再依次验证 CFG001 CONFIG PASS 和 CORE001 SMOKE PASS，任一 SCRIPT ERROR/FAIL/非零退出即失败。不得修改 examples/**、schemas/**、docs/**、tasks/APPROVALS.md 或范围外文件。
 END-APPROVAL
+
+
+BEGIN-APPROVAL ID=FSM-001 PHASE=B
+APPROVED
+by: Codex
+date: 2026-11-11
+scope: scripts/fishing/**, tests/**
+notes: 项目所有者在持续执行授权中委托 Codex 自动审批本地 v0.1。仅按 tasks/evidence/FSM-001/plan.md 与 review.md 实施；review.md 的五项条件均为强制项，特别是满篓拒绝、精确步长不变时间轴、可重放待结算候选、隔离副本串行测试。不得修改 GameState/schema、经济值或 GUI。
+END-APPROVAL
