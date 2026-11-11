@@ -149,5 +149,5 @@ B/60 > B/30 > A/60 > A/30
 
 - Added an isolated headless regression for `DesktopWindow`: short clicks emit one boat-click signal; native drag is requested on press and an unmoved release remains a click; manual movement records window geometry without toggling the basket.
 - `python3 -B tests/unit/run_ui001_checks.py` passed on the current tree: import-first plus UI/SAVE/ECO/FSM/CORE/CFG all exit 0 with required PASS markers and no `SCRIPT ERROR`.
-- This is policy-level regression evidence only. macOS click-through and the remaining GUI matrix are still unverified; G-UI-4 hide/resume remains the only additional GUI item recorded.
+- This is policy-level regression evidence only. A controlled macOS run confirmed one transparent-area click reached an opaque underlay, but this does not complete G-UI-1: boat/panel input and the remaining GUI matrix are still unverified. G-UI-4 hide/resume remains recorded.
 - The global queue freeze remains set and UI-001 remains blocked. Existing untracked session archives were not touched; no push occurred.
