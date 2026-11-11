@@ -222,3 +222,13 @@ Git diff / commit: FSM 实现 `8732c8f`、API 补齐 `2d859aa`；AUTO-001 门禁
 Risks & unresolved decisions: RNG/Clock continuation 与 pending candidate 的持久化由 SAVE-001 承接；ECO-001 仍需实现经济事务。
 Owner approval: 2026-11-11 项目所有者持续执行委托；本地 v0.1 范围内 Codex 审查并验收。
 ```
+
+```text
+ID: ECO-001
+Status: In Review（AUTO-001 自动通过测试/范围/批准检查，待人工验收）
+Owner: AUTO-001 scheduler + headless Qwen Flash (serial)
+Executed commands + exit codes: test_cmd=python3 -B tests/unit/run_eco001_checks.py -> 0; attempt=1
+Test result & evidence: tasks/evidence/ECO-001/ (会话归档+日志+diff)
+Risks & unresolved decisions: 见 tasks/evidence/ECO-001/phaseA.out 与 report.md
+Recorded by AUTO-001 at 2026-11-11T08:55:35+00:00
+```
