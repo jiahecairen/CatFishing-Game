@@ -1,0 +1,78 @@
+=== TEST ===
+SAVE-001 source root: /Users/rain/DevGame/Fishing
+Godot binary: /Applications/Godot.app/Contents/MacOS/Godot
+pre-flight: deliverables present, value-lock frozen, v1 example frozen, schema v2 locked, class names unique, fixtures present
+isolated project copy: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_save001_g7naginf/project
+isolated HOME: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_save001_g7naginf/home
+========================================================================
+[step1-import] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_save001_g7naginf/project --editor --quit
+[step1-import] exit_code=0
+[step1-import] stdout(tail):
+[  11% ] [90m[1mupdate_scripts_classes[22m | FishingSystem[39m[0m
+[  15% ] [90m[1mupdate_scripts_classes[22m | GameController[39m[0m
+[  19% ] [90m[1mupdate_scripts_classes[22m | GameState[39m[0m
+[  23% ] [90m[1mupdate_scripts_classes[22m | EconomyService[39m[0m
+[  26% ] [90m[1mupdate_scripts_classes[22m | FishInstance[39m[0m
+[  30% ] [90m[1mupdate_scripts_classes[22m | DeterministicRng[39m[0m
+[  34% ] [90m[1mupdate_scripts_classes[22m | FishingStateMachine[39m[0m
+[  38% ] [90m[1mupdate_scripts_classes[22m | VirtualClock[39m[0m
+[  42% ] [90m[1mupdate_scripts_classes[22m | ConfigLoader[39m[0m
+[  46% ] [90m[1mupdate_scripts_classes[22m | EventLog[39m[0m
+[  50% ] [90m[1mupdate_scripts_classes[22m | SaveService[39m[0m
+[  53% ] [90m[1mupdate_scripts_classes[22m | DesktopWindow[39m[0m
+[  57% ] [90m[1mupdate_scripts_classes[22m | PlatformAdapter[39m[0m
+[  61% ] [90m[1mupdate_scripts_classes[22m | CatPresenter[39m[0m
+[  65% ] [90m[1mupdate_scripts_classes[22m | SaveFaults[39m[0m
+[  69% ] [90m[1mupdate_scripts_classes[22m | AtomicSaveService[39m[0m
+[  73% ] [90m[1mupdate_scripts_classes[22m | SaveValidate[39m[0m
+[  76% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  80% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  84% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  88% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  92% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing pre-reimport operations...[39m[0m
+[   0% ] [90m[1mreimport[22m | icon.svg[39m[0m
+[  50% ] [90m[1mreimport[22m | Finalizing Asset Import...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing post-reimport operations...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Loading editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Loading editor layout...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Loading docks...[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m
+[step1-import] OK
+========================================================================
+[step2-save001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_save001_g7naginf/project --script res://tests/unit/test_save001_save.gd
+[step2-save001] exit_code=1
+[step2-save001] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+SAVE001 SAVE FAIL: S0 BAD_DOC zero file writes
+[step2-save001] stderr(tail):
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_recursive' in base 'DirAccess'.
+          at: _remove_dir (res://tests/unit/test_save001_save.gd:714)
+          GDScript backtrace (most recent call first):
+              [0] _remove_dir (res://tests/unit/test_save001_save.gd:714)
+              [1] _fresh_dir (res://tests/unit/test_save001_save.gd:702)
+              [2] _s0 (res://tests/unit/test_save001_save.gd:57)
+              [3] _initialize (res://tests/unit/test_save001_save.gd:34)
+SCRIPT ERROR: Invalid call. Nonexistent function 'remove_recursive' in base 'DirAccess'.
+          at: _remove_dir (res://tests/unit/test_save001_save.gd:714)
+          GDScript backtrace (most recent call first):
+              [0] _remove_dir (res://tests/unit/test_save001_save.gd:714)
+              [1] _cleanup_dirs (res://tests/unit/test_save001_save.gd:708)
+              [2] _initialize (res://tests/unit/test_save001_save.gd:35)
+[step2-save001] FAILED: non-zero exit code 1; forbidden marker 'SCRIPT ERROR'; forbidden marker 'SAVE001 SAVE FAIL'; required marker 'SAVE001 SAVE PASS' must appear exactly once
+SAVE001 RUNNER FAIL
+
+---STDERR---
+
+EXIT=1

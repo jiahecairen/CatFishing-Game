@@ -257,3 +257,13 @@ Git diff / commit: 实现 `2cf0ada`；独立复核修正 `29032fd`；验收与�
 Risks & unresolved decisions: 实际原子存档、ledger+FSM checkpoint 持久化与故障注入由 SAVE-001 承接；UI/日志由后续工单实现。
 Owner approval: 项目所有者 2026-11-11 持续执行委托；本地 v0.1 逐票独立验收。
 ```
+
+```text
+ID: SAVE-001
+Status: In Review（AUTO-001 自动通过测试/范围/批准检查，待人工验收）
+Owner: AUTO-001 scheduler + headless Qwen Flash (serial)
+Executed commands + exit codes: test_cmd=python3 -B tests/unit/run_save001_checks.py -> 0; attempt=3
+Test result & evidence: tasks/evidence/SAVE-001/ (会话归档+日志+diff)
+Risks & unresolved decisions: 见 tasks/evidence/SAVE-001/phaseA.out 与 report.md
+Recorded by AUTO-001 at 2026-11-11T13:01:06+00:00
+```

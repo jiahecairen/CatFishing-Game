@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/fishing/v0.1/game-save.schema.json",
-  "title": "Fishing v0.1 persisted state",
+  "title": "Fishing v0.1 persisted state (save v2)",
   "type": "object",
   "additionalProperties": false,
-  "required": ["save_version", "revision", "wallet_gold", "basket_capacity", "basket", "processed_catch_ids", "processed_sale_ids", "fishing_checkpoint", "desktop_window"],
+  "required": ["save_version", "revision", "wallet_gold", "basket_capacity", "basket", "processed_catch_ids", "processed_sale_ids", "fishing_checkpoint", "desktop_window", "economy_ledger", "rng_snapshot", "clock_snapshot", "pending_candidate"],
   "properties": {
-    "save_version": {"const": 1},
+    "save_version": {"const": 2},
     "revision": {"type": "integer", "minimum": 0},
     "wallet_gold": {"type": "integer", "minimum": 0},
     "basket_capacity": {"type": "integer", "minimum": 1},
@@ -48,7 +48,76 @@
         "height": {"type": "integer", "minimum": 1},
         "display_hint": {"type": ["integer", "null"], "minimum": 0}
       }
+    },
+    "economy_ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["processed_catches", "processed_sales"],
+      "properties": {
+        "processed_catches": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["species_id", "caught_at_utc"],
+            "properties": {
+              "species_id": {"type": "string", "minLength": 1},
+              "caught_at_utc": {"type": "string", "format": "date-time"}
+            }
+          }
+        },
+        "processed_sales": {
+          "type": "object",
+          "additionalProperties": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "rng_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "seed", "state"],
+      "properties": {
+        "version": {"const": 1},
+        "seed": {"type": "integer", "minimum": 1, "maximum": 2147483646},
+        "state": {"type": "integer", "minimum": 1, "maximum": 2147483646}
+      }
+    },
+    "clock_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "now"],
+      "properties": {
+        "version": {"const": 1},
+        "now": {"type": "number", "minimum": 0}
+      }
+    },
+    "pending_candidate": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version", "catch_event_id", "species_id", "weight_snapshot", "caught_at_clock", "caught_at_utc"],
+          "properties": {
+            "version": {"const": 1},
+            "catch_event_id": {"type": "string", "minLength": 1},
+            "species_id": {"type": "string", "minLength": 1},
+            "weight_snapshot": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["catch_weight", "base_price", "rarity"],
+              "properties": {
+                "catch_weight": {"type": "number", "exclusiveMinimum": 0},
+                "base_price": {"type": "integer", "minimum": 0},
+                "rarity": {"type": "string", "minLength": 1}
+              }
+            },
+            "caught_at_clock": {"type": "number", "minimum": 0},
+            "caught_at_utc": {"type": "string", "format": "date-time"}
+          }
+        }
+      ]
     }
   },
-  "$comment": "Further semantic checks required in Godot: basket length <= capacity, unique instance/source IDs, state-specific checkpoint completeness, valid species/processed transaction reconciliation, currency overflow, event payload identity."
+  "$comment": "SAVE-001: save_version 2 (plan §4.1). v1 (save_version const 1, previous nine keys only) remains a read-only legacy shape accepted solely by scripts/save/save_validate.gd for provably-safe migration (empty ledger, empty basket, IDLE checkpoint; otherwise VERSION_LEGACY_UNSAFE and originals retained); new documents must always be v2. Further semantic checks are executed fail-closed in Godot by scripts/save/save_validate.gd (no jsonschema dependency): basket length <= capacity; unique instance/source IDs; UTC second-precision timestamps via FishInstance.timestamp_valid; state-specific checkpoint completeness; basket/candidate species must belong to the config-gated catalog; economy_ledger key sets must equal processed_*_ids and fingerprints must match basket fish; sold instances must not remain in basket; pending_candidate.weight_snapshot must equal the validated catalog entry (catch_weight/base_price/rarity); pending_candidate != null requires SETTLEMENT checkpoint with matching event_id; wallet_gold stays a plain non-negative integer (review #3: no extra gold-vs-transaction-ID inference)."
 }
