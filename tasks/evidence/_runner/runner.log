@@ -101,3 +101,18 @@
 [2026-11-11T09:17:32+00:00] launch headless session tag=phaseA
 [2026-11-11T09:35:04+00:00] session done tag=phaseA rc=0 archived=True
 [2026-11-11T09:35:04+00:00] SAVE-001: plan 完成 → awaiting_approval（人工批准: 编辑 APPROVALS.md 后把 status 改为 exec_ready）
+[2026-11-11T10:09:55+00:00] model gate PASS: health ok; model listed
+[2026-11-11T10:09:55+00:00] approval verified for SAVE-001 (ledger sha 6da63dfbb05e8695)
+[2026-11-11T10:09:55+00:00] launch headless session tag=phaseB-1
+[2026-11-11T11:09:57+00:00] session done tag=phaseB-1 rc=-9 archived=True
+[2026-11-11T11:09:57+00:00] SAVE-001 test attempt 1 exit=2
+[2026-11-11T11:09:57+00:00] SAVE-001 attempt 1 失败 test_rc=2 session_rc=-9 越界=[]
+[2026-11-11T11:09:57+00:00] launch headless session tag=phaseB-2
+[2026-11-11T12:09:59+00:00] session done tag=phaseB-2 rc=-9 archived=True
+[2026-11-11T12:10:01+00:00] SAVE-001 test attempt 2 exit=1
+[2026-11-11T12:10:01+00:00] SAVE-001 attempt 2 失败 test_rc=1 session_rc=-9 越界=[]
+[2026-11-11T12:10:01+00:00] launch headless session tag=phaseB-3
+[2026-11-11T13:01:03+00:00] session done tag=phaseB-3 rc=0 archived=True
+[2026-11-11T13:01:06+00:00] SAVE-001 test attempt 3 exit=0
+[2026-11-11T13:01:06+00:00] SAVE-001: 成功 → commit 034c035
+ → in_review（不 push）
