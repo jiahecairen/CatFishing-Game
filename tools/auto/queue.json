@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-11T05:33:00+00:00",
+  "updated": "2026-11-11T06:27:50+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -80,7 +80,8 @@
       ],
       "test_cmd": "python3 -B tests/unit/run_fsm001_checks.py",
       "needs_human": false,
-      "brief": "按 tasks/evidence/FSM-001/plan.md 实施，并严格满足 tasks/evidence/FSM-001/review.md 的 5 项必做审查条件。测试驱动必须在临时副本执行 Godot 导入/FSM/CORE/CFG，禁止与用户 GUI 并发导入。allowed_files 仅 scripts/fishing/**、tests/**；不得修改经济值、schemas、GameState、窗口 UI。"
+      "brief": "按 tasks/evidence/FSM-001/plan.md 与 review.md 实施本次 review-followup.md 所列返修，范围仍仅 scripts/fishing/**、tests/**，既有 Phase B 委托批准有效。\n\n强制条件：\n1) request_cast(state: GameState) 内部检查初始化/状态/null/满篮；任何拒绝均不消耗 RNG、不产生 event ID。\n2) F4/F5 比较完整连续周期时间轴，逐字段包括阈值时刻、event_id、wait_seconds、候选 species/payload；0.5/1/2 秒步长一致。\n3) DeterministicRng 提供 fail-closed snapshot_state/restore_state；恢复测试使用新 RNG/Clock 实例。PAUSED 快照使用当前四字段 schema 可表达且重启可安全续跑的状态；严格校验 event/wait/elapsed。候选重复请求返回相同 payload 深拷贝，不重复抽 RNG。报告注明 SAVE-001 仍需持久化 RNG/Clock 状态和 pending candidate；不得改 schema。\n4) CASTING/HOOKED/REELING 表现时长通过可选 stage_durations 参数配置，校验有限正数，默认 1 秒；不改 runtime_config、经济参数或 schema。\n5) run_fsm001_checks.py 先复制工程到系统临时目录（排除 .git/.godot/tasks/evidence/Python cache），同一副本串行运行 editor import、FSM、CORE、CFG；HOME/XDG 隔离，finally 清理副本与 HOME。所有 Godot --path/cwd 必须指向副本，禁止在真实工程路径直接启动 Godot。每步检查退出码、PASS/FAIL 标记、SCRIPT ERROR。\n6) 不改 GameState、经济代码、数据配置、schema、UI；保持批准文件范围。修正旧 report 对 OPEN-004 的错误表述。",
+      "retries": 1
     },
     {
       "id": "ECO-001",

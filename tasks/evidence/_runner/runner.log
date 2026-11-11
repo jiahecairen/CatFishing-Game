@@ -72,3 +72,10 @@
 [2026-11-11T05:17:27+00:00] launch headless session tag=phaseA
 [2026-11-11T05:27:28+00:00] session done tag=phaseA rc=0 archived=True
 [2026-11-11T05:27:28+00:00] FSM-001: plan 完成 → awaiting_approval（人工批准: 编辑 APPROVALS.md 后把 status 改为 exec_ready）
+[2026-11-11T05:33:50+00:00] model gate PASS: health ok; model listed
+[2026-11-11T05:33:50+00:00] approval verified for FSM-001 (ledger sha 06c7685ba5df6074)
+[2026-11-11T05:33:50+00:00] launch headless session tag=phaseB-1
+[2026-11-11T06:07:19+00:00] session done tag=phaseB-1 rc=0 archived=True
+[2026-11-11T06:07:21+00:00] FSM-001 test attempt 1 exit=0
+[2026-11-11T06:07:21+00:00] FSM-001: 成功 → commit 9dc9753
+ → in_review（不 push）
