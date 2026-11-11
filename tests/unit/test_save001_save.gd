@@ -217,6 +217,7 @@ func _s2() -> bool:
 			and String((svc_b.persist_runtime_checkpoint() as Dictionary)["code"]) == "QUARANTINE_FAILED"
 			and _read_bytes(dir_b + "game_state.json") == corrupt_bytes
 			and _read_bytes(dir_b + "game_state.json.bak") == bak_b_bytes
+			and not FileAccess.file_exists(dir_b + "game_state.corrupt.1.json")
 			and not _has_tmp_residue(dir_b), "S2b quarantine fault keeps corrupt main + good bak bytes"):
 		return false
 	var rescue: Variant = svc_b.load_save(_species, 5)
@@ -304,7 +305,7 @@ func _s4() -> bool:
 	if not _check(example is Dictionary and int(example["save_version"]) == 1, "S4 examples/save_v01.json stays v1"):
 		return false
 	var dir_path := _fresh_dir("s4")
-	var parts := _services(dir_path, 1); var svc = parts["save"]
+	var parts := _services(dir_path, 1); var svc = parts["save"]; var bound_state: GameState = parts["state"]
 	var main := dir_path + "game_state.json"
 	_write_text(main, example_text)
 	var v1_bytes := _read_bytes(main)
@@ -357,6 +358,21 @@ func _s4() -> bool:
 	if not _check(res.get("ok") == true and String(res["code"]) == "MIGRATED_V1"
 			and int((res["state"] as GameState).save_version) == 1,
 			"S4 migrated state stays save_version 1 until first successful commit"):
+		return false
+	var bound_state_before := _state_snapshot(bound_state)
+	if not _check((svc.set_fault_injection("legacy_copy", true) as Dictionary).get("ok") == true,
+			"S4 arm legacy_copy failure after temporary archive copy"):
+		return false
+	var legacy_failed: Variant = svc.persist_runtime_checkpoint()
+	if not _check(legacy_failed.get("ok") == false and String(legacy_failed["code"]) == "LEGACY_COPY_FAILED"
+			and _read_bytes(main) == v1_bytes and _read_bytes(dir_path + "game_state.json.bak") == v1_bytes
+			and not FileAccess.file_exists(dir_path + "game_state.legacy.1.json")
+			and _files(dir_path) == ["game_state.json", "game_state.json.bak"]
+			and not _has_tmp_residue(dir_path) and _deep_eq(bound_state_before, _state_snapshot(bound_state)),
+			"S4 injected legacy_copy failure preserves source and removes both temporary files"):
+		return false
+	if not _check((svc.set_fault_injection("legacy_copy", false) as Dictionary).get("ok") == true,
+			"S4 disarm legacy_copy failure"):
 		return false
 	if not _check((svc.persist_runtime_checkpoint() as Dictionary).get("ok") == true
 			and int(svc.export_document()["save_version"]) == 2,
@@ -521,6 +537,12 @@ func _s7() -> bool:
 		return false
 	var cand := _cycle_to_settlement(fsm, state, svc, utc)
 	if not _check(not cand.is_empty(), "S7 settlement reached"):
+		return false
+	var malformed_candidate: Dictionary = cand.duplicate(true)
+	malformed_candidate["weight_snapshot"] = "not a dictionary"
+	var malformed_result: Variant = svc.set_pending_candidate(malformed_candidate, utc)
+	if not _check(malformed_result.get("ok") == false and String(malformed_result["code"]) == "BAD_PAYLOAD",
+			"S7 malformed weight_snapshot fails closed without a GDScript cast error"):
 		return false
 	if not _check(String((svc.set_pending_candidate(cand, raw))["code"]) == "BAD_TIMESTAMP",
 			"S7 raw logical-clock-as-UTC timestamp must reject BAD_TIMESTAMP"):

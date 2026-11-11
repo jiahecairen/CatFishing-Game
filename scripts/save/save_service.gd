@@ -101,6 +101,8 @@ func set_pending_candidate(candidate: Variant, caught_at_utc: Variant) -> Dictio
 			or not raw.has("catch_event_id") or not raw.has("species_id") \
 			or not raw.has("weight_snapshot") or not raw.has("caught_at_clock"):
 		return _result(false, SaveValidate.CODE_BAD_PAYLOAD, "candidate is not a successful FSM payload", {})
+	if not (raw["weight_snapshot"] is Dictionary):
+		return _result(false, SaveValidate.CODE_BAD_PAYLOAD, "candidate weight_snapshot must be a dictionary", {})
 	if not FishInstance.timestamp_valid(caught_at_utc):
 		return _result(false, SaveValidate.CODE_BAD_TIMESTAMP, "caught_at_utc is not valid UTC seconds", {})
 	var checkpoint: Dictionary = _fsm.snapshot_checkpoint()
@@ -316,23 +318,15 @@ func _commit(document: Variant) -> Dictionary:
 	# 步骤 5：v1 或坏/缺 main ⇒ 惰性复制原件到唯一保留名（main 全程留在原位，review #2/#10）。
 	var archive_path := ""
 	if main_status == SaveValidate.STATUS_V1:
-		if _faults != null and _faults.is_armed("legacy_copy"):
-			_remove_quietly(temp_path)
-			return _commit_fail(SaveValidate.CODE_LEGACY_COPY_FAILED, "fault injection: legacy_copy", main_status, "legacy")
 		archive_path = _unique_archive_path(LEGACY_PREFIX)
-		var legacy_error := _archive_copy(_main_path(), archive_path)
+		var legacy_error := _archive_copy(_main_path(), archive_path, "legacy_copy")
 		if not legacy_error.is_empty():
-			DirAccess.remove_absolute(archive_path)  # 仅本次未完成的临时副本，不触碰原件
 			_remove_quietly(temp_path)
 			return _commit_fail(SaveValidate.CODE_LEGACY_COPY_FAILED, legacy_error, main_status, "legacy")
 	elif main_status == SaveValidate.STATUS_CORRUPT:
-		if _faults != null and _faults.is_armed("quarantine"):
-			_remove_quietly(temp_path)
-			return _commit_fail(SaveValidate.CODE_QUARANTINE_FAILED, "fault injection: quarantine", main_status, "quarantine")
 		archive_path = _unique_archive_path(CORRUPT_PREFIX)
-		var corrupt_error := _archive_copy(_main_path(), archive_path)
+		var corrupt_error := _archive_copy(_main_path(), archive_path, "quarantine")
 		if not corrupt_error.is_empty():
-			DirAccess.remove_absolute(archive_path)
 			_remove_quietly(temp_path)
 			return _commit_fail(SaveValidate.CODE_QUARANTINE_FAILED, corrupt_error, main_status, "quarantine")
 	# 步骤 6：原子替换；rename OK 才算应用级提交（步骤 7 失败路径不触碰任何原件）。
@@ -539,7 +533,13 @@ func _read_document(path: String, catalog: Dictionary) -> Dictionary:
 				"reason": "cannot open (%s)" % error_string(FileAccess.get_open_error())}
 	var text := file.get_as_text()
 	file.close()
-	var parsed: Variant = JSON.parse_string(text)
+	var parser := JSON.new()
+	var parse_error := parser.parse(text)
+	if parse_error != OK:
+		return {"code": SaveValidate.STATUS_CORRUPT, "status": SaveValidate.STATUS_CORRUPT,
+				"reason": "invalid JSON at line %d: %s" % [parser.get_error_line(), parser.get_error_message()],
+				"document": {}}
+	var parsed: Variant = parser.data
 	var classification: Dictionary = SaveValidate.classify_document(parsed, catalog)
 	return {"code": String(classification["status"]), "status": String(classification["status"]),
 			"reason": String(classification.get("reason", "")),
@@ -600,15 +600,21 @@ func _update_backup(main_path: String) -> String:
 
 
 ## 坏档/旧版原件惰性隔离：唯一临时副本 → 逐字节验证 → rename 到保留名。原件不动。
-func _archive_copy(source: String, target: String) -> String:
+func _archive_copy(source: String, target: String, fault_stage: String) -> String:
 	var archive_temp := _next_temp_path(TMP_PREFIX)
 	var copy_error := DirAccess.copy_absolute(source, archive_temp)
 	if copy_error != OK:
+		_remove_quietly(archive_temp)
 		return "archive copy failed (%s)" % error_string(copy_error)
+	if _faults != null and _faults.is_armed(fault_stage):
+		_remove_quietly(archive_temp)
+		return "fault injection: %s" % fault_stage
 	if _read_bytes(source) != _read_bytes(archive_temp):
+		_remove_quietly(archive_temp)
 		return "archive temp bytes differ from original"
 	var rename_error := DirAccess.rename_absolute(archive_temp, target)
 	if rename_error != OK:
+		_remove_quietly(archive_temp)
 		return "archive rename failed (%s)" % error_string(rename_error)
 	return ""
 
