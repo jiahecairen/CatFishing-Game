@@ -19,6 +19,8 @@
 7. 测试矩阵加入新档/损坏档/候选恢复/full-screen coexistence；每个 Godot 子进程都需退出码 0、精确一次 PASS、无对应 FAIL、无 `SCRIPT ERROR`，并且导入步骤先完成。
 8. 保留 GUI `needs_human=true`；尚未声称 GUI 通过。
 
+原始生成器输出 `phaseA.out` 与压缩会话归档保留在证据目录；其中初稿范围判断已被本计划修订，不能把初稿当作当前实施授权。
+
 ## 审批边界
 
 本计划的 Phase B 白名单为：

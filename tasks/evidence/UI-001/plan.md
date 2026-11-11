@@ -55,7 +55,7 @@
 
 **不修改**（超出范围，零 diff）：`scripts/core/game_state.gd`、`scripts/core/fishing_system.gd`、
 `scripts/io/**`、`data/**`、`examples/**`、`schemas/**`、`tools/**`、
-`tasks/APPROVALS.md`、既有 `scripts/{economy,fishing,save,config}/**`、`tests/spike/**`。
+`tasks/APPROVALS.md`（Phase B 代码不直接改审批账本；授权记录只经现有审批服务写入）、既有 `scripts/{economy,fishing,save,config}/**`、`tests/spike/**`。
 
 ## 3. 接口充分性结论与最小范围变更清单（Phase A 审查结论）
 
@@ -73,7 +73,7 @@
 |---|---|---|
 | SC-1 | Mac GUI 证实运行时透明设置在主工程不生效；headless 测试不能证明窗口透明 | 仅追加 `[display]` 六键，逐值镜像已验收 SPIKE：`window/size/viewport_width=220`、`window/size/viewport_height=160`、`window/size/resizable=false`、`window/size/borderless=true`、`window/size/always_on_top=true`、`window/size/transparent=true`。保留 `run/max_fps=30` 与现有 main scene，不添加其他键。 |
 
-除 SC-1 外不动态扩权；若实现需要任何额外路径，先停下并报告。队列白名单须与 §2 一致。此审查计划不记录 Phase B 批准，工单保持 `awaiting_approval`。
+除 SC-1 外不动态扩权；若实现需要任何额外路径，先停下并报告。队列白名单须与 §2 一致。Phase B 审批只能由现有审批服务写入账本并变更队列状态，不得手工绕过门禁。
 
 ## 4. 接口与不变量（Phase B 必须保持）
 
@@ -187,12 +187,12 @@ GUI 未测项一律记 NOT RUN，禁止记 PASS（godot-overlay §7）。
 | 最小路径白名单与唯一条件设置 | §2、§3 |
 | 隔离副本 runner：先导入、精确 PASS 标记、无脚本错误和相关回归 | §5.1 |
 | Mac GUI 验收：透明/穿透/拖动/售鱼/隐藏显示/FPS | §5.3 G-UI-1…8 |
-| 保留审批账本与 runner 门禁 | 本票不改 `tasks/APPROVALS.md` 或 runner；审批状态保持待审批 |
+| 保留审批账本与 runner 门禁 | Phase B 实现不改账本或 runner；授权记录由现有审批服务提交；`needs_human=true` 保持 |
 
 ## 8. Phase B 交接（供审查者）
 
-1. 计划审查确认白名单与 SC-1；本轮保留 `awaiting_approval`，不改审批账本、不进入 Phase B。
-2. Phase B 获批后队列 `test_cmd` 使用 `python3 -B tests/unit/run_ui001_checks.py`（`needs_human=true` 保持，GUI 项需证据）。
+1. 独立审查已核对白名单与 SC-1；由既有审批服务记录批准及测试命令，禁止直接改审批账本或绕过 Runner check。
+2. 批准命令为 `python3 -B tests/unit/run_ui001_checks.py`（`needs_human=true` 保持，GUI 项需证据）。
 3. 实现顺序建议：`fishing_session.gd`+`test_ui001_ui.gd`（headless 先绿）→ UI 场景/控制器 → `run_ui001_checks.py` → GUI 清单。
 4. 证据归档至 `tasks/evidence/UI-001/`（plan/review/report/测试日志/GUI 截图与验收矩阵）。
 
