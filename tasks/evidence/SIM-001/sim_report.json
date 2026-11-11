@@ -1,0 +1,5164 @@
+{
+ "build_id": "unreleased-local",
+ "fault_injection": [
+  {
+   "armed_at_clock": 3625,
+   "armed_at_or_after_seconds": 3600,
+   "failed_transaction_id": "catch-1746293397-152970896",
+   "failure_code": "PERSIST_FAILED",
+   "same_id_retry_code": "",
+   "stage": "rename",
+   "state_unchanged": true,
+   "transaction_kind": "catch"
+  },
+  {
+   "armed_at_clock": 7255,
+   "armed_at_or_after_seconds": 7200,
+   "failed_transaction_id": "catch-1421824363-1453951900",
+   "failure_code": "PERSIST_FAILED",
+   "same_id_retry_code": "",
+   "stage": "tmp_write",
+   "state_unchanged": true,
+   "transaction_kind": "catch"
+  }
+ ],
+ "godot_version": "4.7.2-stable (official)",
+ "notes": [
+  "SIM001 真实执行结果，非示例；产品数值零改动：20/60 秒、30 FPS、容量 10、权重 60/30/10、价格 8/16/32 均按 data/ 现状只读加载",
+  "模拟策略常量（20 seeds 101..120、1h/4h/8h、TICK 1.0s、场景 B 周期 1800s、满篓点击 60s、stage 1.0s）均为测试参数，非产品数值；调节建议仅见 report.md 提请用户审核段",
+  "场景 A/B 走 EconomyService 默认恒真内存门（零文件 IO）；仅故障子场景经 AtomicSaveService 写 OS.get_temp_dir() 下临时目录且结束时清理，不触碰真实 user://",
+  "executed_utc=2026-11-11T21:14:02Z (runner step2 本次真实运行；Godot=/Applications/Godot.app/Contents/MacOS/Godot, python=3.15.2)"
+ ],
+ "pass": true,
+ "per_run": [
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 431,
+   "full_basket_cast_rejections": 52,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 101,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 4,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 32,
+    "silver_perch": 80
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 431,
+   "full_basket_cast_rejections": 232,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 101,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 4,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 32,
+    "silver_perch": 80
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 431,
+   "full_basket_cast_rejections": 472,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 101,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 4,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 32,
+    "silver_perch": 80
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 431,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-101-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 101,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 9,
+    "silver_perch": 10
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 72,
+    "silver_perch": 160
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 431,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-101-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-101-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-101-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-101-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-101-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-101-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-101-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 101,
+   "species_counts": {
+    "golden_trout": 6,
+    "river_carp": 49,
+    "silver_perch": 25
+   },
+   "species_total_value": {
+    "golden_trout": 192,
+    "river_carp": 392,
+    "silver_perch": 400
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 431,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-101-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-101-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-101-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-101-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-101-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-101-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-101-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 80,
+     "sale_event_id": "sale-101-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-101-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-101-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-101-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-101-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-101-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-101-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-101-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 101,
+   "species_counts": {
+    "golden_trout": 16,
+    "river_carp": 98,
+    "silver_perch": 46
+   },
+   "species_total_value": {
+    "golden_trout": 512,
+    "river_carp": 784,
+    "silver_perch": 736
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 395,
+   "full_basket_cast_rejections": 53,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 102,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 8,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 64,
+    "silver_perch": 16
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 395,
+   "full_basket_cast_rejections": 233,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 102,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 8,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 64,
+    "silver_perch": 16
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 395,
+   "full_basket_cast_rejections": 473,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 102,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 8,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 64,
+    "silver_perch": 16
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 395,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-102-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 102,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 14,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 112,
+    "silver_perch": 80
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 395,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-102-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-102-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-102-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-102-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-102-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-102-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-102-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 102,
+   "species_counts": {
+    "golden_trout": 9,
+    "river_carp": 42,
+    "silver_perch": 29
+   },
+   "species_total_value": {
+    "golden_trout": 288,
+    "river_carp": 336,
+    "silver_perch": 464
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 395,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-102-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-102-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-102-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-102-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-102-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-102-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-102-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-102-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-102-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-102-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-102-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-102-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-102-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-102-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-102-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 102,
+   "species_counts": {
+    "golden_trout": 17,
+    "river_carp": 87,
+    "silver_perch": 56
+   },
+   "species_total_value": {
+    "golden_trout": 544,
+    "river_carp": 696,
+    "silver_perch": 896
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 391,
+   "full_basket_cast_rejections": 53,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 103,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 4,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 32,
+    "silver_perch": 80
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 391,
+   "full_basket_cast_rejections": 233,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 103,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 4,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 32,
+    "silver_perch": 80
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 391,
+   "full_basket_cast_rejections": 473,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 103,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 4,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 32,
+    "silver_perch": 80
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 391,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-103-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 103,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 10,
+    "silver_perch": 8
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 80,
+    "silver_perch": 128
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 391,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-103-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-103-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-103-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-103-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-103-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-103-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-103-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 103,
+   "species_counts": {
+    "golden_trout": 6,
+    "river_carp": 42,
+    "silver_perch": 32
+   },
+   "species_total_value": {
+    "golden_trout": 192,
+    "river_carp": 336,
+    "silver_perch": 512
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 391,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-103-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-103-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-103-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-103-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-103-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-103-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-103-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-103-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-103-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-103-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-103-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-103-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-103-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-103-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-103-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 103,
+   "species_counts": {
+    "golden_trout": 13,
+    "river_carp": 86,
+    "silver_perch": 61
+   },
+   "species_total_value": {
+    "golden_trout": 416,
+    "river_carp": 688,
+    "silver_perch": 976
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 478,
+   "full_basket_cast_rejections": 52,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 104,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 7,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 56,
+    "silver_perch": 32
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 478,
+   "full_basket_cast_rejections": 232,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 104,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 7,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 56,
+    "silver_perch": 32
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 478,
+   "full_basket_cast_rejections": 472,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 104,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 7,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 56,
+    "silver_perch": 32
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 478,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-104-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 104,
+   "species_counts": {
+    "golden_trout": 3,
+    "river_carp": 10,
+    "silver_perch": 7
+   },
+   "species_total_value": {
+    "golden_trout": 96,
+    "river_carp": 80,
+    "silver_perch": 112
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 478,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-104-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-104-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-104-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-104-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-104-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-104-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-104-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 104,
+   "species_counts": {
+    "golden_trout": 7,
+    "river_carp": 54,
+    "silver_perch": 19
+   },
+   "species_total_value": {
+    "golden_trout": 224,
+    "river_carp": 432,
+    "silver_perch": 304
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 478,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-104-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-104-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-104-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-104-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-104-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-104-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-104-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-104-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-104-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-104-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-104-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-104-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-104-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-104-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-104-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 104,
+   "species_counts": {
+    "golden_trout": 15,
+    "river_carp": 98,
+    "silver_perch": 47
+   },
+   "species_total_value": {
+    "golden_trout": 480,
+    "river_carp": 784,
+    "silver_perch": 752
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 360,
+   "full_basket_cast_rejections": 53,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 105,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 4,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 32,
+    "silver_perch": 80
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 360,
+   "full_basket_cast_rejections": 233,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 105,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 4,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 32,
+    "silver_perch": 80
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 360,
+   "full_basket_cast_rejections": 473,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 105,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 4,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 32,
+    "silver_perch": 80
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 360,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-105-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 105,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 12,
+    "silver_perch": 6
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 96,
+    "silver_perch": 96
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 360,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-105-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-105-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-105-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-105-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-105-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-105-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-105-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 105,
+   "species_counts": {
+    "golden_trout": 10,
+    "river_carp": 48,
+    "silver_perch": 22
+   },
+   "species_total_value": {
+    "golden_trout": 320,
+    "river_carp": 384,
+    "silver_perch": 352
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 360,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-105-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-105-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-105-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-105-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-105-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-105-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-105-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 184,
+     "sale_event_id": "sale-105-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-105-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 176,
+     "sale_event_id": "sale-105-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-105-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-105-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-105-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-105-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-105-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 105,
+   "species_counts": {
+    "golden_trout": 19,
+    "river_carp": 97,
+    "silver_perch": 44
+   },
+   "species_total_value": {
+    "golden_trout": 608,
+    "river_carp": 776,
+    "silver_perch": 704
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 473,
+   "full_basket_cast_rejections": 52,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 106,
+   "species_counts": {
+    "golden_trout": 3,
+    "river_carp": 6,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "golden_trout": 96,
+    "river_carp": 48,
+    "silver_perch": 16
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 473,
+   "full_basket_cast_rejections": 232,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 106,
+   "species_counts": {
+    "golden_trout": 3,
+    "river_carp": 6,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "golden_trout": 96,
+    "river_carp": 48,
+    "silver_perch": 16
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 473,
+   "full_basket_cast_rejections": 472,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 106,
+   "species_counts": {
+    "golden_trout": 3,
+    "river_carp": 6,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "golden_trout": 96,
+    "river_carp": 48,
+    "silver_perch": 16
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 473,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-106-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 106,
+   "species_counts": {
+    "golden_trout": 3,
+    "river_carp": 16,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "golden_trout": 96,
+    "river_carp": 128,
+    "silver_perch": 16
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 473,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-106-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 80,
+     "sale_event_id": "sale-106-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-106-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-106-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-106-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 208,
+     "sale_event_id": "sale-106-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-106-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 106,
+   "species_counts": {
+    "golden_trout": 12,
+    "river_carp": 50,
+    "silver_perch": 18
+   },
+   "species_total_value": {
+    "golden_trout": 384,
+    "river_carp": 400,
+    "silver_perch": 288
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 473,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-106-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 80,
+     "sale_event_id": "sale-106-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-106-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-106-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-106-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 208,
+     "sale_event_id": "sale-106-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-106-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-106-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-106-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-106-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-106-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-106-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-106-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-106-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-106-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 106,
+   "species_counts": {
+    "golden_trout": 17,
+    "river_carp": 99,
+    "silver_perch": 44
+   },
+   "species_total_value": {
+    "golden_trout": 544,
+    "river_carp": 792,
+    "silver_perch": 704
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 399,
+   "full_basket_cast_rejections": 53,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 107,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 6,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 48,
+    "silver_perch": 48
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 399,
+   "full_basket_cast_rejections": 233,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 107,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 6,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 48,
+    "silver_perch": 48
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 399,
+   "full_basket_cast_rejections": 473,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 107,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 6,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 48,
+    "silver_perch": 48
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 399,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-107-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 107,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 12,
+    "silver_perch": 7
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 96,
+    "silver_perch": 112
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 399,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-107-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-107-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-107-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-107-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-107-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-107-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-107-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 107,
+   "species_counts": {
+    "golden_trout": 7,
+    "river_carp": 46,
+    "silver_perch": 27
+   },
+   "species_total_value": {
+    "golden_trout": 224,
+    "river_carp": 368,
+    "silver_perch": 432
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 399,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-107-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-107-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-107-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-107-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-107-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-107-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-107-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-107-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-107-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-107-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-107-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-107-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-107-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 184,
+     "sale_event_id": "sale-107-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-107-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 107,
+   "species_counts": {
+    "golden_trout": 13,
+    "river_carp": 97,
+    "silver_perch": 50
+   },
+   "species_total_value": {
+    "golden_trout": 416,
+    "river_carp": 776,
+    "silver_perch": 800
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 351,
+   "full_basket_cast_rejections": 54,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 108,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 7,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 56,
+    "silver_perch": 32
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 351,
+   "full_basket_cast_rejections": 234,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 108,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 7,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 56,
+    "silver_perch": 32
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 351,
+   "full_basket_cast_rejections": 474,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 108,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 7,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 56,
+    "silver_perch": 32
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 351,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-108-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 108,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 13,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 104,
+    "silver_perch": 80
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 351,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-108-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-108-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-108-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-108-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-108-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-108-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-108-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 108,
+   "species_counts": {
+    "golden_trout": 7,
+    "river_carp": 52,
+    "silver_perch": 21
+   },
+   "species_total_value": {
+    "golden_trout": 224,
+    "river_carp": 416,
+    "silver_perch": 336
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 351,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-108-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-108-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-108-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-108-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-108-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-108-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-108-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-108-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-108-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-108-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-108-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-108-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-108-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 200,
+     "sale_event_id": "sale-108-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-108-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 108,
+   "species_counts": {
+    "golden_trout": 18,
+    "river_carp": 103,
+    "silver_perch": 39
+   },
+   "species_total_value": {
+    "golden_trout": 576,
+    "river_carp": 824,
+    "silver_perch": 624
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 400,
+   "full_basket_cast_rejections": 53,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 109,
+   "species_counts": {
+    "river_carp": 9,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "river_carp": 72,
+    "silver_perch": 16
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 400,
+   "full_basket_cast_rejections": 233,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 109,
+   "species_counts": {
+    "river_carp": 9,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "river_carp": 72,
+    "silver_perch": 16
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 400,
+   "full_basket_cast_rejections": 473,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 109,
+   "species_counts": {
+    "river_carp": 9,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "river_carp": 72,
+    "silver_perch": 16
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 400,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-109-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 109,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 16,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 128,
+    "silver_perch": 32
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 400,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-109-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-109-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-109-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-109-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-109-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-109-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-109-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 109,
+   "species_counts": {
+    "golden_trout": 11,
+    "river_carp": 55,
+    "silver_perch": 14
+   },
+   "species_total_value": {
+    "golden_trout": 352,
+    "river_carp": 440,
+    "silver_perch": 224
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 400,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-109-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-109-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-109-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-109-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-109-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-109-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-109-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-109-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-109-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-109-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-109-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-109-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-109-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-109-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-109-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 109,
+   "species_counts": {
+    "golden_trout": 18,
+    "river_carp": 108,
+    "silver_perch": 34
+   },
+   "species_total_value": {
+    "golden_trout": 576,
+    "river_carp": 864,
+    "silver_perch": 544
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 396,
+   "full_basket_cast_rejections": 53,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 110,
+   "species_counts": {
+    "river_carp": 5,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "river_carp": 40,
+    "silver_perch": 80
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 396,
+   "full_basket_cast_rejections": 233,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 110,
+   "species_counts": {
+    "river_carp": 5,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "river_carp": 40,
+    "silver_perch": 80
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 396,
+   "full_basket_cast_rejections": 473,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 110,
+   "species_counts": {
+    "river_carp": 5,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "river_carp": 40,
+    "silver_perch": 80
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 396,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-110-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 110,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 12,
+    "silver_perch": 6
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 96,
+    "silver_perch": 96
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 396,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-110-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-110-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-110-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-110-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-110-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-110-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-110-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 110,
+   "species_counts": {
+    "golden_trout": 7,
+    "river_carp": 49,
+    "silver_perch": 24
+   },
+   "species_total_value": {
+    "golden_trout": 224,
+    "river_carp": 392,
+    "silver_perch": 384
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 396,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-110-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-110-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-110-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-110-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-110-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-110-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-110-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-110-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-110-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-110-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-110-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-110-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-110-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-110-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-110-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 110,
+   "species_counts": {
+    "golden_trout": 14,
+    "river_carp": 88,
+    "silver_perch": 58
+   },
+   "species_total_value": {
+    "golden_trout": 448,
+    "river_carp": 704,
+    "silver_perch": 928
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 474,
+   "full_basket_cast_rejections": 52,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 111,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 7,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 56,
+    "silver_perch": 32
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 474,
+   "full_basket_cast_rejections": 232,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 111,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 7,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 56,
+    "silver_perch": 32
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 474,
+   "full_basket_cast_rejections": 472,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 111,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 7,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 56,
+    "silver_perch": 32
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 474,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-111-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 111,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 14,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 112,
+    "silver_perch": 80
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 474,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-111-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-111-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-111-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-111-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-111-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-111-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-111-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 111,
+   "species_counts": {
+    "golden_trout": 7,
+    "river_carp": 48,
+    "silver_perch": 25
+   },
+   "species_total_value": {
+    "golden_trout": 224,
+    "river_carp": 384,
+    "silver_perch": 400
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 474,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-111-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-111-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-111-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-111-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-111-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-111-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-111-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 176,
+     "sale_event_id": "sale-111-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-111-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-111-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-111-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-111-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-111-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-111-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-111-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 111,
+   "species_counts": {
+    "golden_trout": 14,
+    "river_carp": 103,
+    "silver_perch": 43
+   },
+   "species_total_value": {
+    "golden_trout": 448,
+    "river_carp": 824,
+    "silver_perch": 688
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 441,
+   "full_basket_cast_rejections": 52,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 112,
+   "species_counts": {
+    "river_carp": 8,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "river_carp": 64,
+    "silver_perch": 32
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 441,
+   "full_basket_cast_rejections": 232,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 112,
+   "species_counts": {
+    "river_carp": 8,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "river_carp": 64,
+    "silver_perch": 32
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 441,
+   "full_basket_cast_rejections": 472,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 112,
+   "species_counts": {
+    "river_carp": 8,
+    "silver_perch": 2
+   },
+   "species_total_value": {
+    "river_carp": 64,
+    "silver_perch": 32
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 441,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-112-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 112,
+   "species_counts": {
+    "river_carp": 17,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "river_carp": 136,
+    "silver_perch": 48
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 441,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-112-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-112-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-112-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-112-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-112-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-112-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-112-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 112,
+   "species_counts": {
+    "golden_trout": 4,
+    "river_carp": 51,
+    "silver_perch": 25
+   },
+   "species_total_value": {
+    "golden_trout": 128,
+    "river_carp": 408,
+    "silver_perch": 400
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 441,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-112-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-112-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-112-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-112-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-112-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-112-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-112-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-112-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-112-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 176,
+     "sale_event_id": "sale-112-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-112-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 192,
+     "sale_event_id": "sale-112-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-112-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-112-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-112-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 112,
+   "species_counts": {
+    "golden_trout": 19,
+    "river_carp": 94,
+    "silver_perch": 47
+   },
+   "species_total_value": {
+    "golden_trout": 608,
+    "river_carp": 752,
+    "silver_perch": 752
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 437,
+   "full_basket_cast_rejections": 52,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 113,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 4,
+    "silver_perch": 4
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 32,
+    "silver_perch": 64
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 437,
+   "full_basket_cast_rejections": 232,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 113,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 4,
+    "silver_perch": 4
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 32,
+    "silver_perch": 64
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 437,
+   "full_basket_cast_rejections": 472,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 113,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 4,
+    "silver_perch": 4
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 32,
+    "silver_perch": 64
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 437,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-113-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 113,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 9,
+    "silver_perch": 9
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 72,
+    "silver_perch": 144
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 437,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-113-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-113-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 80,
+     "sale_event_id": "sale-113-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-113-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 176,
+     "sale_event_id": "sale-113-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-113-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-113-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 113,
+   "species_counts": {
+    "golden_trout": 9,
+    "river_carp": 45,
+    "silver_perch": 26
+   },
+   "species_total_value": {
+    "golden_trout": 288,
+    "river_carp": 360,
+    "silver_perch": 416
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 437,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-113-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-113-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 80,
+     "sale_event_id": "sale-113-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-113-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 176,
+     "sale_event_id": "sale-113-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-113-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-113-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-113-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-113-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-113-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-113-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-113-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-113-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-113-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-113-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 113,
+   "species_counts": {
+    "golden_trout": 17,
+    "river_carp": 90,
+    "silver_perch": 53
+   },
+   "species_total_value": {
+    "golden_trout": 544,
+    "river_carp": 720,
+    "silver_perch": 848
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 357,
+   "full_basket_cast_rejections": 54,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 114,
+   "species_counts": {
+    "river_carp": 6,
+    "silver_perch": 4
+   },
+   "species_total_value": {
+    "river_carp": 48,
+    "silver_perch": 64
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 357,
+   "full_basket_cast_rejections": 234,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 114,
+   "species_counts": {
+    "river_carp": 6,
+    "silver_perch": 4
+   },
+   "species_total_value": {
+    "river_carp": 48,
+    "silver_perch": 64
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 357,
+   "full_basket_cast_rejections": 474,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 114,
+   "species_counts": {
+    "river_carp": 6,
+    "silver_perch": 4
+   },
+   "species_total_value": {
+    "river_carp": 48,
+    "silver_perch": 64
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 357,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-114-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 114,
+   "species_counts": {
+    "river_carp": 10,
+    "silver_perch": 10
+   },
+   "species_total_value": {
+    "river_carp": 80,
+    "silver_perch": 160
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 357,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-114-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-114-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-114-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-114-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-114-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-114-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-114-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 114,
+   "species_counts": {
+    "golden_trout": 10,
+    "river_carp": 38,
+    "silver_perch": 32
+   },
+   "species_total_value": {
+    "golden_trout": 320,
+    "river_carp": 304,
+    "silver_perch": 512
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 357,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-114-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-114-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-114-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-114-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-114-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-114-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-114-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 184,
+     "sale_event_id": "sale-114-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-114-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-114-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-114-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-114-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-114-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-114-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-114-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 114,
+   "species_counts": {
+    "golden_trout": 16,
+    "river_carp": 84,
+    "silver_perch": 60
+   },
+   "species_total_value": {
+    "golden_trout": 512,
+    "river_carp": 672,
+    "silver_perch": 960
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 403,
+   "full_basket_cast_rejections": 53,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 115,
+   "species_counts": {
+    "river_carp": 4,
+    "silver_perch": 6
+   },
+   "species_total_value": {
+    "river_carp": 32,
+    "silver_perch": 96
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 403,
+   "full_basket_cast_rejections": 233,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 115,
+   "species_counts": {
+    "river_carp": 4,
+    "silver_perch": 6
+   },
+   "species_total_value": {
+    "river_carp": 32,
+    "silver_perch": 96
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 403,
+   "full_basket_cast_rejections": 473,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 115,
+   "species_counts": {
+    "river_carp": 4,
+    "silver_perch": 6
+   },
+   "species_total_value": {
+    "river_carp": 32,
+    "silver_perch": 96
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 403,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-115-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 115,
+   "species_counts": {
+    "river_carp": 11,
+    "silver_perch": 9
+   },
+   "species_total_value": {
+    "river_carp": 88,
+    "silver_perch": 144
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 403,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-115-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-115-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-115-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-115-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-115-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-115-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-115-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 115,
+   "species_counts": {
+    "golden_trout": 5,
+    "river_carp": 51,
+    "silver_perch": 24
+   },
+   "species_total_value": {
+    "golden_trout": 160,
+    "river_carp": 408,
+    "silver_perch": 384
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 403,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-115-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-115-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-115-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-115-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-115-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-115-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-115-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-115-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-115-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-115-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-115-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-115-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-115-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-115-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-115-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 115,
+   "species_counts": {
+    "golden_trout": 16,
+    "river_carp": 95,
+    "silver_perch": 49
+   },
+   "species_total_value": {
+    "golden_trout": 512,
+    "river_carp": 760,
+    "silver_perch": 784
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 399,
+   "full_basket_cast_rejections": 53,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 116,
+   "species_counts": {
+    "river_carp": 7,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "river_carp": 56,
+    "silver_perch": 48
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 399,
+   "full_basket_cast_rejections": 233,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 116,
+   "species_counts": {
+    "river_carp": 7,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "river_carp": 56,
+    "silver_perch": 48
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 399,
+   "full_basket_cast_rejections": 473,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 116,
+   "species_counts": {
+    "river_carp": 7,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "river_carp": 56,
+    "silver_perch": 48
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 399,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-116-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 116,
+   "species_counts": {
+    "river_carp": 15,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "river_carp": 120,
+    "silver_perch": 80
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 399,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-116-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-116-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-116-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-116-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-116-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-116-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-116-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 116,
+   "species_counts": {
+    "golden_trout": 8,
+    "river_carp": 51,
+    "silver_perch": 21
+   },
+   "species_total_value": {
+    "golden_trout": 256,
+    "river_carp": 408,
+    "silver_perch": 336
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 399,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-116-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-116-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-116-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-116-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-116-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-116-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 168,
+     "sale_event_id": "sale-116-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-116-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-116-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-116-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-116-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 88,
+     "sale_event_id": "sale-116-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-116-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-116-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-116-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 116,
+   "species_counts": {
+    "golden_trout": 15,
+    "river_carp": 109,
+    "silver_perch": 36
+   },
+   "species_total_value": {
+    "golden_trout": 480,
+    "river_carp": 872,
+    "silver_perch": 576
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 445,
+   "full_basket_cast_rejections": 52,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 117,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 8,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 64,
+    "silver_perch": 16
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 445,
+   "full_basket_cast_rejections": 232,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 117,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 8,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 64,
+    "silver_perch": 16
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 445,
+   "full_basket_cast_rejections": 472,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 117,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 8,
+    "silver_perch": 1
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 64,
+    "silver_perch": 16
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 445,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-117-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 117,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 14,
+    "silver_perch": 5
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 112,
+    "silver_perch": 80
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 445,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-117-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-117-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-117-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-117-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-117-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-117-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-117-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 117,
+   "species_counts": {
+    "golden_trout": 5,
+    "river_carp": 52,
+    "silver_perch": 23
+   },
+   "species_total_value": {
+    "golden_trout": 160,
+    "river_carp": 416,
+    "silver_perch": 368
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 445,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-117-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-117-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-117-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-117-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-117-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-117-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-117-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-117-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-117-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-117-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-117-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-117-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-117-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-117-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-117-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 117,
+   "species_counts": {
+    "golden_trout": 10,
+    "river_carp": 104,
+    "silver_perch": 46
+   },
+   "species_total_value": {
+    "golden_trout": 320,
+    "river_carp": 832,
+    "silver_perch": 736
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 397,
+   "full_basket_cast_rejections": 53,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 118,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 8
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 64
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 397,
+   "full_basket_cast_rejections": 233,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 118,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 8
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 64
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 397,
+   "full_basket_cast_rejections": 473,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 118,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 8
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 64
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 397,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-118-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 118,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 15,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 120,
+    "silver_perch": 48
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 397,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-118-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-118-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 176,
+     "sale_event_id": "sale-118-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-118-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-118-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-118-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-118-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 118,
+   "species_counts": {
+    "golden_trout": 7,
+    "river_carp": 44,
+    "silver_perch": 29
+   },
+   "species_total_value": {
+    "golden_trout": 224,
+    "river_carp": 352,
+    "silver_perch": 464
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 397,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-118-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-118-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 176,
+     "sale_event_id": "sale-118-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-118-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-118-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-118-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-118-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-118-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-118-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-118-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-118-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-118-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-118-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-118-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-118-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 118,
+   "species_counts": {
+    "golden_trout": 16,
+    "river_carp": 85,
+    "silver_perch": 59
+   },
+   "species_total_value": {
+    "golden_trout": 512,
+    "river_carp": 680,
+    "silver_perch": 944
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 446,
+   "full_basket_cast_rejections": 52,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 119,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 6,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 48,
+    "silver_perch": 48
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 446,
+   "full_basket_cast_rejections": 232,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 119,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 6,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 48,
+    "silver_perch": 48
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 446,
+   "full_basket_cast_rejections": 472,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 119,
+   "species_counts": {
+    "golden_trout": 1,
+    "river_carp": 6,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "golden_trout": 32,
+    "river_carp": 48,
+    "silver_perch": 48
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 446,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-119-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 119,
+   "species_counts": {
+    "golden_trout": 2,
+    "river_carp": 10,
+    "silver_perch": 8
+   },
+   "species_total_value": {
+    "golden_trout": 64,
+    "river_carp": 80,
+    "silver_perch": 128
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 446,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-119-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-119-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-119-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-119-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-119-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-119-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-119-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 119,
+   "species_counts": {
+    "golden_trout": 10,
+    "river_carp": 43,
+    "silver_perch": 27
+   },
+   "species_total_value": {
+    "golden_trout": 320,
+    "river_carp": 344,
+    "silver_perch": 432
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 446,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-119-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-119-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-119-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-119-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-119-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-119-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-119-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 160,
+     "sale_event_id": "sale-119-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 104,
+     "sale_event_id": "sale-119-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 176,
+     "sale_event_id": "sale-119-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 136,
+     "sale_event_id": "sale-119-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-119-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-119-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-119-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 200,
+     "sale_event_id": "sale-119-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 119,
+   "species_counts": {
+    "golden_trout": 24,
+    "river_carp": 93,
+    "silver_perch": 43
+   },
+   "species_total_value": {
+    "golden_trout": 768,
+    "river_carp": 744,
+    "silver_perch": 688
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 404,
+   "full_basket_cast_rejections": 53,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 120,
+   "species_counts": {
+    "golden_trout": 3,
+    "river_carp": 4,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "golden_trout": 96,
+    "river_carp": 32,
+    "silver_perch": 48
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 404,
+   "full_basket_cast_rejections": 233,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 120,
+   "species_counts": {
+    "golden_trout": 3,
+    "river_carp": 4,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "golden_trout": 96,
+    "river_carp": 32,
+    "silver_perch": 48
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 10,
+   "first_fill_seconds": 404,
+   "full_basket_cast_rejections": 473,
+   "sales": [],
+   "scenario": "hold_until_full",
+   "seed": 120,
+   "species_counts": {
+    "golden_trout": 3,
+    "river_carp": 4,
+    "silver_perch": 3
+   },
+   "species_total_value": {
+    "golden_trout": 96,
+    "river_carp": 32,
+    "silver_perch": 48
+   },
+   "virtual_hours": 8
+  },
+  {
+   "cycles_completed": 20,
+   "first_fill_seconds": 404,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 176,
+     "sale_event_id": "sale-120-1"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 120,
+   "species_counts": {
+    "golden_trout": 4,
+    "river_carp": 10,
+    "silver_perch": 6
+   },
+   "species_total_value": {
+    "golden_trout": 128,
+    "river_carp": 80,
+    "silver_perch": 96
+   },
+   "virtual_hours": 1
+  },
+  {
+   "cycles_completed": 80,
+   "first_fill_seconds": 404,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 176,
+     "sale_event_id": "sale-120-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-120-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-120-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-120-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-120-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-120-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-120-7"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 120,
+   "species_counts": {
+    "golden_trout": 9,
+    "river_carp": 54,
+    "silver_perch": 17
+   },
+   "species_total_value": {
+    "golden_trout": 288,
+    "river_carp": 432,
+    "silver_perch": 272
+   },
+   "virtual_hours": 4
+  },
+  {
+   "cycles_completed": 160,
+   "first_fill_seconds": 404,
+   "full_basket_cast_rejections": 0,
+   "sales": [
+    {
+     "at_clock": 1800,
+     "fish_count": 10,
+     "gold_added": 176,
+     "sale_event_id": "sale-120-1"
+    },
+    {
+     "at_clock": 3600,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-120-2"
+    },
+    {
+     "at_clock": 5400,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-120-3"
+    },
+    {
+     "at_clock": 7200,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-120-4"
+    },
+    {
+     "at_clock": 9000,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-120-5"
+    },
+    {
+     "at_clock": 10800,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-120-6"
+    },
+    {
+     "at_clock": 12600,
+     "fish_count": 10,
+     "gold_added": 112,
+     "sale_event_id": "sale-120-7"
+    },
+    {
+     "at_clock": 14400,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-120-8"
+    },
+    {
+     "at_clock": 16200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-120-9"
+    },
+    {
+     "at_clock": 18000,
+     "fish_count": 10,
+     "gold_added": 152,
+     "sale_event_id": "sale-120-10"
+    },
+    {
+     "at_clock": 19800,
+     "fish_count": 10,
+     "gold_added": 96,
+     "sale_event_id": "sale-120-11"
+    },
+    {
+     "at_clock": 21600,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-120-12"
+    },
+    {
+     "at_clock": 23400,
+     "fish_count": 10,
+     "gold_added": 128,
+     "sale_event_id": "sale-120-13"
+    },
+    {
+     "at_clock": 25200,
+     "fish_count": 10,
+     "gold_added": 120,
+     "sale_event_id": "sale-120-14"
+    },
+    {
+     "at_clock": 27000,
+     "fish_count": 10,
+     "gold_added": 144,
+     "sale_event_id": "sale-120-15"
+    }
+   ],
+   "scenario": "periodic_sell_1800s",
+   "seed": 120,
+   "species_counts": {
+    "golden_trout": 15,
+    "river_carp": 101,
+    "silver_perch": 44
+   },
+   "species_total_value": {
+    "golden_trout": 480,
+    "river_carp": 808,
+    "silver_perch": 704
+   },
+   "virtual_hours": 8
+  }
+ ],
+ "scenarios": [
+  "hold_until_full",
+  "periodic_sell_1800s"
+ ],
+ "seeds": [
+  101,
+  102,
+  103,
+  104,
+  105,
+  106,
+  107,
+  108,
+  109,
+  110,
+  111,
+  112,
+  113,
+  114,
+  115,
+  116,
+  117,
+  118,
+  119,
+  120
+ ],
+ "suite": "economy-simulation",
+ "summary": {
+  "basket_capacity": 10,
+  "bite_wait_max_sec": 60,
+  "bite_wait_min_sec": 20,
+  "casts_started_while_full": 0,
+  "cycle_seconds": {
+   "mean": 42.885,
+   "median": 42,
+   "p10": 27,
+   "p90": 59
+  },
+  "cycles_completed_total": 5800,
+  "deterministic_replay_identical": true,
+  "deterministic_replay_pairs": 40,
+  "duplicate_catch_transactions": 0,
+  "duplicate_sale_transactions": 0,
+  "fault_transactions_committed_before_recovery": 0,
+  "first_fill_scope": "hold_until_full 场景 60 run；null 表示该时长内从未满篓",
+  "first_fill_seconds": {
+   "mean": 413.85,
+   "median": 400,
+   "p10": 357,
+   "p90": 473
+  },
+  "full_basket_cast_rejections": 15162,
+  "gold_per_sale": {
+   "mean": 127.635,
+   "samples": 460
+  },
+  "runs": 120,
+  "species_counts": {
+   "golden_trout": 569,
+   "river_carp": 3498,
+   "silver_perch": 1733
+  },
+  "species_share": {
+   "golden_trout": 0.0981,
+   "river_carp": 0.6031,
+   "silver_perch": 0.2988
+  },
+  "species_total_value": {
+   "golden_trout": 18208,
+   "river_carp": 27984,
+   "silver_perch": 27728
+  },
+  "wait_seconds_out_of_range": 0
+ },
+ "virtual_hours": [
+  1,
+  4,
+  8
+ ]
+}

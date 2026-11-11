@@ -1,0 +1,485 @@
+## SIM-001 Phase B（第 2 次尝试）完成摘要
+
+**诊断（上次失败原因）**：`test-1.log` 末尾为 `SIM001 RUNNER PASS`、EXIT=0——上次测试本身已通过；失败源于会话级 `(TIMEOUT)`（`phaseB-1.out`），即 Phase B 会话在写出工单要求的执行报告前被调度器截断，并非代码或断言问题。
+
+**本次处置（未扩大范围）**：
+1. **真实重跑测试两次**：`python3 -B tools/sim/run_sim001_checks.py`（项目根）→ 真实退出码 **0**、**0**（wall 13.62s / ~11s，7 步 Godot headless 全 `exit_code=0`，无任何 FAIL/SCRIPT ERROR/TIMEOUT 标记）。
+2. 发现工单要求 report.md 含「改动文件清单、执行命令与退出码、测试输出摘要、覆盖的验收条目、遗留风险」，而 runner 每次运行会**覆盖** report.md——若只手写会被重跑抹掉。故仅修改 `tools/sim/run_sim001_checks.py`（允许范围内），让 runner 把**本次真实**的 step 命令、逐步退出码与墙钟时间注入 report.md 新增「§8 Phase B 执行记录」段（§8.1–8.5），调度器重跑 test_cmd 时该段随真实退出码自动再生成。
+3. 最终正式运行后重生成 `sim_report.json`（pass=true，120 run，20 seeds，硬门禁全 0，重放一致）与 `report.md`（§8.2 表中逐步真实退出码 0），完整输出存档为 `tasks/evidence/SIM-001/test-2.log`。
+
+**硬门禁（真实实测）**：`duplicate_catch_transactions=0`、`duplicate_sale_transactions=0`、`casts_started_while_full=0`、`wait_seconds_out_of_range=0`、`fault_transactions_committed_before_recovery=0`、`deterministic_replay_identical=true`（40 对重放）；120 run 统计与故障注入 2 例（rename/tmp_write → PERSIST_FAILED → 解除同 ID 重试成功）见报告与 JSON。
+
+**范围合规**：本会话仅改动 `tools/sim/run_sim001_checks.py`，仅在 `tasks/evidence/SIM-001/` 写文件（report.md、sim_report.json、test-2.log）；未读未改 `tasks/APPROVALS.md`；`git status` 中的 tracked 改动（`_runner/runner.log`、`tools/auto/queue.json`）为调度器既有状态，本会话未触碰；零数值调节（数值锁在 pre-flight 把关）；无 git 写操作、无子 Agent/并行/后台任务、无网络/安装。
+
+**遗留风险**：8h 为虚拟时间模拟，真实 8 小时稳定性属 REL-001；任何参数调节建议仅成文于报告 §6「提请用户审核」段，须人工批准另票执行；UI-001 GUI 阻塞与本票无关未触碰。
+
+PHASE-B-DONE
+
+---STDERR---
+dsh: reasoning:
+Let's start by understanding the situation. I am the Phase B execution agent for ticket SIM-001: Multi-Random-Seed Virtual Time Simulation Report. According to my instructions, the human approval record has already been confirmed.
+
+Constraints:
+- Only tools/sim/**, tasks/evidence/SIM-001/**, and files inside /Users/rain/DevGame/Fishing/tasks/evidence/SIM-001 are modifiable.
+- Reading/modifying tasks/APPROVALS.md is prohibited.
+- Sub-agents, forks, workflows, background tasks are prohibited — all serial execution within this session.
+- Git commit/merge/push/stash/reset/clean are prohibited.
+- If there are requirement changes not covered by the plan, destructive operations, or high-risk judgments: stop writing code and output "BLOCKED: <reason>" on the final line.
+- Test results must be obtained from actual command execution; faking exit codes is prohibited.
+
+Procedure:
+1. Read AGENTS.md (already injected — check compliance), read tasks/evidence/SIM-001/plan.md and implement according to the plan.
+2. Implement within scope.
+3. Run at project root: python3 -B tools/sim/run_sim001_checks.py — record the actual exit code.
+4. Write report.md to the evidence directory.
+
+This is attempt #2 (max 2 retries). Previous failure: test_exit=0, logs are test-1.log and phaseB-1.out. First diagnose, then fix; don't expand scope.
+
+Wait — "Previous failure: test_exit=0" — the test exit code was 0 but it still failed? That's strange. Maybe the test runner exited with 0 but something failed, or the checker detected something. Let me look at the log files.
+
+Skills: godot-validation and fishing-state-and-save look relevant. The system reminder says to load relevant skills. This task is a Python simulation check (run_sim001_checks.py), a simulation of multi-seed virtual time — this matches "godot-validation: run reproducible Godot 4 headless, macOS GUI, fault injection, economy simulation, and evidence-based acceptance tests", and may also match fishing-state-and-save. Since the task clearly matches them (simulation + evidence-based acceptance tests), let me load the godot-validation and fishing-state-and-save skills. Actually, this task is a Python simulation, not Godot itself. However, AGENTS.md says to enumerate skills and load relevant ones for each task. The task is "Multi-Random-Seed Virtual Time Simulation Report (multi-random-seed virtual time simulation report)" — simulation-based validation, matching godot-validation. And the fishing FSM and determinism — fishing-state-and-save. Let me load both.
+
+Also, AGENTS.md says to read docs/SDD_v0.1.md, docs/DECISION_REGISTER.md, etc. — however my instructions say to read AGENTS.md and plan.md and implement according to the plan. The plan probably references specific documents. I should at least read plan.md and related docs. But be careful about scope: reading is fine (read-only). AGENTS.md section 1 says to read the documents before starting a task. My instructions say to read AGENTS.md and plan.md. For compliance, let me read plan.md and related documents.
+
+First, let me start by exploring the current state: git status (read-only), tools/sim/, and reading the evidence directory.
+
+Plan:
+1. Load skills (godot-validation, fishing-state-and-save).
+2. Read plan.md, the contents of the evidence directory, test-1.log, phaseB-1.out.
+3. Check the state of tools/sim/.
+4. Diagnose why attempt #1 was judged as failed despite test_exit=0.
+5. Fix within scope.
+6. Run python3 -B tools/sim/run_sim001_checks.py and record the exit code.
+7. Write report.md.
+
+Alright, let's get started.
+dsh: reasoning:
+I'm going to read the plan now and check the current state. First, I'll check the evidence directory and the plan, plus the logs from the previous attempt.
+dsh: reasoning:
+The code from the previous attempt already exists: tools/sim/run_sim001_checks.py and sim001_economy_sim.gd, plus there are outputs for sim_report.json, report.md, and test-1.log. The previous failure was "test_exit=0" — meaning the test exited with 0, but the scheduler still judged it as a failure? Let me look at phaseB-1.out and test-1.log and try to diagnose.
+
+phaseB-1.out is only 23 bytes. Let me read that and the tail of test-1.log.
+
+上一轮已经生成了代码和测试产物。我先查看上一轮的会话输出和测试日志来定位问题。
+dsh: reasoning:
+Interesting. test-1.log ends with "SIM001 RUNNER PASS" and "EXIT=0". In other words, in the previous attempt, the test actually completed with exit 0 — but the scheduler recorded "上次失败：test_exit=0" (previous failure: test_exit=0) along with phaseB-1.out showing "(TIMEOUT)". So the reason the scheduler judged it as a failure was that the phase B session (agent session) timed out before completion — the test itself passed with exit 0 and wrote out evidence, but the session probably timed out before writing report.md… but report.md exists (19379 bytes, November 11 20:59). Hmm, wait — report.md and sim_report.json were written at 20:59, same as test-1.log. So actually it looks like the previous attempt did complete: tools/sim files exist, test-1.log with EXIT=0 exists, sim_report.json and report.md exist. But phaseB-1.out = "(TIMEOUT)" means the scheduler's session output capture timed out.
+
+Wait, let me re-read: "上次失败：test_exit=0，日志 .../test-1.log，会话输出 .../phaseB-1.out" (previous failure: test_exit=0, log .../test-1.log, session output .../phaseB-1.out). The scheduler is saying last time failed, test_exit=0. phaseB-1.out says "(TIMEOUT)". So the scheduler judged that attempt as failed due to TIMEOUT (probably the whole session), even though the test exited 0. The test log ends with SIM001 RUNNER PASS and EXIT=0.
+
+So this time (attempt 2), my job is: diagnose first, then fix without expanding scope. Diagnosis: the previous test run actually passed (exit 0) and wrote out all evidence. The failure was the scheduler's session timeout, probably because the full runner takes too long (multi-seed simulation: the plan says "约 40 个 seed×场景组合... 纯内存 LCG 循环" (about 40 seed×scenario combinations... pure-memory LCG loop) and it may have taken several minutes, and the scheduler killed the session). But the log says EXIT=0, so the run did complete at 20:59… hmm, but phaseB-1.out's timestamp is 20:59 with "(TIMEOUT)". Maybe the scheduler timed out the agent session before the agent could output PHASE-B-DONE, while the test itself was running/completing.
+
+Actually, wait — maybe the previous attempt's session ran the test, and it passed with exit 0 (test-1.log), and report.md and sim_report.json were also written. Then the agent session hit the scheduler's timeout before outputting PHASE-B-DONE. So this time I need to:
+1. Verify that the existing tools/sim implementation matches the plan (it exists).
+2. Re-run the test myself: `python3 -B tools/sim/run_sim001_checks.py` and record the actual exit code.
+3. Write/update report.md based on the actual run.
+4. Finish with PHASE-B-DONE.
+
+Key risk: the test takes a long time (last time probably >10 minutes?). But background tasks are forbidden — everything has to run serially within this session. The bash tool has a timeout, and on expiration it "moves to background as a job" rather than being killed. Hmm, but the instructions forbid background tasks (run_in_background). The bash tool's timeout behavior automatically moves the command to background — that's not me actively choosing run_in_background, but the spirit of the instruction is not to use run_in_background. I could also give the bash call a long timeoutMs. The plan's runner says: TIMEOUT 600 sec/step, full suite expected to take "数分钟" (several minutes).
+
+Let me look at the head of test-1.log to check timing and what the pre-step did, and confirm the runner's exit code. The log's tail shows "EXIT=0" — that's probably the previous agent recording the exit code.
+
+Actually, let me check the head of test-1.log to see the command and steps. Also, let me read the runner and simulation scripts to verify they match the plan and are correct. Then I'll re-run the test for real, freshly record the exit code, and write report.md.
+
+Another important point: where did test-1.log come from? The scheduler writes logs at the evidence path — test-1.log is probably the scheduler's capture of the previous attempt's test command. The "(TIMEOUT)" in phaseB-1.out suggests the session hit its time limit. The scheduler's message says "上次失败：test_exit=0" — meaning the test passed but the session failed? Actually, if test_exit=0 was recorded and the failure is TIMEOUT, the fix is: make sure this session completes: quickly run the verification, update report.md, and output PHASE-B-DONE.
+
+Wait — but the reason for failure might be this: the scheduler expected report.md to be written by the agent, but it wasn't there in time (session timeout). The evidence files (report.md, sim_report.json) are written at 20:59 by the runner — the same time as test-1.log and phaseB-1.out. So the runner wrote them. The scheduler's instructions ask me (the agent) to write report.md with specific content: 改动文件清单 (changed files list), 执行命令与退出码 (commands run and exit codes), 测试输出摘要 (test output summary), 覆盖的验收条目 (covered acceptance criteria), 遗留风险 (residual risks). The existing report.md is the runner's Chinese summary — probably mostly fine, but my instructions ask me to write report.md with these sections. Hmm, but report.md is also the runner's output ("runner 在 Phase B 写出 ... report.md（中文摘要）" (runner writes out ... report.md (Chinese summary) in Phase B)). If I overwrite it with my own report and re-run the test, it'll be overwritten again. Order: first run test (runner writes report.md + sim_report.json), then append/extend report.md with the ticket-required sections (file list, commands + exit codes, output summary, covered acceptance items, risks).
+
+Let me check the current report.md's contents and the head of test-1.log. Then re-run the test.
+
+Also, verify that the runner doesn't write outside of allowed paths. Let me read the runner script and the simulation script. They're long (27KB each). Let me read.
+
+Actually, priority: diagnosis. Let me check the head of test-1.log to see the step timings — is there a timestamp? And check whether there was an earlier failing run. The log is 111 lines; let me read the whole thing.
+
+从日志来看，上一轮测试的 runner 实际上已经完整运行并通过了（`SIM001 RUNNER PASS`，EXIT=0，证据文件也已写入），但 `phaseB-1.out` 显示 `(TIMEOUT)`——也就是说调度器侧的会话超时被判定为失败，而不是测试本身失败。接下来我将检查测试日志的整个头部以及已有的报告，之后再如实地重新执行并进行验证。
+dsh: reasoning:
+So the previous attempt (attempt 1) actually completed: the test log ends with "SIM001 RUNNER PASS", EXIT=0, and report.md + sim_report.json exist. The scheduler's failure message says "test_exit=0" — hmm, but phaseB-1.out says "(TIMEOUT)". So the scheduler timed out the Phase B session, but the test itself passed with exit 0. Interesting — perhaps the scheduler's failure is that although the test was run (test-1.log shows EXIT=0), the agent's session timed out before the agent wrote the final report.md? But report.md exists and was generated by the runner (auto-generated). However, the task instructions say: "Write /Users/rain/DevGame/Fishing/tasks/evidence/SIM-001/report.md: list of changed files, execution command and exit code, test output summary, covered acceptance criteria, residual risks." The current report.md is the runner's auto-generated summary, but does it include the list of changed files / execution command and exit code / covered acceptance criteria? It includes "scope and residuals" but does not explicitly include the list of changed files, command + exit code, or acceptance criteria mapping. Hmm, wait — report.md was written by the runner (line 3 says "This summary is auto-generated by run_sim001_checks.py after the actual run passes"). But my task instructions ask me to write report.md with these specific sections. The runner's report.md covers the statistics, but the scheduler is asking for a Phase B report that includes a file list, commands and exit codes, test output summary, covered acceptance criteria, and residual risks.
+
+Wait — but if I rewrite report.md, wouldn't it get overwritten the next time the test is run? The test writes report.md itself. So if I re-run the test, report.md will be overwritten by the runner. Order: first run the test, then update report.md to include the required sections (or write it as part of the report). Actually, the runner auto-generates report.md. Hmm, but my task step 4 says to write report.md with these sections. Let me check the runner to see exactly what it writes. Actually, I should read the runner script for understanding.
+
+Important question: why was the attempt judged as a failure? "Previous failure: test_exit=0, log .../test-1.log, session output .../phaseB-1.out" and phaseB-1.out = "(TIMEOUT)". So the scheduler judged Phase B as failed because the agent session timed out — but the test log shows that the runner itself completed at 20:59 (report.md written at 20:59, test-1.log at 20:59, phaseB-1.out at 20:59). Hmm, actually the timestamps are: sim_report.json 20:59, report.md 20:59, phaseB-1.out 20:59, test-1.log 20:59. And the phaseB-1 session ended at 20:58. So the previous attempt: the session timed out, but the runner continued running and completed? The test log ended with "EXIT=0" — so the actual test passed.
+
+So my job now (2nd attempt): diagnose, then fix without expanding scope. The work seems almost done. What's missing:
+1. report.md needs the Phase B report sections: list of changed files, execution command and exit code, test output summary, covered acceptance criteria, residual risks. The current report.md is a statistical summary that partially includes scope and residuals. Let me check whether it covers the list of changed files / execution command and exit code — no. It doesn't include commands or exit codes. The scheduler explicitly asks for those.
+
+2. I have to actually run the test myself: `python3 -B tools/sim/run_sim001_checks.py` and record the real exit code. Note: the runner overwrites report.md and sim_report.json — so I should run the test first, and only then append/rewrite the Phase B sections of report.md. Wait, but does the runner overwrite report.md every time? Yes ("evidence written: ... report.md"). So the order: first run the test, then update report.md.
+
+Also a constraint: how long does the test take? The previous attempt timed out — the runner does a full simulation of 20 seeds × 2 × 3, plus 40 replay pairs, plus a fault sub-run. The plan says "the whole suite is expected to take several minutes". The scheduler's TIMEOUT probably killed the previous session, but the test continued in the background? test-1.log contains the full output including EXIT=0 — that log was probably produced by the scheduler's test harness running the test command separately (the runner itself writes test-1.log). Actually "test-1.log" is the scheduler's log for the test command (111 lines, ending with "EXIT=0"). The stdout of the Godot simulation was huge (a giant single line of JSON).
+
+Note: the tool's default timeout in the bash tool — "on expiry the command is backgrounded as a job rather than being killed". But I'm forbidden from using background tasks! "Calling sub-Agents / delegation / fork / parallel workflows / background tasks (run_in_background) is forbidden". That refers to my explicitly using run_in_background. If a foreground bash command times out, the harness automatically moves it to the background... that's a harness-side action, not my explicit choice, but it would still effectively become a background job. To be safe, I should give a generous timeoutMs to the test run. How long will it take? Let me check the timing info in test-1.log — probably there's no timing info. Let me look at the full log and the runner.
+
+First, let me read the runner and the simulation script to confirm they match the plan and are sound. Then re-run the test in the foreground with a generous timeout.
+
+Also, check git status: the tools/sim files are untracked (?? tools/sim/). That's fine — no commit needed.
+
+First let me read the runner.
+
+The test in the previous session actually ran to completion (the tail of the log has `SIM001 RUNNER PASS` and `EXIT=0`), but the session output shows `(TIMEOUT)` — meaning the previous session got judged as timed out/failed because the execution time was too long, and it's not that the test assertions failed. Right now the priorities are: verify that the existing `tools/sim/` code conforms to the plan, actually re-run the test and record the true exit code, and then complete report.md according to the ticket's requirements (the current report.md is a runner-generated statistical summary, and is missing items like "list of changed files, commands and exit codes, coverage of acceptance criteria, etc.").
+
+First, read the runner and simulation driver, and check whether there's any room to optimize execution time:
+dsh: reasoning:
+The runner looks complete and matches the plan. The previous run passed with EXIT=0. The previous session failed due to TIMEOUT — probably because the runner takes a long time to run. The test-1.log has per-step timing info, so let me check the overall execution time. There's no timestamp in the log. But the scheduler timed out the session. The previous session's log shows that the test was executed (test-1.log was generated), but the agent's session output shows TIMEOUT — probably the scheduler gave the agent a time limit and the agent was waiting for the tests to finish.
+
+How long does the runner take? 7 Godot headless invocations, step1 import (about 30-60s), step2 sim (LCG loop, maybe 1-2 min?), 5 regressions (fast). Probably 3-6 min total. Last attempt the sim step may have been slow.
+
+OK, this is attempt 2. Plan:
+1. Verify sim's gd files are sound (skim through).
+2. Run `python3 -B tools/sim/run_sim001_checks.py` from the project root in the foreground, with a large enough timeoutMs (e.g. 900000 = 15 min). The bash tool says "the executor applies its configured defaults and ceilings" — the ceiling may be less than what I need. If it exceeds, the command moves to background. The ticket forbids background tasks (run_in_background). Hmm, but if the harness auto-backgrounds due to timeout, that's not my choice. But it could conflict with "一切在本会话内串行完成 (all completed serially within this session)". Let me try to make it fit within the timeout ceiling by giving it a big timeoutMs.
+
+Alternatively, first time how long step2 takes: run each Godot step directly? That's duplicative. Better: just run the runner. Measure: previous run: files written 20:54 (sim001_economy_sim.gd) → 20:58 runner py, log 20:59. So the session was around 20:26 to 20:58/20:59 — mostly writing code. Test ran and finished by 20:59. Actually test-1.log timestamp is 20:59 and session archive is 20:58. So the test finished at 20:59 and session timed out at about 21:00? So the test itself may have run relatively fast.
+
+Anyway — the runner's step timeout is 600s each; whole thing probably a few minutes. Run with timeoutMs around 600000. Even if the harness caps lower and it moves to background, I'll need to collect with job_output. The instructions forbid "启动 (starting)" background tasks via run_in_background; auto-move due to timeout is a harness behavior, and I'll deal with it if it happens (job_output with wait). But I should avoid it if possible: set timeoutMs high.
+
+Also, before running, should I quickly sanity-check that the sim gd script has no obvious issues (since it was already validated last run, re-running should reproduce).
+
+Also, check the timing info in test-1.log: does the runner print per-step elapsed time? No, no timing prints. OK.
+
+One more consideration: the ticket says "先诊断再修，勿扩大范围 (diagnose first then fix, don't expand scope)". Diagnosis: last attempt failed due to session TIMEOUT (session output = "(TIMEOUT)"), not because of test failure — test-1.log shows the full suite ran, wrote evidence, and printed SIM001 RUNNER PASS EXIT=0. But wait — the scheduler said "上次失败：test_exit=0 (previous failure: test_exit=0)". Hmm, maybe the scheduler records the test's exit code and treats test_exit=0 as the failure reason?? Strange. Maybe the scheduler expected the agent to run the tests and record the exit code, but the agent timed out and the scheduler itself ran the tests (test-1.log with EXIT=0 is the scheduler's run). Then why did the attempt fail? Because phaseB-1.out = "(TIMEOUT)" — the session output capture timed out. The scheduler probably judged the attempt as failed because the session ended with TIMEOUT rather than with PHASE-B-DONE.
+
+Another possibility: the scheduler expected report.md to be written by the agent with the required sections (改动文件清单 = changed files list, 执行命令与退出码 = execution commands and exit codes, 测试输出摘要 = test output summary, 覆盖的验收条目 = covered acceptance items, 遗留风险 = residual risks) but report.md is the auto-generated report. The runner-generated report.md doesn't explicitly include "执行命令与退出码" or the per-step exit codes. The ticket instructs the agent to write report.md with those sections. The runner overwrites report.md at end of run. So: after running the tests, append/extend report.md with a Phase B section (or rewrite including required sections). That satisfies both: the runner writes the statistical report, then I extend report.md with a "Phase B 执行记录 (execution log)" section including file list, commands, exit codes, output summary, acceptance mapping, and risks.
+
+Wait — but should report.md remain as the runner-generated one (since the scheduler may re-run and compare)? Plan §3 says runner writes report.md as Chinese summary. Ticket says I write report.md with list / commands / exit codes / summary / acceptance / risks. I'll append the "Phase B 执行记录（工单要求） (Phase B Execution Log (ticket required))" section after the generated content. That covers both.
+
+Also — should test-1.log be regenerated? The scheduler itself writes test-N.log (it said 上次失败 test-1.log). The scheduler runs test_cmd and logs to test-1.log. In this attempt 2 it may write test-2.log. But my instructions: "在项目根运行测试：python3 -B tools/sim/run_sim001_checks.py 如实记录真实退出码 (run tests at project root: python3 -B tools/sim/run_sim001_checks.py; record the real exit code faithfully)" — I run it myself and record the exit code in report.md. I could tee my run to a log too… the scheduler has already written test-1.log. Should I write my own run to a log file? Allowed paths include tasks/evidence/SIM-001/**. I could write test-2.log. But naming may collide with scheduler's naming for this attempt. Safer: capture the output of my run into a file inside the evidence dir with a distinguishable name like `test-2.log`? If the scheduler writes its own test-2.log, mine may be overwritten — harmless. Hmm, but I shouldn't overwrite the scheduler's file. The scheduler writes test-1.log for attempt 1. For attempt 2, it may write test-2.log at the end. If I write my log first, the scheduler may overwrite it — no problem, that's their file.
+
+Actually, simpler: run the command, capture exit code, tee output to a log file, e.g., `/tmp`? The temp area may also be writable, but I'll put evidence inside the evidence dir: `tools-test-2.log`? I'll name it `test-2.log` inside the evidence dir — consistent with scheduler's naming and allowed. If the scheduler overwrites it with its own run, that's fine.
+
+Wait, actually test-1.log looks like the scheduler's own capture ("---STDERR---" then "EXIT=0" — that format matches a harness wrapper, not the runner). Yes, test-1.log ends with "---STDERR---" and "EXIT=0" — that's the scheduler's wrapper. So the scheduler ran the test command itself and recorded exit 0. So the previous failure really was the session TIMEOUT (phaseB-1.out). The scheduler will probably run the test again for attempt 2. My job: ensure everything's in place, re-run the test myself to validate, write report.md, and finish with PHASE-B-DONE quickly (to avoid timeout).
+
+Time budget: the previous session's timeout happened during test execution. To be safe, should I first time a fast pre-check to make sure nothing's broken (e.g., run only the quick steps)? The runner runs everything serially. Let me estimate: the step2 sim does ~4.5e6 ticks in GDScript — the previous log shows it completed. Whole runner probably a few minutes. I'll run with a large timeout.
+
+First, quickly sanity-check the sim's GDScript file to make sure nothing's wrong (since it was already validated last run, re-running should reproduce). Also check git diff hasn't touched anything else — only tools/sim and evidence files were modified, good.
+
+Let me skim the gd file.
+
+runner 与 plan 的 §5 步骤（前置数值锁 → step1 导入 → step2 模拟 → step3-7 回归 → 证据写入）相匹配。诊断已经明确：上一轮（attempt-1）在 runner 内完整运行并通过（test-1.log 的末尾为 `SIM001 RUNNER PASS` / `EXIT=0`），但 phaseB-1.out 为 `(TIMEOUT)` —— 会话因测试执行时间过长而超时，被调度器判定为失败。这并非代码或断言的问题。本轮的对策是：复用已完成的代码，实际重新运行一次并记录真实的退出码，在 report.md 中补充 ticket 所要求的 Phase B 执行记录，并尽快将其作为产物提交。
+
+首先，快速确认模拟驱动脚本没有损坏（只读检查）：
+dsh: reasoning:
+Everything is ready. I also recommend reading review.md (a small file, 2511 bytes) — the plan says "review.md 本会話已加載 (this conversation is already loaded)." Let me quickly check that first, and then run the tests. Also, I'll check whether any out-of-scope changes have been made: git status only shows the runner-owned files and my SIM-001 evidence — good.
+
+Next, I'll run the tests from the project root with a generous timeout. Last time it took a while, so I'll set timeoutMs to 900000 (15 minutes). The runner has a 600-second timeout per step, 7 steps → up to 70 minutes in the worst case, but the actual run last time completed in just a few minutes. Let me measure it using `time`, and use tee to save the output to the evidence log file. The scheduler wrote the previous log itself to test-1.log. My own execution output should be recorded to a log inside the evidence directory — but there's a chance my log name could collide with the scheduler's next log name (test-2.log). Should I write to `test-2.log`? Hmm. Actually, the instructions don't require me to write a log file — only report.md is required. The scheduler will capture its own logs. To avoid overwriting a scheduler-owned filename, I'll capture the output to a temporary file (tempdir) and extract a summary from it. Actually, workspace-write mode may allow temporary areas too. I'll write to a tempdir.
+
+Wait — actually, there's a subtle point: the runner itself writes sim_report.json and report.md into EVIDENCE_DIR (the main project's tasks/evidence/SIM-001), which is permitted. However, this means my report.md will get overwritten. So after running the tests, I'll edit report.md to append a Phase B execution record section.
+
+Alright, let me check review.md and run the tests.
+
+环境检查：Godot 4.7.2 已就位，Python 3.15.2。代码和证据链完整。现在快速查看 review.md 确认 Phase A 审查结论，然后在项目根目录正式运行测试并记录退出码。
+dsh: reasoning:
+The test ran with exit code 0. Let me check the log details, then write report.md. Also, I'll verify that sim_report.json was regenerated (with a new timestamp), and check whether there are any SCRIPT ERRORs or similar in the log. I'll also check the execution time (the `time` output is in the log).
+dsh: reasoning:
+The test actually ran this time and passed:
+- Real exit code: 0 (REAL_EXIT=0)
+- All 7 steps exit_code=0
+- `SIM001 RUNNER PASS` was output
+- Total elapsed time: 13.62 seconds (real 13.62) — interestingly, this time it only took 13.6 seconds. The previous failure was TIMEOUT on the session — maybe the previous attempt's session timed out for a different reason (the agent session itself hit the scheduler's timeout. Probably because the previous session was doing things like loading large documents). In any case, this time everything is in place: tools/sim/** is implemented, tests pass with exit 0, and the evidence has been written (sim_report.json and report.md were regenerated at 21:05).
+
+Wait — the runner itself writes report.md! The instructions say "写 /Users/rain/DevGame/Fishing/tasks/evidence/SIM-001/report.md：改动文件清单、执行命令与退出码、测试输出摘要、覆盖的验收条目、遗留风险。" The report.md that the runner wrote is a statistics summary that contains some of these, but is missing "改动文件清单、执行命令与退出码、覆盖的验收条目" in the ticket-required format. Actually, the ticket requires report.md to contain: 改动文件清单 (list of modified files), 执行命令与退出码 (executed commands and exit codes), 测试输出摘要 (test output summary), 覆盖的验收条目 (covered acceptance items), 遗留风险 (remaining risks). The runner-generated report.md has 统计, 硬门禁, 范围与遗留 (partial 遗留风险), but does not have a clear 改动文件清单/命令与退出码/验收条目映射. Hmm, but if I rerun the tests, report.md will get overwritten again. Options: append the ticket-required sections to report.md after the tests, or leave the runner-generated part and add sections. The runner overwrites report.md on every run, so I should append the Phase B report after the test run (I just ran the tests, so it's safe to edit now — no more test runs planned).
+
+Wait, but the scheduler may rerun the test command itself to verify — in that case report.md will be regenerated with the runner template, and my appended sections will be lost. Hmm. But the ticket explicitly instructs me to write report.md with those contents. The plan says the runner writes report.md. Best compromise: append Phase B execution sections (改动文件清单、执行命令与退出码、测试输出摘要、覆盖的验收条目、遗留风险) to the end of the runner-generated report.md. If the scheduler reruns the tests and overwrites it, that's the scheduler's problem — but the safer option would be to also preserve the content. Actually, the plan's contract is that the runner regenerates report.md, and the scheduler has already "批准记录已核对完毕". The Phase B instructions from the scheduler explicitly demand these sections in report.md. Append a clearly marked "Phase B 执行记录" section.
+
+Also, check whether the previous log (test-1.log) matches the current results — identical (same numbers, 5800 cycles, mean 42.885). Deterministic.
+
+Another check: the previous failure "test_exit=0" and phaseB-1.out "(TIMEOUT)" — the previous failure was a session timeout, not a test failure. The test itself passed at that time too (test-1.log ends with SIM001 RUNNER PASS, EXIT=0). So the fix this time: complete quickly and write the report. This time the tests only took 13.6 seconds — so the previous TIMEOUT was probably the agent session's idle/execution time, not the tests'. OK.
+
+Also, need to double-check that I haven't touched files outside the allowed scope: git status shows only allowed paths (tools/sim/**, tasks/evidence/SIM-001/**), plus pre-existing runner-owned changes (tasks/evidence/_runner/runner.log, tools/auto/queue.json, UI-001 files) which, according to the plan, existed before my session ("均非本会话产生"). I haven't touched them. Good.
+
+Should I also copy the full log of this run to the evidence directory? The scheduler mentioned test-1.log from attempt 1. The scheduler probably creates test-2.log itself on rerun. I could save this run's output as evidence — but note: writing new files in the evidence directory is allowed. To preserve the actual full log, let me save my run log as tasks/evidence/SIM-001/test-2.log. Wait — test-1.log was probably created by the scheduler, not me. The naming "test-1.log" and "phaseB-1.out" is scheduler metadata. If I create test-2.log, it might conflict with the scheduler's naming. Hmm, but it is inside the allowed evidence directory and it's genuine evidence. Should I name it `test-2-runner.log` to avoid confusion? Actually simpler: name it `test-2.log` — it's the test log of the 2nd attempt and consistent with the scheduler's naming convention (attempt N → test-N.log). Risk: the scheduler might also write test-2.log and overwrite it — harmless.
+
+Let me copy /tmp/sim001_attempt2_test.log to the evidence directory as test-2.log. Hmm, but /tmp might not be a persistent location, and the content contains the full runner output including per-step exit codes. Good evidence. Actually, let me first check the head of the log to check the preflight lines, and then write the report.
+
+Also, I should double-check that the log contains "REAL_EXIT=0"? No — REAL_EXIT was what I echoed to stdout in the bash session, and the log only contains the command's output. Let me check the tail of the log.
+
+Now, let me append the Phase B sections to report.md. Let me fully read the current tail of report.md (already read — ends at line 187 with "模拟不写真实 user://..."). The runner regenerated it at 21:05 with the same template; the tail is the same. Append the following:
+
+## 8. Phase B 执行记录（AUTO-001 Phase B，第 2 次尝试）
+
+With subsections: 改动文件清单, 执行命令与真实退出码, 测试输出摘要, 覆盖的验收条目, 遗留风险, and a diagnostic note about the attempt 1 TIMEOUT.
+
+For the exit code of the log-copy command, let me also grep the head lines of /tmp/sim001_attempt2_test.log to record the preflight lines. And confirm "SIM001 RUNNER PASS" appears exactly once in the log.
+
+This time's tests actually all passed: 7 steps' exit_code are all 0, `SIM001 RUNNER PASS` was output, total elapsed time was 13.62 seconds. The previous failure was due to the session's TIMEOUT (the test log itself was EXIT=0), and it wasn't that the tests failed. Now I'll check the header portion of this run's log and save the actual log to the evidence directory:
+dsh: reasoning:
+Test passed with real exit 0, all gates zero, 120 per_run lines, markers appear exactly once, no FAIL/SCRIPT ERROR/TIMEOUT. Execution time 13.62 seconds — fast. The previous "TIMEOUT" failure was a session-level timeout, not the test itself.
+
+Next I need to write report.md. However, note that the runner auto-generates report.md (a summary of simulation statistics). The ticket requirement is: "write /Users/rain/DevGame/Fishing/tasks/evidence/SIM-001/report.md: list of changed files, executed commands and exit codes, summary of test output, covered acceptance criteria, residual risks" — a Phase B execution report. The existing report.md is the simulation summary auto-generated by the runner (regenerated at 21:05). The ticket explicitly asks me to write report.md containing the Phase B execution details.
+
+Options: (a) append the Phase B execution report section to the auto-generated report.md — but if the scheduler or reviewer reruns the runner, my edits will be overwritten. However, the instructions say to write report.md with these contents. The plan §3 also states that report.md is the runner's Chinese-language summary. The scheduler's ticket says: write report.md: list of changed files, executed commands and exit codes, test output summary, covered acceptance criteria, residual risks.
+
+Hmm — there's a conflict: the runner overwrites report.md on every run. If I append a Phase B section to report.md, subsequent runner runs (by the scheduler) will erase it. But the ticket explicitly asks that report.md contain those items. Best approach: append the Phase B execution section to report.md (satisfying the ticket requirement in this attempt), because the ticket's requirement takes precedence. Actually wait — better approach: the runner's write_evidence() regenerates report.md from a template. I could also modify the runner's template to include the Phase B execution section, and then re-run. That would be cleaner: report.md remains reproducible on every run, and also contains the required items. But that would mean modifying the runner — which is allowed (tools/sim/**). However, modifying the runner and re-running means the report.md template would change. That's more robust: future scheduler runs will also produce the required sections.
+
+But is this "扩大范围 (scope expansion)"? No — tools/sim/** is allowed. But minimal change is preferable. The scheduler's diagnostic hint: "previous failure: test_exit=0, log test-1.log, session output phaseB-1.out (TIMEOUT)". So the failure was: the runner itself completed successfully (test-1.log shows EXIT=0, SIM001 RUNNER PASS) — but phaseB-1.out shows the session output was TIMEOUT, i.e. the Phase B agent session hit the scheduler's session timeout, and the scheduler judged the attempt as failed even though the test passed. Hmm, "previous failure: test_exit=0" — the scheduler records test_exit=0 but phaseB-1.out is "(TIMEOUT)". So the previous attempt's session timed out (probably during a long run) and the session output was lost/timeout.
+
+Therefore my job in this attempt is: produce a complete, successful session, and write a report.md that contains the required sections. The evidence files (sim_report.json, report.md) were already written by the runner at 21:05 (my new run). report.md currently lacks the ticket-required "list of changed files, executed commands and exit codes, test output summary, covered acceptance criteria" — it only has the simulation statistics. So I should append the Phase B execution report section to report.md.
+
+Given that the runner overwrites report.md, I have two options:
+1. After the final test run, append the section to report.md (the scheduler runs the test before/after my report, so they'll regenerate and erase the section — but the scheduler will probably run the test first and then read my report.md. Ordering is unclear).
+2. Modify the runner's template to include the Phase B execution section (list of changed files, command+exit code summary from the current run, acceptance criteria, risks), then re-run the runner to regenerate report.md with all content. This way the file is self-consistent and reproducible.
+
+Option 2 is better and stays within scope (tools/sim/** is allowed). The runner knows the executed step exit codes — I can programmatically embed the exit codes from the actual run. The report.md will contain: list of changed files, executed commands and actual exit codes (from the current run), test output summary, covered acceptance criteria, residual risks — plus the existing statistical content.
+
+Wait — but modifying the runner and re-running means the runner changes, and the new exit code recorded in report.md will come from that same run (self-consistent, real). This is acceptable and honest: the report is generated from the actual step exit codes of the current run.
+
+Let me implement: in write_evidence(), add a section "## 8. Phase B Execution Record (AUTO-001 Phase B, attempt 2)" with:
+- List of changed files (deliverables created in this ticket's scope): tools/sim/sim001_economy_sim.gd (new), tools/sim/run_sim001_checks.py (new), tasks/evidence/SIM-001/sim_report.json (generated by runner), report.md (generated by runner), test logs preserved by scheduler. No other changes.
+- Executed commands and exit codes: list of actual commands (pre-flight checks + steps 1–7) with real exit codes from the current run.
+- Test output summary: PASS markers for each step, SIM001 RUNNER PASS, total wall-clock time.
+- Covered acceptance criteria: mapping (from plan §7).
+- Residual risks: from plan §6 + notes.
+
+I need to capture step exit codes and wall-clock time in run_step. Currently run_step returns stdout. I can collect results into a list: (name, cmd string, exit code, marker OK). Also capture time. Minimal changes:
+
+- Pass a `results` list; in run_step, record (name, " ".join(cmd), proc.returncode, "TIMEOUT" on timeout).
+- In main, record total time with time.monotonic.
+- Add an `execution` parameter to the write_evidence signature, and append the section.
+
+Also, the Phase B report needs "executed commands and exit codes" — the command line includes the temp directory path that changes per run, but that's fine. It's a real command.
+
+Also record the number of retries? Keep it simple.
+
+Note: the ticket says "write report.md: ... residual risks". Also the plan said the runner regenerates report.md — keep the existing sections.
+
+Also, the previous failure diagnosis: test-1.log shows EXIT=0 and the full PASS — the scheduler judged it as failure due to session TIMEOUT (phaseB-1.out). So nothing to fix on the test side; just need to complete the session promptly and produce report.md. My run took 13.6 s, so it's fast.
+
+Actually wait — should I re-run the runner after modifying it? Yes. To keep the report consistent and to get a genuine exit code from the final version of the runner. The re-run is only ~14 s. Good.
+
+Another consideration: the runner's preflight check_sim_hygiene scans tools/sim/*.gd for class_name and res:// writes — my changes only touch .py files, so no issue.
+
+Also note: the ticket allows file writes into the evidence directory. I've already copied test-2.log. Good — that's evidence of the attempt-2 runner output. Keep it.
+
+Now modify the runner: add `import time`; collect step results; extend write_evidence. Let me write the edits carefully.
+
+run_step: currently returns proc.stdout or None. Change the signature to accept a `results` list and append (name, cmd_str, returncode_or_None). Simplest: return a dict or maintain a module-level list. Add a parameter `results=None`.
+
+Plan of edits:
+
+1. `import time` — add to imports.
+2. run_step: append to the results list.
+3. main: results = []; t0 = time.monotonic(); pass results to run_step; execution_ms = int((time.monotonic()-t0)*1000).
+4. Add a results and duration parameter to write_evidence's signature; add section 8 text.
+
+Also the pre-flight exit code: preflight is a non-zero/one flag. Record as "PRE-FAIL" or "OK".
+
+Let me write the new section content (Chinese, aligned with plan §7 acceptance mapping and §6 risks, and the ticket's items):
+
+```
+## 8. Phase B Execution Record (AUTO-001 Phase B, this actual execution)
+
+### 8.1 List of changed files (all newly added, strictly confined to allowed scope tools/sim/** and tasks/evidence/SIM-001/**)
+| File | Kind |
+|---|---|
+| tools/sim/sim001_economy_sim.gd | New: SceneTree headless simulation driver (no class_name, does not write res:///user://) |
+| tools/sim/run_sim001_checks.py | New: Python stdlib runner (value-lock → isolated replica → serial Godot steps → evidence writing) |
+| tasks/evidence/SIM-001/sim_report.json | Written out by this runner after real execution (machine-readable report) |
+| tasks/evidence/SIM-001/report.md | This file (auto-generated by the runner; includes statistical report and the Phase B execution record) |
+| tasks/evidence/SIM-001/plan.md, review.md | Phase A outputs, not modified in Phase B |
+Zero changes outside the allowed scope (scripts/, data/, examples/, schemas/, tests/, tools/auto/, project.godot, docs/ all untouched); no git commit/merge/push; no sub-Agents/parallel/background tasks; tasks/APPROVALS.md not read or modified.
+
+### 8.2 Executed commands and real exit codes
+python3 -B tools/sim/run_sim001_checks.py (project root, this run total wall-clock time Xs, real exit code 0)
+| step | command | exit_code |
+... (real values)
+
+### 8.3 Test output summary
+- pre-flight: ...
+- step2 stdout has exactly one `SIM001 SIM PASS`, no FAIL/SCRIPT ERROR; JSON between the report markers is parseable with all hard gates passing
+- step3-7 each PASS marker exactly once
+- stdout of each step and this record are synchronously archived by the scheduler as test-N.log (test-1.log=attempt 1; test-2.log=the initial full run of this attempt, runner total elapsed 13.62s, EXIT=0)
+
+Wait — test-2.log was copied from the previous run (before the runner edit). After re-running, the output will contain the same steps plus the added evidence write. Should I re-copy test-2.log after the final run to match the final runner? Actually, the scheduler probably captures the session itself. Let me update test-2.log from the final run... But then test-2.log from the runner-modified version won't exactly match the pre-edit run. Simpler: after the final run, overwrite-copy test-2.log so the archived log matches the final runner. Actually, keep both: test-2.log (initial full run of attempt 2, before runner edits — but that run already passed; the edits only add report content). Hmm, the initial run also passed, so either log is genuine evidence. Let me re-copy the final run's output to test-2.log so it's consistent with the final runner; and the initial run's log is identical except for timing and report text. Actually, to avoid confusion, after the final run re-copy the final log to test-2.log.
+
+Wait, actually — a subtle point: if I overwrite the runner, then the report.md section 8.2 "executed commands and exit codes" will be recorded from the final run (self-consistent). Good.
+
+### 8.4 Covered acceptance criteria
+| Acceptance criterion | How covered in this run | Evidence |
+| SDD-178 / V01-T02 multi-seed 1h/4h/8h | 20 seeds × 2 scenarios × 3 horizons = 120 run statistics | sim_report.json + report.md §1–5 |
+| Duplicate transactions / full-basket new-cast = 0 | duplicate_catch/sale_transactions=0, casts_started_while_full=0 | §3 hard-gate table |
+| T-TIME-01 wait∈[20,60] and determinism | wait_seconds_out_of_range=0; deterministic_replay_identical=true (40 pairs) | §3 |
+| T-TIME-02 step invariance | 1.0s virtual step + FSM single-step single-transition contract; step3 FSM regression 0 | test log step2/3 |
+| T-ECO-01/02/03 | Scenario A full-basket rejection 15162 all rejected; sampled retries ALREADY_APPLIED | §2/§3 + step4 |
+| T-SAVE-02 flank | rename/tmp_write injection PERSIST_FAILED, same-ID retry succeeds, zero new transactions before recovery | §4 + step5 |
+| T-CONF-01 boundary | FSM.initialize inline ConfigGate loads real config; runner pre-value lock | pre-flight |
+| Parameter adjustments require human approval | zero numerical changes, recommendations only documented in §6 | value-lock + §6 |
+
+### 8.5 Residual risks
+- 8h is virtual time; real 8-hour stability is under REL-001's purview
+- Numerical tuning (if any) should be done in a separate ticket after user approval (§6 recommendations); this ticket has zero numerical changes
+- The GUI/window layer (UI-001) is not covered by this ticket and remains in blocked state, unaffected by this ticket
+- The runner depends on local Godot 4.7.2 (overridable via GODOT_BIN); cross-engine-version comparisons require re-running
+- The previous failure (attempt 1) was an AUTO-001 session-level TIMEOUT (phaseB-1.out), not a test failure: test-1.log shows EXIT=0 and SIM001 RUNNER PASS; this attempt's runner total wall-clock ~14 s
+```
+
+Now, implement the runner changes.
+
+Note on the runner's docstring: does it say report.md contains the Phase B execution record? Update the docstring minimally? Not strictly necessary; leave as is.
+
+Now let me make the edits.
+
+Edits to run_sim001_checks.py:
+
+1. Add `import time` after import sys.
+
+2. run_step: add `results` parameter to record actual exit codes.
+
+```python
+def run_step(step_name, cmd, env, project_root, want_marker=None, forbid_markers=(), results=None):
+    ...
+    except subprocess.TimeoutExpired:
+        print(...)
+        if results is not None:
+            results.append((step_name, " ".join(cmd), "TIMEOUT"))
+        return None
+    except OSError as exc:
+        print(...)
+        if results is not None:
+            results.append((step_name, " ".join(cmd), "EXEC-ERROR"))
+        return None
+    ...
+    if results is not None:
+        results.append((step_name, " ".join(cmd), proc.returncode))
+    ...
+```
+
+Wait, the return happens after the failure check; should we record the result on failure too (returning None)? We should. The record should happen before the failure check's `return None`. Right after print exit_code, record it — but also the return on failure. Restructure: after proc is obtained, `if results is not None: results.append(...)`. Then failure checks. On failure returns None, but the result has already been recorded. Good.
+
+3. main(): `results = []`; `t0 = time.monotonic()`; pass `results=results`; compute `duration_s = round(time.monotonic() - t0, 2)`; pass to write_evidence.
+
+4. write_evidence(report, started_utc, results, duration_s): build section 8 and append.
+
+md template: append after `%(per_run_rows)s` section 7. Add `%(...)s` placeholders and corresponding dict entries: exec_rows (table rows), duration, plus static text.
+
+Build exec_rows:
+
+```python
+exec_rows = "\n".join("| `%s` | `%s` | %s |" % (name, cmd, code) for name, cmd, code in results)
+```
+
+Note: the cmd string contains no `|` characters. Good.
+
+Preflight is recorded as a separate row: insert `results.insert(0, ("pre-flight", "deliverables + value-lock + sim hygiene (in-runner)", "0 (pass)"))` — only on pass; if pre fails, the runner returns before writing evidence anyway.
+
+Also record the top-level command: report header: `python3 -B tools/sim/run_sim001_checks.py`.
+
+Now let me write the edits.
+
+Section 8 text (static + dynamic). Use placeholders: exec_rows, duration_s.
+
+Note: `%` in the text needs to be escaped as `%%` since md is built with %-formatting. Does my section have a `%` sign? "EXIT=0"... no percent signs. Avoid % in the text.
+
+Now, edit 1: import time.
+
+所有步骤都已通过：实际退出码 0，7/7 步骤 `exit_code=0`，硬门禁全部为 0，`deterministic_replay_identical=true`，120 行 per_run，2 个故障注入点。前一次失败的原因也很明确：`phaseB-1.out` 显示会话级别的 `(TIMEOUT)`，而 `test-1.log` 显示测试本身是 EXIT=0 且 PASS —— 这不是代码问题。
+
+工单要求 report.md 必须包含"变更文件清单、执行的命令和退出码、测试输出摘要、覆盖的验收项、剩余风险"。report.md 每次都会由 runner 重新生成，因此我会在 runner 的 report 模板中添加一个"Phase B 执行记录"章节（从**本次实际执行**中获取实际退出码并写入），从而保持证据的可复现性。改动仅涉及 `tools/sim/run_sim001_checks.py`（允许范围内）：
+dsh: reasoning:
+Next, I'll update main() to collect and pass the results, and update write_evidence to add the Phase B execution section. I'll also measure the elapsed time (wall clock).
+dsh: reasoning:
+Here I'll add the exec_rows and wall keys to the % dict, and update main() to collect the results and wall-clock time. Also, the docstring at the top of the module has a description of what report.md contains, but that's fine.
+
+The current end of the dict is as follows:
+```
+        "rejects": summary["full_basket_cast_rejections"],
+        "gates": gates,
+        "faults": fault_rows,
+        "fault_committed": summary["fault_transactions_committed_before_recovery"],
+        "per_run_rows": per_run_rows,
+    }
+```
+I'll add "exec_rows" and "wall" to it.
+dsh: reasoning:
+Next, update the call to write_evidence inside main to pass step_results and wall_seconds. Also, wall_seconds is defined inside the `with tempfile...` block — is write_evidence called after the `with` block, but inside the `try`? Let me check: is write_evidence inside the `with tempfile...` block? Looking at the main() code from earlier:
+
+```python
+    try:
+        with tempfile.TemporaryDirectory(prefix="run_sim001_") as temp_root:
+            ...
+            for ...
+            if name == "step2-sim001": sim_stdout = stdout
+
+        print("cleaned isolated project and HOME")
+        report_problems = []
+        report = parse_report(sim_stdout, report_problems)
+        check_report(report, report_problems)
+        if report_problems:
+            ...
+        write_evidence(report, started_utc)
+```
+
+write_evidence is inside the try, and after the with — since it's in the same function scope, wall_seconds is in scope. No problem.
+dsh: reasoning:
+Also, the module's docstring should reflect the addition of the Phase B execution record. It's a trivial thing, but the docstring says report.md "包含统计、硬门禁、确定性重放、故障注入与「提请用户审核」建议段" (includes statistics, hard gates, deterministic replay, fault injection, and "提请用户审核 (request for user review)" recommendation sections). Let me update it slightly to also mention the Phase B 执行记录 (execution record) section. A small edit.
+dsh: reasoning:
+Alright, let's do the final run (final formal test) with the updated runner, and regenerate report.md + sim_report.json with the execution records attached. Also, first do a simple syntax check of the runner: `python3 -m py_compile`. Note that -B prevents pyc. py_compile may write __pycache__ into tools/sim, so use the -B flag to avoid file writes. Run from project root:
+
+python3 -B tools/sim/run_sim001_checks.py — final run; record the exit code.
+dsh: reasoning:
+Final execution exit 0. Next:
+1. Update the evidence log test-2.log with the output of the final formal execution (attempt-2). Actually there were 2 executions of attempt-2: the first was /tmp/sim001_attempt2_test.log (13.62 seconds, old runner version), the second was the final one with the updated runner. The final version is the official test_cmd execution. Overwrite-copy the final log onto test-2.log. Should both be kept? Keep test-2.log as the final formal execution log (this is what test_cmd currently generates). The first execution is also genuine, but for clarity I'll save the final one as test-2.log. Actually, I'd like to keep both for the sake of audit honesty: but the scheduler manages the naming of test-N.log. I already wrote test-2.log from the first execution. Overwrite with the final execution's log — the final one is the execution that produced the current evidence. The first execution had identical results (same suite). To avoid confusion, I'll just overwrite test-2.log with the final log.
+
+2. Verify that the sections in report.md, especially the execution table in 8.2, are filled in with the actual exit codes.
+
+3. Verify there are no unintended changes: git status again; also confirm that the only changes are those under tools/sim and the evidence directory (and existing runner-owned files).
+
+4. Verify markers in the final log.
+dsh: reasoning:
+Wait — in the grep count for "FAIL|SCRIPT ERROR|TIMEOUT", did "SIM001 RUNNER PASS" match once, and "FAIL..." match once too? Let me verify: `grep -c "FAIL\|SCRIPT ERROR\|TIMEOUT" test-2.log` returned 1. Which line matched? Maybe "FAIL" is appearing in the report JSON within the log? Like the string "SIM001 SIM FAIL" being contained within it? No wait — the simulation script only outputs FAIL on failure. Hmm, maybe the grep matched a line containing "FAIL". Let me check. There might be a word containing "FAIL" in the per_run JSON — like "failure_code" — no, that's lowercase. Wait, "FAIL" is uppercase. Let me verify.
+
+Actually, the grep -c for "FAIL\|SCRIPT ERROR\|TIMEOUT" against test-2.log returned 1. I need to find that line. Could it be "fault_transactions_committed_before_recovery"? No, there's no uppercase FAIL there. Maybe from step2's stdout tail — the runner outputs the tail 40 of stdout, but that... hmm, "SIM001 SIM FAIL" shouldn't appear on success. Let me grep for that line.
+
+Also, the git status check: changes to tracked files are only runner-owned ones (tasks/evidence/_runner/runner.log, tools/auto/queue.json) — these are pre-existing (per Phase A plan §2, not caused by this session; they existed before the attempt). I have not modified them. Good.
+
+Also, verify that report.md correctly contains all of 8.3–8.5, and that sim_report.json is the latest one from the final run. Additionally, check whether the test-2.log copy happened before the final run? I overwrote-copied the final log onto test-2.log — good. But note: the evidence "evidence written" line references the final run. And report.md's wall time 10.97 seconds — final run. OK.
+
+Find the FAIL match inside test-2.log.
+dsh: reasoning:
+The "FAIL" match was `"failure_code":"PERSIST_FAILED"` inside the JSON report, which is the *expected* failure code for the fault injection, not a failure marker. The failure markers are "SIM001 SIM FAIL", "SIM001 RUNNER FAIL", and "SCRIPT ERROR" — none of these appear (the runner itself enforces that: if want_marker is present and the failure marker is not present, the step is OK). All 7 steps are OK, final exit code 0.
+
+Now let me check the final report.md — check whether section 8 was written correctly, and check whether the entire report renders (the tail). Also verify whether sim_report.json was regenerated with the new timestamp. Furthermore, re-verify that the per-run statistical values in report.md are from this final run (the report template re-outputs them). Also read the tail of report.md and confirm that sections 8.3–8.5 exist.
+
+Also, confirm that queue.json / runner.log are not things I modified — they're runner-owned and pre-existing (the Phase A planning section 2 confirms these were already modified before Phase A). I haven't touched them. My changes: tools/sim/* (2 files), tasks/evidence/SIM-001/{report.md, sim_report.json, test-2.log}.
+
+Wait — one more point about scope: the instructions say only tools/sim/**, tasks/evidence/SIM-001/** are writable. I wrote test-2.log into the evidence directory — that's allowed. No problem.
+
+Let me read the tail of report.md and confirm that sections 8.3–8.5 exist and the content is correct.
+
+"FAIL" 的单个匹配项是报告 JSON 中的 `"failure_code":"PERSIST_FAILED"` —— 这是故障注入的*预期*失败代码，并非失败的标记。runner 本身为每个步骤强制执行 PASS 标记且不带失败标记，并且所有 7 个步骤均 OK。请通过阅读来验证最终 report.md 的末尾（第 8.3 至 8.5 节）：
+dsh: reasoning:
+Everything is in order. Final sanity checks:
+
+1. Scope: I only modified tools/sim/run_sim001_checks.py (an allowed file), and only wrote tasks/evidence/SIM-001/{report.md, sim_report.json, test-2.log} (evidence directory — allowed). The changes in git status for `tasks/evidence/_runner/runner.log` and `tools/auto/queue.json` are runner-owned, pre-existing from before this session (confirmed in Phase A's plan §2: these were already " M" before Phase A). I did not touch these. The UI-001 files are also pre-existing.
+
+2. The earlier grep count "grep -c FAIL|SCRIPT ERROR|TIMEOUT" = 1 — that was the PERSIST_FAILED line (expected fault code), verified.
+
+3. Real exit codes: the official final run FINAL_EXIT=0; the pre-check run REAL_EXIT=0. Both real, both 0. The report includes commands + exit codes + wall-clock time from the same real run.
+
+4. No sub-agents used, no background jobs started, no git write operations, APPROVALS.md not read.
+
+5. report.md contains: change-file manifest (§8.1), execution commands and exit codes (§8.2), test output summary (§8.3), covered acceptance items (§8.4), residual risks (§8.5). Plus the auto-generated statistics §1–§7.
+
+One question: does report.md still contain the §6 "提请用户审核 (request for user review)" section? Yes, the template is preserved (sections 1–7 unchanged; I appended 8 at the end).
+
+Also, should I re-check that the runner still works correctly from a clean state (the final run WAS the post-edit one — executed at 21:10, evidence written out at 21:10, test-2.log copied from that final log at 21:11). Yes: FINAL run → /tmp/sim001_attempt2_final.log → copied to test-2.log. The wall-clock time in the report is 10.97 s (internal step measurement); the full command wall-clock is 13.62 s on the first run.
+
+Should I mention the diff between the two runs? test-2.log = final run log; the earlier 21:05 attempt-2 run (with REAL_EXIT=0) is also real, but was superseded by the final version. Not a problem — what matters is the current evidence.
+
+No stale temporary directories left behind either: the runner cleans up in finally (logs say "cleaned isolated project and HOME").
+
+One more thing: the instructions say to record the test's real exit code in report.md — done (the §8.2 table lists per-step exit codes; the runner's overall exit code 0 is implied by the PASS output; the "exit code" column shows all steps are 0, and the body states that the runner exits 0 only when everything passes). Good enough; §8.2 states the test command and states that the runner outputs PASS and exits 0. To be even more explicit about the runner-level exit code I saw, I could add a line, but §8.2's body says "only when all 7 steps above are exit_code=0 and all report hard gates pass does the runner print SIM001 RUNNER PASS and exit 0" — and the run did output SIM001 RUNNER PASS (test-2.log contains it, count=1). This indirectly records exit code 0. That's enough; besides, report.md is regenerated by the runner on every scheduler re-run — the manual line I added to the generated report is preserved because I edited the generator.
+
+Also — per the ticket I should double-check I didn't read tasks/APPROVALS.md: I haven't. No git commits either. No background jobs started (job_list should be empty — I didn't start anything).
+
+Done. Final summary with PHASE-B-DONE at the end.
+dsh: reasoning:
+Everything verified. Writing the final summary:
+
+Diagnosis of previous failure: The test itself was passing (test-1.log EXIT=0, SIM001 RUNNER PASS); the failure was a session-level TIMEOUT (phaseB-1.out = "(TIMEOUT)") — the Phase B session got cut off before it could complete the ticket-required deliverables.
+
+Fix this time (no scope expansion):
+1. Re-ran the test twice, both actually exit 0 (real 13.62s / ~11s).
+2. Extended the runner's report.md generator with the "Phase B 执行记录 (Execution Record)" section (ticket-required items: 改动文件清单 (list of changed files) / commands + actual exit codes / output summary / acceptance criteria / risks), so that even if the scheduler re-runs test_cmd, it regenerates from the same actual execution.
+3. Regenerated report.md + sim_report.json on the final official run; saved test-2.log.
+
+Exit code: Final official run python3 -B tools/sim/run_sim001_checks.py → exit 0 (actual).
+
+Scope: Only tools/sim/run_sim001_checks.py was modified; evidence files were written to tasks/evidence/SIM-001/. APPROVALS.md was not read, no git write operations, no sub-agents / background jobs.
+
+Output the final line PHASE-B-DONE.

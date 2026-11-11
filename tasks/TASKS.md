@@ -292,3 +292,13 @@ Git diff / commit: UI 主实现 `188bc27`；画面证据 `87855cf`；本次回�
 Risks & unresolved decisions: `tools/auto/queue.json` 的全局冻结字段和 UI-001 blocked 状态保持；不把 headless policy test 视为 macOS GUI 通过。
 Owner approval: Phase B 既有授权有效；项目所有者要求保持人工审批和冻结机制。
 ```
+
+```text
+ID: SIM-001
+Status: In Review（AUTO-001 自动通过测试/范围/批准检查，待人工验收）
+Owner: AUTO-001 scheduler + headless Qwen Flash (serial)
+Executed commands + exit codes: test_cmd=python3 -B tools/sim/run_sim001_checks.py -> 0; attempt=2
+Test result & evidence: tasks/evidence/SIM-001/ (会话归档+日志+diff)
+Risks & unresolved decisions: 见 tasks/evidence/SIM-001/phaseA.out 与 report.md
+Recorded by AUTO-001 at 2026-11-11T21:14:13+00:00
+```

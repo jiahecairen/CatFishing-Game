@@ -1,0 +1,269 @@
+SIM-001 Phase A 完成。总结如下：
+
+**已完成的只读流程**
+- 遵守 AGENTS.md 全程只读、单会话串行；未调用子 Agent/并行/后台工具，未读取 `tasks/APPROVALS.md`，无任何 git 写操作。
+- 已读：TASKS.md（SIM-001 段与状态记录）、SDD_v0.1、DECISION_REGISTER、ACCEPTANCE_TESTS、TECH_SPIKE、HARNESS_LOCAL_SETUP、DEV_LOG、INTERFACES_AND_DATA；加载 Skills `fishing-state-and-save`、`godot-validation`。
+- 实测（命令+退出码已如实记入 plan §2）：`git status/log`=0（HEAD `f66f5c7`，工作树仅 runner 自有状态，非本会话产生）；`tools/sim` 不存在（exit 1，Phase B 新建）；`tasks/evidence/SIM-001/` 已预建且为空；Godot `4.7.2.stable.official.ed1daf0bf`=0；queue 中 SIM-001=`ready`、needs_human=false、test_cmd 空待回填；数值基线 20/60/30/10 与 60/30/10、8/16/32 在案。
+- 计划已写入 `tasks/evidence/SIM-001/plan.md`（本会话唯一写入，已用 git status 验证），第二行逐字引用 AGENTS.md §2「固定业务约束…」行（程序化比对=True）。内容含：目标、Phase B 文件清单（仅 `tools/sim/**` + `tasks/evidence/SIM-001/**` 新增）、真实接口签名与不变量、精确测试命令与预期退出码（`python3 -B tools/sim/run_sim001_checks.py`→0，含 6 个串行 Godot 步骤与唯一 PASS 标记约定）、数值锁/回滚风险表、验收映射（SDD-178、T-TIME-01/02、T-ECO-01～03、T-SAVE-02 侧翼、T-CONF-01）。
+
+**判定**：本票为纯统计模拟票——不调节任何数值（runner 前置数值锁强制）、无破坏性操作、无需求变更；参数调节仅作为报告中的用户批准建议，不由本票实施。无需阻断。
+
+PHASE-A-DONE
+
+---STDERR---
+dsh: reasoning:
+Let me start by understanding the task. I am the Phase A (read-only planning) agent for ticket SIM-001 regarding a multi-seed virtual time simulation report.
+
+Constraints:
+- Read-only, except for writing a plan document to /Users/rain/DevGame/Fishing/tasks/evidence/SIM-001/plan.md
+- No sub-agents, no background tasks
+- Do not read tasks/APPROVALS.md
+- No git write operations
+- If approval is needed → output "BLOCKED: <reason>" on the final line
+
+Steps:
+1. Read AGENTS.md (already injected into context — need to comply)
+2. Read the SIM-001 ticket in tasks/TASKS.md, and docs (SDD_v0.1, DECISION_REGISTER, ACCEPTANCE_TESTS, TECH_SPIKE, DEV_LOG, HARNESS_LOCAL_SETUP)
+3. Read-only verification: project structure, existence of files, git status and recent log; record commands and exit codes
+4. Write plan.md to tasks/evidence/SIM-001/plan.md. Contents: goal / files to modify (within allowed scope) / interfaces and invariants / exact test commands and expected exit codes / risks and rollback / acceptance criteria mapping
+5. The second line of plan.md must verbatim quote a one-line rule from AGENTS.md as proof of having read it.
+
+Also regarding skills: `godot-validation` and `fishing-state-and-save` seem to be relevant. AGENTS.md says "for each relevant task, enumerate Skills and read the guide as needed." Task type: multi-seed virtual time simulation report — it's an economy/verification simulation. The skills `fishing-state-and-save` and `godot-validation` apply. The skill tool should be called for these.
+
+Wait — but the constraints prohibit side effects; loading a skill is read-only, so that's fine.
+
+Let me plan the tool calls:
+1. Load skills: fishing-state-and-save, godot-validation (independent — execute together).
+2. Read files: tasks/TASKS.md, docs/SDD_v0.1.md, docs/DECISION_REGISTER.md, docs/ACCEPTANCE_TESTS.md, docs/TECH_SPIKE (probably TECH_SPIKE.md), docs/DEV_LOG.md, docs/HARNESS_LOCAL_SETUP (probably HARNESS_LOCAL_SETUP.md). Also the project structure.
+3. bash: git status, git log --oneline -n, ls of tools/sim, etc.
+
+First, let me check the directory structure with glob and bash ls. Then read files.
+
+Let me start from the todo list, then load the skills, and explore.
+dsh: reasoning:
+Next, I'll read the tasks and documentation. First, let's check the project structure.
+dsh: reasoning:
+Okay, I'll read the related documents: SDD_v0.1.md, DECISION_REGISTER.md, ACCEPTANCE_TESTS.md, TECH_SPIKE.md, DEV_LOG.md, HARNESS_LOCAL_SETUP.md. Also INTERFACES_AND_DATA.md and ARCHITECTURE.md are mentioned in AGENTS.md — the task says "related docs (SDD_v0.1 / DECISION_REGISTER / ACCEPTANCE_TESTS / TECH_SPIKE / DEV_LOG / HARNESS_LOCAL_SETUP)", so I'll read those. Also, I'll check the entry for SIM-001 in queue.json (read-only, allowed — it's in tools/auto, not tools/sim. Reading is fine; the file scope restriction applies to writes).
+
+I'll read these in parallel.
+dsh: reasoning:
+Okay, so I'll read DEV_LOG.md and INTERFACES_AND_DATA.md + ARCHITECTURE.md (AGENTS.md §1 instructs me to read these). Also, I'll read the SIM-001 entry in queue.json to confirm the exact test_cmd requirements. Furthermore, I'll explore the scripts/tests directory to check the existing FSM / economy / save services. Then I'll also run git status / log.
+dsh: reasoning:
+Alright, let's check the SIM-001 entry in queue.json, and also look at ARCHITECTURE.md, the scripts directory, the tests directory, and the evidence directory structure. Also going to run git status/log. I'll also check the Godot version. On top of that, I'll check whether tools/sim exists (probably doesn't). Let's run the read-only commands.
+dsh: reasoning:
+queue.json has `tickets`, and SIM-001's status is "ready" with empty test_cmd, needs_human=false. There's also a top-level 'unfrozen' key. Let me check the contents of 'unfrozen' and 'note'. Also, 'frozen' being null means frozen doesn't exist, but UI-001 was said to be blocked while frozen is set. Let me check the full structure of queue.json (read-only) and how the runner determines freeze. Actually, DEV_LOG said "the global `frozen` object is preserved with byte-level equivalence and remains set because UI-001 is awaiting GUI acceptance." But now, my query output frozen: null. The key is 'unfrozen' — maybe the meaning is inverted. Let me check.
+
+Also, to plan the simulation tool, I need to inspect the main interfaces: deterministic_rng.gd, virtual_clock.gd, fishing_system.gd / fishing_state_machine.gd, economy_service.gd, game_state.gd, save_service.gd (scripts/save), the config loader, and the config files data/fish_species.json + runtime_config.json. Furthermore, to understand the structure of the test runner and how Phase B runs tests, let me look at an example test runner (run_save001_checks.py) (the runner executes test_cmd. Probably Python that launches Godot headless with an isolated copy).
+
+Let me read the main scripts and the header of the test runner. Also, let me check the runner's README to understand the evidence conventions, and possibly look at FSM-001's plan.md as a model for plan format. Let me look at tasks/evidence/FSM-001/plan.md to check the expected plan format.
+dsh: reasoning:
+The runner's convention is clear. Next, in order to write a plan with actual interfaces, I need to read the interfaces of the main scripts:
+
+- scripts/fishing/deterministic_rng.gd
+- scripts/fishing/virtual_clock.gd
+- scripts/fishing/fishing_state_machine.gd
+- scripts/core/fishing_system.gd
+- scripts/economy/economy_service.gd
+- scripts/core/game_state.gd
+- scripts/save/save_service.gd (atomic save)
+- Possibly scripts/config/*.gd for loading configs
+- scripts/io/config_loader.gd
+
+Also, I'll check the planning format in FSM-001's plan.md. Let me read the main scripts. They might be long, so I'll first check the sizes and then read the important parts. Furthermore, to understand the runner's Phase A/B mechanism, I'll also read tools/auto/README.md (this will help in writing a plan that conforms to the format — for example, plan.md is the Phase A deliverable, and Phase B needs to write the test_cmd to the queue, right? No — the runner itself updates the queue. The plan needs to include the exact test command that the scheduler will use when setting exec_ready).
+
+First, let me check the file sizes.
+
+runner 的约定现在已经很清楚了。接下来，我将阅读核心接口脚本，并为计划中的界面/不变量部分收集实际的签名。
+dsh: reasoning:
+The interface looks good. Let's also read game_state.gd (only 15 lines). Also, I'll check the FSM's plan.md to confirm the format of the plan, and further, I'll check the key parts of fishing_state_machine's request_cast / produce_catch_candidate to understand how the simulation drives the loop. Additionally, I'll check the public API of save_service.gd (scripts/save) (build_document / commit / restore?) as well. Let's quickly read game_state.gd, and grep the interface of the save service.
+dsh: reasoning:
+The planning format of FSM-001 is clear. Note that the second line of the FSM-001 plan.md is the original quoted line from AGENTS.md — this is the convention: line 2 must be a verbatim rule line from AGENTS.md. In my plan.md, line 2 must quote a line from AGENTS.md verbatim.
+
+Interesting point: the FSM plan used `tasks/evidence/FSM-001/` for the isolated HOME. Because the CFG runner stated that the isolated HOME lives inside the evidence directory. Wait — but the SIM-001 permitted files are tools/sim/** and tasks/evidence/SIM-001/**. The simulation code lives in tools/sim/**, and the runner also lives in tools/sim/** (since tests/** is not permitted in SIM-001!). Note: SIM-001's allowed_files are tools/sim/** and tasks/evidence/SIM-001/** — meaning the test/runner scripts must live under tools/sim/ rather than tests/. The queue's test_cmd must reference something under tools/sim. For example `python3 -B tools/sim/run_sim001_checks.py`.
+
+However, a Godot headless test script under tools/sim needs to be part of the Godot project in order to be run with --path. tools/sim/*.gd under the project root is res://tools/sim/..., and Godot --path /path/to/copy --script res://tools/sim/test_sim001_sim.gd will work. Good.
+
+One issue: the simulation runner copies the project into a temporary directory and runs headless Godot steps. This is the existing convention. The simulation itself: multi-seed 20 seeds × 1h/4h/8h virtual time, with two scenario modes (hold until basket is full; periodic sell loop). Compute statistics; output JSON report + Chinese summary to tasks/evidence/SIM-001/.
+
+Important: where does the report get written? Phase B will run under the AUTO-001 scheduler; evidence is placed under tasks/evidence/SIM-001/** (permitted). The simulation test script (GDScript) can emit the JSON report to a path passed via a user:// directory under an isolated HOME, and the runner copies the report into tasks/evidence/SIM-001/. Or, more simply, the runner captures the simulation report (JSON) from the GDScript script's stdout and writes the file itself into tasks/evidence/SIM-001/. Note that the runner writes evidence into the permitted evidence directory. This aligns with the runner convention: previous runners printed logs into the evidence directory? In practice AUTO-001 archives the runner's stdout into the evidence directory (phaseA.out etc. are runner artifacts). The previous plan placed the isolated HOME inside the evidence directory (CFG-001 precedent "isolated HOME inside tasks/evidence/FSM-001/ temp dir and finally-deleted (CFG-001 same precedent)"). So it is fine to write the simulation JSON report directly into tasks/evidence/SIM-001/ (permitted scope).
+
+Simulation design details:
+
+What we use:
+- DeterministicRng (seed via set_seed)
+- VirtualClock
+- FishingStateMachine (initialize with catalog/runtime, tick_effective, request_cast, produce_catch_candidate, ack_settlement)
+- EconomyService (commit_catch, sell_fish with persistence gate returning true — memory only; no actual disk save required? The ticket SIM-001 dependency includes SAVE-001, and ACCEPTANCE §4 says "after save-failure fault injection, new transactions before state restoration MUST be 0" — that item is about fault-injection simulation, but the SAVE-001 tests already cover fault injection. The focus of the SIM-001 report is: complete-cycle stats, first fill time distribution, species proportion and value, duplicate transactions and post-full additional casts = 0. SAVE-001 integration is optional. To keep it lightweight: use the persistence gate = always true (memory), or optionally include an AtomicSaveService configured_dir'd into a temp dir to run one 8h seed scenario with save fault injection? The skill godot-validation #3/#5: fixed seed, controllable virtual-time tests: 20-60s, FSM path, full basket stop, sell recovery, restart recovery, duplicate catch/sale IDs do not re-increase fish/coins; multi-seed simulation 1/4/8h, output machine-readable JSON report, enumerate complete cycles / full-basket distribution / species and value distribution.
+
+ACCEPTANCE_TESTS §4's bullet says "after save-failure fault injection, new transactions before state restoration MUST be 0" — this is part of the SDD-178 suite's expectations. Hmm, that line is in the §4 list. To be safe, include one integration scenario: at the 8h mark, one seed (or all seeds) with fault injection using AtomicSaveService + SaveFaults... but AtomicSaveService's default dir is user://; configure_dir can point at a temp dir. During simulation, install_into(economy, state, rng, clock, ...). This gives real save-fault integration: during persist_runtime_checkpoint / while transactions are gated, arm a fault, verify that after the persist gate fails no new transactions are applied, then clear and verify the state is either old or new and complete.
+
+This adds complexity; but the acceptance criterion demands that metric. Alternatively, mark that metric as covered by the SAVE-001 regression and record it in the report as 0 from the simulation's own transaction ledger (duplicate catch/sale = 0, cast-while-full = 0 are the ones the SIM-001 ticket lists: "duplicate transactions / new-casts-when-full = 0" per the TASKS.md line: minimal acceptance "SDD-178; duplicate transactions / new-casts-when-full=0"). The SIM-001 line in TASKS.md's table has: minimal acceptance = SDD-178; duplicate transactions/new-casts-when-full=0. So the ticket's minimum is: multi-seed virtual-time report + duplicate transactions 0 + cast-while-full 0. ACCEPTANCE §4's fault-injection item can be handled by reusing SAVE-001's runner regression as a suite step (run test_save001_save.gd as a regression step) and by including one in-simulation fault-injection scenario. In the plan, to be safe I'll propose a lightweight integration scenario (1 seed × 8h, sell loop with AtomicSaveService using an isolated HOME, arm a write fault at some point, assert that after the gate failure no transactions are applied and the state remains consistent) — that covers the bullet without heavy duplication.
+
+Also the 20 seeds: "first round 20 sets recommended" and ACCEPTANCE says at least 20 (proposed value for the test project). Use exactly 20 fixed seeds (e.g. 101..120, or primes), deterministic list. 1h=3600s, 4h=14400s, 8h=28800s virtual. Two scenarios each: "hold until full (no sell)" and "periodic sell loop" (e.g. sell all once basket reaches capacity — i.e. sell on full, continue; or sell periodically every N fish). Define: Scenario B = sell all as soon as basket is full, then resume casting (this maximizes cycles); or "periodic sell" = sell one fish every 300s? The ticket says "hold until basket is full with no sell, periodic sell loop" — scenario A: no sell until full; scenario B: periodic sell loop (sell all when full and continue is the natural "loop"; but "periodic sell" suggests time-based periodic sell). Define Scenario B: every T=1800s (30 min) virtual, sell all fish in the basket (fixed period, not a random value) and continue casting; this is periodic. Both scenarios defined as simulation policy (test-only), do not change game parameters. Note: the sell loop uses EconomyService.sell_fish with unique sale_event_ids generated deterministically from the RNG or counter.
+
+Assertions:
+- Each WAITING's wait_seconds ∈ [20,60] (from FSM's transition log/candidate)
+- duplicate_catch_transactions == 0, duplicate_sale_transactions == 0 (retrying each event_id is already committed? No — "count of duplicate processed catch/sale IDs MUST be 0" means: count of times the same catch/sale ID is committed twice (double-apply). In the simulation we do not intentionally retry; count = 0 means the ledger shows no double-apply. To actively test idempotency, at a few checkpoints during the simulation retry an already-applied catch/sale ID and verify an AlreadyApplied is returned and no state change occurs — this counts as a rejection and is not a duplicate. Define duplicate count as: count of processed-catch IDs applied after the first application (should be 0). Plus explicit idempotent-retry probes.
+- casts_started_while_full == 0: request_cast returns BASKET_FULL rejection when full, and FSM never enters CASTING when basket is full.
+- Determinism: rerun one seed twice and identical transition digest (hash of event sequence) — reproducibility check.
+- Stats: cycle times (CASTING→SETTLEMENT completion, per fish), per-seed×duration first-fill time (mean/median/p10/p90), species counts/ratios, per-species total value, gold earned per sell event.
+
+Runtime: pure GDScript LCG, 8h=28800s, average cycle ~40s + stage time → 8h ≈ 28800/42 ≈ 685 cycles per seed; ×20 seeds × (1+4+8h = 13h total / seed... 1h+4h+8h scenarios are independent runs per seed) → total cycles ≈ 20 × (1+4+8) × 3600/42 ≈ 20×13×85.7 ≈ 22k cycles per scenario; ×2 scenarios ≈ 45k cycles. Each cycle is a few tick_effective calls — use a large tick step (e.g. 1s or event-driven advance to next threshold; tick_effective accepts float seconds and only one transition per tick — careful: single step crossing a threshold advances at most one transition, and the remainder is carried over). So event-driven: tick just the exact required seconds. ~10 ticks per cycle → 450k calls, trivial. Runtime is a few seconds. Good — no timeout issues. Godot headless per step is on the order of a few seconds.
+
+Runner steps (tools/sim/run_sim001_sim.py or a name like tools/sim/run_sim001_checks.py):
+- Pre-flight value lock (reuse pattern: data==examples, 20/60/30/10 lock, species weights/prices, v1 sample lock? At least runtime+species value lock to prove numbers were not adjusted)
+- Copy project into temp dir, isolate HOME
+- step1 import (--editor --quit)
+- step2 simulation main: --script res://tools/sim/sim001_economy_sim.gd → outputs stats JSON + "SIM001 SIM PASS"
+- step3 SAVE-001 regression (test_save001_save.gd) — because SIM depends on SAVE; plus FSM/ECO/CORE/CFG regressions too (convention: predecessor red means full-ticket red). Include ECO, FSM, CORE, CFG regressions like the save runner.
+- Runner writes the report: parse the simulation script's stdout JSON (marker-delimited block) and write it to tasks/evidence/SIM-001/sim_report.json + summary_zh.md? Chinese summary — the simulation GDScript itself can compute the summary lines; the runner writes the file into tasks/evidence/SIM-001/ (permitted). Also PASS marker "SIM001 SIM PASS" exactly once.
+
+Wait: writing the report file from the Python runner into the source tree's tasks/evidence/SIM-001 is a write inside the permitted scope — OK in Phase B.
+
+Files to add (Phase B):
+- tools/sim/sim001_economy_sim.gd — the simulation driver (extends SceneTree, headless), emits machine-readable JSON between markers SIM001_REPORT_BEGIN/END and a PASS marker.
+- tools/sim/run_sim001_checks.py — Python stdlib runner; pre-flight value lock + isolated copy + step execution; writes tasks/evidence/SIM-001/sim_report.json and tasks/evidence/SIM-001/report.md (Chinese summary) from parsed report; exit 0/1.
+- tools/sim/README.md optional — keep minimal; skip to avoid extraneous files? Allowed scope is tools/sim/** so it's permitted. Keep it as optional.
+
+No changes to scripts/**, data/**, schemas/**, tests/**, etc. The simulation only uses existing public APIs.
+
+test_cmd to backfill: `python3 -B tools/sim/run_sim001_checks.py` (matches convention; the scheduler backfills).
+
+Next, risk analysis:
+- EconomyService.set_persistence_gate requires a Callable gate — the simulation installs a gate that returns true (Scenario A/B is memory-only), but the fault-injection scenario uses AtomicSaveService.install_into to actually write into a temp user dir. Need to confirm install_into's signature — install_into(economy, state, rng, clock, ...) — let me confirm that signature. Also the FSM's initialize signature includes a stage_durations dict with default 1.0s stage time. Stage durations (casting/hooked/reeling) are technical placeholders per the SDD's "cast/reel action durations — technical test config". The simulation must document the chosen stage durations as test-only assumptions: use the FSM's default DEFAULT_STAGE_SEC=1.0 (not a config change; a parameter at test time). Cycle ≈ wait(20-60, mean 40) + 3 stages×1s ≈ 43s.
+- first-fill: capacity 10, mean cycle 43s → ~430s to fill; fine for 1h.
+- Determinism check: run the seed twice and compare the transition-log digest.
+
+Additional checks: FSM's request_cast(state) now takes GameState; produce_catch_candidate returns a candidate with event_id + species_id; ack_settlement(catch_event_id, committed) — the flow: request_cast → tick until HOOKED → produce_catch_candidate → economy.commit_catch → ack_settlement(id, true). Need to confirm exact return-value semantics. For §4 interface precision, let me read the relevant sections of the FSM script and the signatures of the economy's commit/sell. Also the full signature of AtomicSaveService.install_into, and the SaveFaults stages.
+
+Also I must confirm that scripts/core/game_controller.gd already wires these together (maybe the simulation can reuse GameController?). Let me quickly check game_controller.
+
+Then I'll write plan.md. Line 2 must be a verbatim line from AGENTS.md. E.g. FSM-001's plan used a §4 line. Use one that's relevant to SIM-001, e.g. "- `FishingSystem` as a pure business state machine can be tested in headless environment; visualization and business separation, prohibit using per-frame count for fishing wait." — that's already used; any line from AGENTS.md works as proof. Pick one from §2 fixed business constraints: "Fixed business constraints: visible desktop **30 FPS**; auto-fishing random bite wait initially **20–60 seconds**; independent game logic clock; ~three fish types configurable; basket capacity **10 slots is only a candidate initial value**; full basket does not initiate new casts; one fish corresponds to a unique instance ID; sales use unique event/transaction ID to atomically deduct fish and add coins; crash retry does not double-settle." — a long line. Or pick a §3 line "4. **Review**: submit `git diff --stat`..."? The most relevant: "Multiple fixed random seeds simulate 1h/4h/8h, ..." — that is actually SDD, not AGENTS. Line 2 of AGENTS.md §4: "- `FishingSystem` as a pure business state machine can be tested in headless environment; ..." — a good proof line. Actually AGENTS.md §0 "Single agent serial" is also good. Use the §4 FishingSystem line (mirroring the FSM-001 plan's convention; verbatim from AGENTS.md §4 bullet 1).
+
+Now let me read the remaining interface details.
+dsh: reasoning:
+With this, I've grasped the complete interface. Also, I'll check the return value shapes of EconomyService's commit_catch/sell_fish, and the behavior of the persistence gate — commit_catch calls _persist and returns a result with the code ALREADY_APPLIED. Let me quickly check the return value shapes of commit_catch and sell_fish, and how caught_at_utc is passed (FishInstance.timestamp_valid — UTC seconds string?). For the simulation, caught_at_utc needs to be a valid UTC timestamp string. FishInstance probably has a helper like a timestamp from clock. Let me quickly check fish_instance.gd and EconomyService's commit_catch. Also, I'll check whether GameController ties these together. With this, I can write down accurate invariants and pseudocode.
+dsh: reasoning:
+All interfaces are now in place. One more thing: caught_at_utc needs to be a valid UTC string like "2026-11-10T16:00:00Z" — the sim uses a deterministic synthetic clock, so it needs a UTC string. We can derive UTC from a fixed epoch (e.g., 2026-01-01T00:00:00Z epoch seconds + virtual seconds, formatted via Time.get_datetime_string_from_unix_seconds... wait, GDScript needs to deterministically format a UTC string; the FSM's candidate has caught_at_clock (floating-point seconds). EconomyService.commit_catch requires caught_at_utc to match the pattern. For the sim, deterministically convert virtual seconds into a UTC string (implement a civil-from-days algorithm inside the sim script, pure integers — deterministic, no dependence on the machine's timezone/time). Or more simply, use Time.get_datetime_string_from_unix_seconds(secs, true) — Godot 4 has Time.get_datetime_string_from_unix_seconds(use_utc). Deterministic for a given integer. No problem — leave the decision to Phase B: a deterministic UTC formatter inside the sim (pure integer math) to avoid engine locale/timezone effects; Godot's Time.get_datetime_string_from_unix_seconds is UTC and deterministic, but to be safe, either document a homegrown integer civil calendar helper, or use Time with use_utc=true and only integer seconds.
+
+Note: FSM's initialize takes (catalog, runtime, rng, clock, recovered_checkpoint, stage_durations). stage_durations: configure via configure_stage_durations(casting_sec, hooked_sec, reeling_sec), or via an initialize parameter. The default DEFAULT_STAGE_SEC is 1.0. In the sim, use the default 1.0s stage duration (an implementation value for testing, not a change to the economic numbers — document as a premise; the SDD says casting/reeling durations are technical test settings).
+
+Sim's driving loop (per scenario):
+- Fresh GameState, DeterministicRng(seed), VirtualClock
+- economy.initialize(catalog, runtime); persistence gate = test-only memory gate (Callable returning true), or in fault scenarios AtomicSaveService.install_into.
+- fsm.initialize(catalog_dict, runtime_dict, rng, clock, {})
+- Loop until virtual time budget is reached:
+  - if fsm.can_cast(state) and state is IDLE: r = fsm.request_cast(state) → record cycle start at clock.now()
+  - Loop tick_effective with fixed dt = 1.0s? But 1 tick = at most 1 transition; using 1-second ticks: CASTING (1s) → WAITING (wait_seconds) → HOOKED (1s) → REELING (1s) → SETTLEMENT. On SETTLEMENT: candidate = fsm.produce_catch_candidate(); save_service.set_pending_candidate + persist? For a memory-only scenario: res = economy.commit_catch(state, candidate.catch_event_id, candidate.species_id, utc_string); if res.ok: fsm.ack_settlement(id, true); otherwise on BASKET_FULL (race between can_cast and commit? Can't happen — cast only when not full, basket only grows on catch, capacity 10, one basket fills at exactly 10, and the 11th commit becomes BASKET_FULL? Wait: can_cast checks basket.size() < capacity → cast when basket is 9 → catch would make 10 = full? commit_catch rejects when basket.size() >= capacity — at catch time basket is 9 → allowed → basket 10, full. Next can_cast is false. So no cast in progress at full. But scenario A "no selling, run until full" — after full, sim keeps calling request_cast, expecting BASKET_FULL rejections to be counted: casts_started_while_full only counts if FSM transitions to CASTING while full; expected value 0; rejections are recorded separately.)
+- Idempotency probes: periodically (e.g., per cycle, 1 in 100) retry commit_catch with an already-committed ID and the same parameters → expect ALREADY_APPLIED and no state change (basket unchanged) — counted as duplicate_applied = 0. Same for sale retry.
+- Sale events: sale_event_id = "sale-<seed>-<counter>" is deterministic.
+- Scenario B's periodic selling: every SALE_EVERY_SEC=1800 virtual seconds (a test parameter), sell all in the basket: sell_fish(state, sale_id, all instance ids). gold_added is recorded.
+- Fault-injection scenario (1 seed × 8 hours, Scenario B + AtomicSaveService): configure_dir with a temp directory under the isolated HOME (or a user:// default with an isolated HOME — since HOME is isolated, user:// automatically maps under the isolated HOME; test_save001 was probably using the default user:// with an isolated HOME; simplest: configure_dir to an absolute temp path). Arm set_fault_injection("tmp_write" ...?) — SaveFaults stage names: check the stages in save_faults.gd. While the fault is armed, transactions return PERSIST_FAILED, assert the basket/gold state is unchanged; then disarm, retry the same ID → success (state transitions to the complete new state). Count new_transactions_during_fault_uncommitted → must be 0.
+
+Let me quickly check the stages in save_faults.gd. Also confirm that the FSM's initialize signature's stage_durations parameter is optional. Also check the config loader — how tests load the data JSONs (FileAccess in Godot). Existing tests probably use FileAccess.open("res://data/..."). No problem.
+
+Also check the .gitignore handling of the evidence file: writing sim_report.json to tasks/evidence/SIM-001/ is permitted.
+
+Another consideration: Phase B's test_cmd should be `python3 -B tools/sim/run_sim001_checks.py`. The scheduler will backfill it. The runner should write evidence to tasks/evidence/SIM-001/sim_report.json + sim_summary_zh.md, and print PASS markers. Also, do a full project copy excluding .git/.godot/__pycache__ and tasks/evidence (the runner copies the tree; tasks/evidence is excluded from the copy per convention, but the runner writes reports to the real ROOT/tasks/evidence/SIM-001/ — permitted).
+
+Determinism assertion: run the full suite twice? Cost is acceptable — the runner runs the sim script once; determinism can be asserted inside the sim script (run seed X twice in-process and compare digests). Better: run 1 seed × 1 hour twice and compare the complete event-sequence digests; cheaper.
+
+Next, quickly check the fault stages in save_faults.gd and the config_gate's API, and also check how existing tests load the config (FishSpeciesCatalog.load_catalog? RuntimeConfig). Let me grep the config scripts.
+
+接口已基本完整，现在我来补充最后几处细节，包括故障注入、阶段名、配置加载入口与 FSM 初始化的对应关系。
+dsh: reasoning:
+All necessary information is gathered. Next, check the second line of the plan format requirement in the FSM-001 plan: line 2 is exactly the line from AGENTS.md §4:
+"- `FishingSystem` is testable in a headless environment as a pure business logic state machine; visualization and business logic are separated, and using per-frame counting for fishing waits is forbidden."
+
+I need to include a line from AGENTS.md as-is on the second line of my own plan.md. Pick a line from AGENTS.md that is relevant to SIM-001. Candidates:
+- §4 line 1 (used in the FSM plan; no problem reusing it, but another line would be better): "- External JSON configs must always be validated; illegal species IDs, negative weights/prices, duplicate IDs, corrupted save format — all must have a clear failure path." — not very relevant.
+- §2: "Fixed business constraints: visible desktop **30 FPS**; random hook-up wait for auto-fishing is initially **20–60 seconds**; independent game logic clock; ~3 kinds of configurable fish; fish basket capacity **10 slots is merely a candidate initial value**; no new casts when the basket is full; 1 fish corresponds to a unique instance ID; sales atomically subtract fish and add coins with a unique event/transaction ID; no double-settlement on crash retry." — this line is highly relevant (covers 20-60 seconds, capacity 10 candidate, full-basket no-cast, unique ID, atomic sale, no double-settlement). Use this one.
+
+Check the exact text from the injected AGENTS.md — §2 final paragraph: "Fixed business constraints: visible desktop **30 FPS**; random hook-up wait for auto-fishing is initially **20–60 seconds**; independent game logic clock; ~3 kinds of configurable fish; fish basket capacity **10 slots is merely a candidate initial value**; no new casts when the basket is full; 1 fish corresponds to a unique instance ID; sales atomically subtract fish and add coins with a unique event/transaction ID; no double-settlement on crash retry."
+
+I should verify the byte-exact line against the on-disk AGENTS.md. Let me grep that line from the file and copy it exactly.
+
+Next, plan for the BLOCKED judgment. Does SIM-001 need human approval? Ticket: numeric adjustments must be human-approved — this ticket itself is a simulation/statistics report, and the simulation does not adjust parameters (numerical lock check keeps 20/60/30/10, weights 60/30/10, prices 8/16/30). The simulation itself does not constitute a requirements change, does not change numbers, is not a destructive operation, is not high-risk. In queue.json it is needs_human=false, ready, unfrozen, and there is a standing delegation from the project owner (via the queue note, Codex delegation — "The project owner has explicitly delegated auto-approval and completion of local v0.1 in a continuously-executed target"). Simulation policy parameters (20 seeds, 1/4/8 hours, 30-minute sale period, 1-second stage time) are test-only values — the SDD explicitly states that "cast/reel action time" is a "technical test configuration" and not a user-approved balance value; the number of seeds in ACCEPTANCE_TESTS §4 is a "recommended value for a test project, not a confirmed SDD parameter"; and the report will ultimately be submitted to the user for review of parameter adjustments (that is part of the deliverable, not a blocking element of this ticket — the report itself is submitted for user review; the ticket itself does not change numbers).
+
+Therefore: no BLOCKED needed; conclude with PHASE-A-DONE. But wait — one nuance: the report's purpose "Submit to the user for explicit review: whether to adjust fish prices/wait time/candidate capacity" — the report is the deliverable; the adjustment is a later user judgment. This ticket is a read-only simulation + report. That is, Phase B is implementable within scope. Not blocked.
+
+Plan risks:
+- R1: Simulation runtime — 20 seeds × 2 scenarios × (1h+4h+8h); event-driven loop, cycle count ~45k — fast. However, if Phase B mistakenly implements a 1-second-tick loop, 28800 ticks × 20 × 2 × ... ≈ 28800+14400+3600=... total virtual seconds per seed-scenario = 13 hours = 46800 seconds → 1-second-tick loop = 46800 iterations per seed-scenario × 40 = 1.9 million tick_effective calls — still no problem in GDScript (<10 seconds). OK, no runtime risk; however, each tick allocates an Array — no problem.
+- R2: Determinism of float accumulation — tick step 1.0 sec fixed; _stage_elapsed uses float accumulation; determinism holds within the same execution order; the determinism check runs the same sequence twice and compares digests computed from integer/string event fields (event IDs, species, rounded seconds) — avoid digesting raw floats.
+- R3: UTC timestamps — commit_catch requires a valid UTC string; derive it deterministically from a virtual clock with pure integer civil-time conversion anchored to a fixed epoch 2026-01-01T00:00:00Z; do not use Time.get_datetime_string... Actually Godot's Time.get_datetime_string_from_unix_seconds is deterministic; however, to keep the digest fully independent of the engine, a pure-int helper within the sim is preferable. Plan: use `Time.get_datetime_string_from_unix_seconds(epoch0 + int(clock.now()), true)` — Godot 4.x has this static; it returns "YYYY-MM-DDTHH:MM:SS" without a Z? There's a use_utc argument. Hmm, risk of format mismatch (no trailing Z). Safer: implement a pure-int civil-time formatter in the sim script. Note both options, with the requirement: output must match FishInstance.UTC_PATTERN and be deterministic across machines.
+- R4: sale_id and catch_id are unique — derive from RNG events (the FSM already provides unique catch IDs via RNG; sale IDs from a per-seed counter).
+- R5: No writing to res:// from the sim — sim only outputs to stdout; the runner writes evidence files into the real ROOT's tasks/evidence/SIM-001/. The Godot steps run only inside a temporary isolated copy (convention: no Godot launch against a real project path). The sim writes no files (memory-only scenarios), the fault-injection scenario writes to a temp save dir via configure_dir (absolute path under a temp directory), and never writes to user:// (isolated HOME would also work — but configure_dir to an absolute temp directory is cleaner; save_service's DEFAULT_DIR is user://; the save test in SAVE-001 probably used configure_dir with an isolated HOME. Use configure_dir(temp_save_dir)).
+- R6: Full 20-seed run — runtime is bounded by the runner's per-step TIMEOUT (600s per step, same as the save runner).
+- R7: Report must not self-adjust numbers: preflight numeric lock (R-4 style), fail if data/*.json is out of sync; the sim only reads configs via the FishSpeciesCatalog/RuntimeConfig loaders.
+
+Interface/invariants section: enumerate the actual signatures that were discovered.
+
+Test command section: exact commands and expected exit codes:
+- Phase B test_cmd (backfill in scheduler): `python3 -B tools/sim/run_sim001_checks.py` → expected 0.
+- Inside the runner: step1 import `--editor --quit` → 0; step2 `--script res://tools/sim/sim001_economy_sim.gd` → 0 with `SIM001 SIM PASS` exactly once, forbidden `SIM001 SIM FAIL`; steps 3-6 regression FSM/ECO/SAVE/CORE/CFG (each 0, with markers). Also a SCRIPT ERROR forbidden across all steps.
+- Manual spot command (read-only): `python3 -B tools/auto/runner.py selftest` → 0 (optional; runner-owned tool, read-only execution). Hmm — does selftest write? It's the runner's selftest; probably runs in an isolated environment. Phase A doesn't run this. Phase B may run it, but the write scope is… selftest is runner-owned and may write temp files, but probably to temp. Keep it as an optional verification.
+
+Acceptance mapping:
+- SDD-178 / V01-T02 → sim report (seeds, 1/4/8h, cycles, first-fill distribution, per-species counts/value, gold per sale).
+- T-TIME-01 → assertion that wait_seconds is within [20,60] across all cycles, seeded determinism (re-run digest equivalence).
+- T-ECO-01 → full basket blocks (casts_started_while_full == 0; BASKET_FULL rejections are counted; sale → resume).
+- T-ECO-02/03 → idempotent probes: 100 retries each of sampled catch/sale IDs → basket/gold unchanged, duplicate applied == 0.
+- T-SAVE-02 boundary → fault-injection scenario: while the fault is armed, transactions are PERSIST_FAILED, authoritative state is unchanged; new transactions during fault period before recovery == 0 (report field).
+- T-CONF-01 boundary → preflight numeric lock + config gate via FSM initialize.
+- ACCEPTANCE §4 report format → sim_report.json keys conform to the example format (suite, build_id, seeds, virtual_hours, summary{...}, pass, notes).
+
+Files to add in Phase B (all new, within allowed scope):
+- tools/sim/sim001_economy_sim.gd (extends SceneTree, headless driver)
+- tools/sim/run_sim001_checks.py (runner, standard library)
+- tasks/evidence/SIM-001/sim_report.json (written by runner in Phase B)
+- tasks/evidence/SIM-001/report.md (Chinese summary, written by runner in Phase B)
+- (plan.md itself — this Phase A deliverable)
+- tools/sim/README.md is optional — skip.
+
+No changes: scripts/**, data/**, examples/**, schemas/**, tests/**, tools/auto/**, project.godot, docs/**, tasks/TASKS.md (the scheduler records it).
+
+Phase A measured records table: commands and exit codes I ran:
+- git status --short → 0 (runner-owned modified files: runner.log, queue.json; untracked UI-001 session archive + runner.lock — existing scheduler state, not mine)
+- git log --oneline -15 → 0, HEAD f66f5c7
+- git branch --show-current → main
+- ls tools/sim → 1 (absent, Phase B will create)
+- ls tasks/evidence/SIM-001 → 0, present, empty
+- Godot --version → 0, 4.7.2.stable.official.ed1daf0bf
+- queue.json SIM-001 ready, needs_human false, test_cmd empty; unfrozen actor is Codex delegation 2026-11-11T20:08
+- data config values 20/60/30/10; per-kind weights 60/30/10, prices 8/16/32
+- scripts/tests tree confirmed; interfaces read.
+
+Also, the Python version is worth verifying. For the record, let me quickly run python3 --version and also confirm the exact line in AGENTS.md.
+
+Then write plan.md. Also confirm: evidence directory exists (it does). Write plan.
+
+Note: the current git status has modified files (runner.log, queue.json are modified; untracked session archive) — these are scheduler/runner-owned and I record them as "not produced by this session".
+
+Let me grep the exact line in AGENTS.md for quoting.
+dsh: reasoning:
+Next, write plan.md. Line 2 must be a line from AGENTS.md as-is. The first line is the title, and the second line is the citation (matching the convention of FSM-001's plan, where line 2 was the citation).
+
+Structure of the plan document:
+1. Header: title + citation line (line 2) + scope/basis
+2. §1 Purpose
+3. §2 Phase A read-only actual-measurement record (table of commands + exit codes)
+4. §3 Files to be changed in Phase B (all newly created, within the permitted scope)
+5. §4 Interfaces and invariants (actual signatures + simulation policy parameters + invariants)
+6. §5 Precise test commands and expected exit codes
+7. §6 Risks and rollback
+8. §7 Acceptance criteria mapping
+9. §8 Deviations/assumptions and matters concerning numerical locks (test-only parameters; no changes to numerical values; report is for user review)
+
+Keep it thorough while keeping it at a manageable length. Write it in Chinese to match the repository's style.
+dsh: reasoning:
+Next thing to verify: line 2 of plan.md must be a line from AGENTS.md, verbatim, character for character. Let's programmatically diff line 2 against AGENTS.md line 24 to verify, and confirm that no other files have been written (git status should show only plan.md as a new file, plus the existing runner's state).
+dsh: reasoning:
+Verified:
+- Line 2 of plan.md matches verbatim line 24 of AGENTS.md ✓
+- The only thing I wrote was tasks/evidence/SIM-001/plan.md (the other entries shown in git status are pre-existing runner/scheduler state that was already present at the time of the first git status before any writes, and I confirmed they are identical except for the new `?? tasks/evidence/SIM-001/` directory) ✓
+- tools/sim is unchanged (still doesn't exist — correct, that's Phase B's job) ✓
+- No sub-agents used, APPROVALS.md was not read, and no git writes either ✓
+
+Update the TODO, and then give a final answer that includes the final line PHASE-A-DONE.
+dsh: reasoning:
+All done. Final summary + last line PHASE-A-DONE.
