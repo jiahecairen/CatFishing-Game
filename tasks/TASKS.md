@@ -267,3 +267,15 @@ Test result & evidence: tasks/evidence/SAVE-001/ (会话归档+日志+diff)
 Risks & unresolved decisions: 见 tasks/evidence/SAVE-001/phaseA.out 与 report.md
 Recorded by AUTO-001 at 2026-11-11T13:01:06+00:00
 ```
+
+```text
+ID: SAVE-001
+Status: Accepted（项目所有者委托 Codex 独立验收）
+Owner: Codex delegated reviewer
+Scope / Dependencies / Allowed files: ECO-001；scripts/save/**, schemas/game-save.schema.json, examples/save_v01.json, tests/**。
+Executed commands & exit codes: 当前树隔离复测 `python3 -B tests/unit/run_save001_checks.py` -> 0；`python3 -B tests/unit/run_ui001_checks.py` -> 0；`python3 -B tools/auto/runner.py selftest` -> 0（40/40）。
+Test result & evidence: `tasks/evidence/SAVE-001/acceptance.md`；所有 Godot 步骤导入先行、逐步 PASS、退出码 0、无 `SCRIPT ERROR`。
+Git diff / commit: 实现 `034c035`；安全修复 `6f77e5a`；验收证据与状态记录在本地进度提交。
+Risks & unresolved decisions: 断电级物理介质持久性不可由 API 故障注入证明，见 `tasks/evidence/SAVE-001/report.md`；不构成本票失败。
+Owner approval: 项目所有者已委托 Codex 在本地 v0.1 范围内逐票独立验收；2026-11-11。
+```

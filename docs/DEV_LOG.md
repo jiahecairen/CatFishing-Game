@@ -136,3 +136,11 @@ B/60 > B/30 > A/60 > A/30
 - ECO-001 is Accepted; SAVE-001 dependencies are satisfied. Queue status is `ready` for a read-only planning session only; no Phase B approval exists yet.
 - Local Qwen model gate is live and passed `python3 -B tools/auto/runner.py check`; queue reported `paused=False`, `frozen=None`.
 - The task requires a safe version/migration design for the schema v1 gaps: ECO fingerprint ledger, RNG/Clock continuation, and pending catch candidate. Phase B scope is limited to save code, the save schema/example, and tests, subject to independent plan review.
+
+## 2026-11-11 — SAVE-001 delegated acceptance
+
+- Re-ran `python3 -B tests/unit/run_save001_checks.py` on the current tree: isolated import and SAVE/ECO/CORE/CFG/FSM steps all exited 0 with their required PASS markers.
+- Re-ran `python3 -B tests/unit/run_ui001_checks.py`: import-first UI and all five regression suites passed in an isolated project copy; no `SCRIPT ERROR`.
+- Re-ran `python3 -B tools/auto/runner.py selftest`: 40/40 synthetic checks passed, including queue ownership, precise icon import sidecar handling, anti-false-pass CORE smoke, whitelist-only commits, concurrent import protection, approvals, and freeze handling.
+- Accepted SAVE-001 under the project owner's recorded delegation. Evidence: `tasks/evidence/SAVE-001/acceptance.md`; implementation commits `034c035` and `6f77e5a`.
+- Queue status for SAVE-001 is now `done`; the global `frozen` object was preserved byte-for-value and remains set because UI-001 still awaits GUI acceptance. `tasks/APPROVALS.md` was not modified; no remote push occurred.
