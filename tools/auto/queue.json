@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-11T01:09:37+00:00",
+  "updated": "2026-11-11T04:21:24+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -38,13 +38,17 @@
       "allowed_files": [
         "project.godot",
         "icon.svg",
+        "icon.svg.import",
         "scenes/**",
         "scripts/**",
         "tests/**"
       ],
       "test_cmd": "/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --script res://tests/unit/test_core001_smoke.gd",
       "needs_human": false,
-      "brief": "见 tasks/TASKS.md。"
+      "brief": "见 tasks/TASKS.md。",
+      "retries": 1,
+      "previous_blocked_reason": "Agent 报 BLOCKED: BLOCKED: scope 门禁在 attempt 2 必然判定 `M tools/auto/queue.json`（runner 自身弄脏的已跟踪状态文件，RUNNER_OWNED 豁免缺 tracked 分支）与 `?? icon.svg.import`（用户常驻 Godot 编辑器 PID 27116 分钟级自动重建）两项越界；两者均超出本票允许清单（tools/** 禁改）与禁止操作（禁 git commit / 禁终止用户进程），需人工按 report.md L-0/L-1 处置后重跑",
+      "previous_blocked_at": "2026-11-11T02:59:17+00:00"
     },
     {
       "id": "CFG-001",
@@ -211,7 +215,8 @@
     }
   ],
   "unfrozen": {
-    "by_human_command": "2026-11-10T21:17:39+00:00",
-    "reason": "Human committed the new repair ticket; working tree reviewed"
+    "actor": "Codex (delegated by project owner)",
+    "at": "2026-11-11T04:21:24+00:00",
+    "reason": "AUTO-001 scope and Godot smoke gates repaired; resume delegated CORE-001 validation"
   }
 }
