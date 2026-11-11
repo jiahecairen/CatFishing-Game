@@ -1,0 +1,189 @@
+Phase A 完成。摘要：
+
+**已读取并核对**：AGENTS.md、tasks/TASKS.md（CFG-001 行与 CORE-001 状态记录）、docs/SDD_v0.1、DECISION_REGISTER、ACCEPTANCE_TESTS（T-CONF-01）、INTERFACES_AND_DATA §1、ARCHITECTURE、TECH_SPIKE、DEV_LOG、HARNESS_LOCAL_SETUP、REQUIREMENTS_CHANGELOG，以及项目 Skills（fishing-state-and-save、godot-validation 已加载；.dsh/skills 三件俱在）。未读取 tasks/APPROVALS.md（遵守禁令）。
+
+**只读实测（真实退出码）**：`git status --porcelain`=0（仅 runner 自有 `?? tasks/evidence/_runner/`）；`git log`=0（HEAD=f8782a1）；Godot `--version`=0（4.7.2.stable）；`ls -d config`=1（根目录无 config/）；schemas/examples 人工比对一致；`.gitignore` 确认 `.godot/`、`*.uid` 不会污染状态。
+
+**计划已写入** `tasks/evidence/CFG-001/plan.md`（101 行，唯一写入），第 2 行经字节级比对原样引用 AGENTS.md 第 38 行规则（`LINE2_VERBATIM_MATCH`）。要点：
+- 新增文件全落在允许范围：`data/fish_species.json`、`data/runtime_config.json`（与 examples 逐值相同，不改任何经济参数）、`scripts/config/` 三个校验类（新 class_name 避免与 io 骨架 `ConfigLoader` 全局类冲突）、`tests/unit/test_cfg001_config.gd` + `tests/unit/fixtures/cfg001/` 反例夹具。
+- 两处已论证的范围偏差（D-1 `data/` 替代建议布局 `config/`；D-2 不触碰范围外的 `scripts/io/config_loader.gd`）如实记录，供 runner 门禁审阅。
+- 测试命令沿用 CORE-001 约定：`Godot --headless --path /Users/rain/DevGame/Fishing --script res://tests/unit/test_cfg001_config.gd` 预期 0（失败 1），另加 CORE-001 回归命令预期 0。
+- T-CONF-01 全部反例（重复 ID、非正权重、负价格、min>max、无效 JSON）逐项映射到夹具与错误码，零默认值不变量。
+
+本票为冻结 v0.1 范围内常规实现票（queue `needs_human: false`），无需求变更、无破坏性操作、无高风险决策。
+
+PHASE-A-DONE
+
+---STDERR---
+dsh: reasoning:
+Let me start by understanding the task. I'm the Phase A (read-only planning) agent for ticket CFG-001: 3-species JSON + config validation.
+
+Constraints:
+- Read-only except writing the plan to /Users/rain/DevGame/Fishing/tasks/evidence/CFG-001/plan.md
+- No subagents, no background tasks
+- Do not read/modify tasks/APPROVALS.md
+- No git write operations
+- Line 2 of plan.md must quote one rule line from AGENTS.md verbatim, character-for-character
+- The files allowed in Phase B are: data/**, scripts/config/**, tests/**
+
+Steps:
+1. Read AGENTS.md (already injected into context, but should verify compliance — since it's already injected, no need to re-read, though the task says "若上下文已自动注入也要核对遵守 (even if context has been auto-injected, must verify and comply)" — verify compliance. It's already there.)
+2. Read the CFG-001 section of tasks/TASKS.md and the docs.
+3. Perform read-only inspections: project file structure, existence of related code/scenes/scripts, git status and recent log; record commands and exit codes.
+4. Write the plan to the evidence path.
+5. On line 2 of plan.md, quote one line from AGENTS.md verbatim.
+
+Note: According to the skill catalog, `godot-validation` or `fishing-state-and-save` may be relevant. The task is config validation of JSON species configuration in a Godot project. AGENTS.md §5 says "每次相关任务先枚举 Skills 并按需读取指引 (for each related task, first enumerate Skills and read the guidelines as needed)". The task clearly corresponds to `fishing-state-and-save` (config/species) and possibly `godot-validation` (validation tests). According to the system reminder, load applicable skills before taking task actions. Let me load `fishing-state-and-save` and `godot-validation` — these seem most relevant to CFG-001 (JSON config + validation). Hmm, but loading skills is just reading instructions, it's read-only, and it's allowed.
+
+Actually, wait — the ticket is "3 鱼种 JSON + 配置校验 (3 fish-species JSON + config validation)" — JSON of 3 fish species + config validation. fishing-state-and-save covers species config validation, and godot-validation covers running headless validation. For Phase A planning, load fishing-state-and-save (directly related to species config/species-ID validation). And probably godot-validation too, for the test commands. Let me load both.
+
+Also need to check whether the evidence directory exists — creating the plan.md file may require creating the directory. The only allowed write is plan.md itself. Creating the parent directory of plan.md is necessary for the write. That's part of writing plan.md. The write tool may create parent directories automatically. Let me first check whether tasks/evidence/CFG-001/ exists.
+
+Plan:
+1. Load skills (fishing-state-and-save, godot-validation).
+2. Read tasks/TASKS.md (the CFG-001 section), and under docs: SDD_v0.1.md, DECISION_REGISTER.md, ACCEPTANCE_TESTS.md, TECH_SPIKE.md, DEV_LOG.md, HARNESS_LOCAL_SETUP (probably docs/HARNESS_LOCAL_SETUP.md). Also ARCHITECTURE.md and INTERFACES_AND_DATA.md per AGENTS.md §1, and REQUIREMENTS_CHANGELOG.md.
+3. Read-only inspection: ls/tree of the project, check the data/, scripts/config/, tests/ directories, git status, git log.
+4. Write plan.md.
+
+Let me start with parallel reads. First, explore the structure and load the skills.
+
+Let me do the first batch: load skills + list the directory + git status. These are independent.
+dsh: reasoning:
+Alright. Next, I'll read the CFG-001 section of tasks/TASKS.md and the documentation. Let me list the docs directory and read the related files. Also, I'll check the structure of scripts, tests, schemas, examples, and tasks/evidence.
+
+I'll execute the reads all together. First, I'll list docs and tasks, and search for CFG-001 within TASKS.md.
+
+Loaded the skill (fishing-state-and-save, godot-validation). Git status is clean, and the only exception is the untracked `tasks/evidence/_runner/` (I will not touch this). Now I'll proceed to read the ticket and the documentation.
+dsh: reasoning:
+TASKS.md references CFG-001 in the table on line 10. Let me read TASKS.md in full and understand the ticket details. I'll also check the acceptance test for T-CONF-01 in ACCEPTANCE_TESTS.md, the fish species specifications in SDD_v0.1.md, the relevant decisions in DECISION_REGISTER.md, TECH_SPIKE.md, DEV_LOG.md, HARNESS_LOCAL_SETUP.md, INTERFACES_AND_DATA.md, and ARCHITECTURE.md as well. Additionally, I'll read the example JSON files and schema files, the existing config_loader.gd, and the test smoke tests.
+dsh: reasoning:
+Next, I'll read the remaining documents: SDD_v0.1.md, DECISION_REGISTER.md, INTERFACES_AND_DATA.md, ARCHITECTURE.md, TECH_SPIKE.md, DEV_LOG.md, HARNESS_LOCAL_SETUP.md, REQUIREMENTS_CHANGELOG.md. And as examples, I'll read the schemas, config_loader.gd, and the smoke test files. I'll batch the reads together and execute them.
+dsh: reasoning:
+Next, I'll read SDD_v0.1.md (relevant sections), TECH_SPIKE.md, DEV_LOG.md, HARNESS_LOCAL_SETUP.md, ARCHITECTURE.md, and REQUIREMENTS_CHANGELOG.md. Also examples/*.json, schemas/fish-species.schema.json, schemas/runtime-config.schema.json, scripts/io/config_loader.gd, tests/unit/test_core001_smoke.gd, and project.godot.
+dsh: reasoning:
+Next, I'll read ARCHITECTURE.md, TECH_SPIKE.md, DEV_LOG.md, HARNESS_LOCAL_SETUP.md, and after that, the examples/schemas/config_loader and the smoke tests.
+dsh: reasoning:
+Alright, let me quickly read HARNESS_LOCAL_SETUP.md, and then also check the schema, samples, config_loader.gd, smoke test, and project.godot.
+dsh: reasoning:
+Next, read the existing code: config_loader.gd, smoke test, project.godot, and other core scripts (game_state, fishing_system, game_controller, save_service, event_log). These are small files.
+dsh: reasoning:
+Also, quickly read the remaining core scripts (game_controller, fishing_system, save_service, event_log, desktop_window, platform_adapter, cat_presenter) — these are small skeletons. Additionally, check whether the scenes/ directory, the CFG-001 evidence directory (empty), and the config/ directory exist. Also check .gdignore in tests/spike. Furthermore, check what the scheduler's queue.json expects as CFG-001's test_cmd — this is read-only and useful for planning (tools/auto/queue.json). Reading queue.json may reveal the expected test commands, so let's read it. This is a read-only, permitted operation.
+
+Also, verify the existence of the Godot executable and its version (read-only execution is permitted; running Godot --version is read-only, but in R-04 it was noted that at that time an attempt to run --help caused the Godot process to hang. Would it be safer to just verify existence with `test -x`? However, in DEV_LOG the version check was run with exit 0. Running `--version` with --headless is probably fine. For safety, we could just do `test -x` without launching Godot. The AUDIT evidence already records 4.7.2. But AGENTS.md §1 says "必须实际执行只读检查：项目目录、Godot 可执行程序及版本 (must actually execute read-only checks: project directory, Godot executable and version)". Running `--version` is read-only and low-risk. Risk R-04: launching Godot without --headless may leave the editor lingering. `Godot --version` normally exits immediately without opening the editor. As a read-only actual check, run it with a timeout for safety. In practice, `Godot --version` just prints the version and exits, and doesn't touch project files (it's just a version flag, so no import is triggered). So that's fine.
+
+Additionally, verify that a config/ directory does not exist at the repo root, and check the contents of scenes/. Check tasks/evidence/CFG-001 (empty) and _runner (don't touch it). Check queue.json for the CFG-001 entry.
+dsh: reasoning:
+I need to investigate this further. Let me check the details.
+
+Let me look at the queue. To understand the format of the test_cmd expected by the scheduler, I'll check around the CFG-001 entry in queue.json (this will help in planning the exact test command).
+dsh: reasoning:
+Important observations:
+
+1. CFG-001's allowed files: `data/**`, `scripts/config/**`, `tests/**`. Note: ARCHITECTURE.md §7 proposes `config/fish_species.json`, and the skeleton in `scripts/io/config_loader.gd` says "CFG-001 implementation: load and validate config/*.json". However, CFG-001's allowed file range (which Phase B enforces) is `data/**`, `scripts/config/**`, `tests/**` — **not** `scripts/io/**` or `config/**`. This is a tension: the existing skeleton `scripts/io/config_loader.gd` (created by CORE-001) has a comment saying CFG-001 will implement it, but Phase B cannot modify `scripts/io/config_loader.gd` because it's outside the allowed range. Therefore, my plan must place the new config loader implementation in `scripts/config/` (e.g., `scripts/config/config_loader.gd`) rather than modifying `scripts/io/config_loader.gd`, and data must be placed under `data/` (e.g., `data/fish_species.json`, `data/runtime_config.json`) rather than `config/`. This resolves the tension without exceeding scope: Phase B will not touch scripts/io/config_loader.gd (it will remain a skeleton; FSM-001 and subsequent tickets can decide how to hook it up, or the io skeleton can later preload the scripts/config implementation — but that's out of scope; record it as a risk).
+
+Wait, but the smoke test CORE-001 loads `res://scripts/io/config_loader.gd` via load() — no problem, this remains a valid script (a class_name ConfigLoader with no methods). If I create a second `class_name ConfigLoader` in scripts/config/, it will collide with the existing `class_name ConfigLoader`! In Godot, duplicate class_name across two scripts is a global registration error ("Class 'X' hides a global script class"). Therefore the new loader must use a different class_name (e.g., `FishSpeciesConfig` / `RuntimeConfig` / `GameConfigLoader`), or not use class_name at all and be preloaded with an explicit path in tests. Safest option: don't use class_name in the new scripts, and in tests use `preload("res://scripts/config/fish_species_config.gd").new()`. Or use a unique class_name. Plan: the new loader will be a class without class_name collisions — recommend either no class_name + preload in tests, or a unique name like `ConfigValidator`. Actually, with no class_name and preload, we can completely avoid touching scripts/io. But wait — can Phase B *modify* scripts/io/config_loader.gd? Not possible (out of scope). So the new code is placed in scripts/config/, uses a unique class_name (e.g., `GameConfig`), or no class_name. In Godot 4, two scripts with the same class_name error out at project load time (SCRIPT ERROR, and might it affect smoke test exit codes? Actually, would the CORE-001 test also fail?). The test returns the quit(0) code via quit(0), so it's independent of parse errors elsewhere... but if there's a global class collision, both scripts might fail to load. Plan decision: give the new class a unique class_name `ConfigValidator` (or no class_name and use preload). To minimize the global class namespace, prefer no class_name + preload in tests.
+
+2. test_cmd in queue.json is empty — the Phase A plan must propose an exact test command. Following the CORE-001 pattern: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --script res://tests/unit/test_cfg001_config.gd`. Expected exit code 0 on pass.
+
+Note the CORE-001 previous_blocked_reason: the runner's scope gate flags things like `?? icon.svg.import` that the user's resident Godot editor regenerates. There's a risk that when the headless run imports the project, Phase B might generate `*.gd.uid` files or modify `.godot/` — .godot/ is probably gitignored; new .gd files get .gd.uid companion files — will the scope checker flag `?? scripts/config/*.gd.uid`? These are under scripts/config/**, so they're inside the allowed range... but `tests/**` covers the test .uid. The data files are under data/**. So the .uid files generated under scripts/config/ and tests/ are within the allowed range. icon.svg.import is a known issue for CORE-001; that risk also exists for CFG-001 (the user's editor PID might regenerate it). Also, running headless with --path on the root project might update .godot/ — check .gitignore to confirm .godot is ignored. Let me read .gitignore.
+
+Also check scenes/main.tscn's contents and the remaining skeletons (fishing_system, game_controller, save_service, event_log) — quickly. And .gitignore too.
+
+3. The plan needs to quote a line from AGENTS.md verbatim on line 2. Example: "- 外部 JSON 配置必须验证；非法 species ID、负权重/价格、重复 ID、存档格式损坏都要有明确失败路径。" This is from AGENTS.md §4. Good as proof of reading.
+
+4. Requirements-change judgment? Does CFG-001 include requirement changes, destructive operations, or high-risk judgments? No — it's within frozen v0.1 scope (V01-F01: 3 test fish species; fish prices are placeholders with "修改需用户审核" — creating a placeholder config that exactly matches examples/fish_species.json is not a change: the examples are the approved placeholders; the SDD states fish weight/price are placeholder test values, and *modifying* them requires user review). Reusing example values as-is into data/ config is not a modification — no new economic values are being invented. basket_capacity=10 is a candidate, keep as-is. So no need to block: this is normal ticket execution. The plan must not modify the 20-60s/30FPS/capacity/price values. Reusing example values as-is = no change.
+
+One question: the species IDs / names of the 3 fish species — the examples already define river_carp, silver_perch, golden_trout with weights 60/30/10 and prices 8/16/32. Phase B will copy these into data/fish_species.json (values unchanged). Good.
+
+Also, the negative test fixtures (invalid JSON, duplicate IDs, negative weight, negative price, min>max) — where do they go? tests/** is allowed — place fixtures under `tests/unit/fixtures/` or `tests/fixtures/` under tests/**. data/** is for production configs. Negative fixtures under tests/** is within scope. Alternatively under data/ — but better to keep data/ clean for production config; fixtures in tests/**.
+
+Also T-CONF-01: "duplicate species ID, non-positive weight, negative price, min>max, invalid JSON block the economy system from starting" — "block the economy system from starting" means the loader API should return a failure that the FSM/economy gate checks. Phase B is in the CFG-001 phase, so the test will assert that the loader returns an error/invalid result for these inputs; the actual gating at economy start is FSM/ECO-001, but we can define a contract that `is_valid()`/error list must be checked before FSM start.
+
+Next, verify that the remaining skeleton scripts don't have any class_name collisions to avoid: existing class_names: ConfigLoader (io), GameState, and probably FishingSystem, GameController, SaveService, EventLog, PlatformAdapter, DesktopWindow, CatPresenter. Let me quickly read the remaining skeletons and .gitignore + main.tscn. Also check the .dsh/skills list (AGENTS.md §5 says to enumerate skills — already done via the available_skills catalog: godot-overlay, fishing-state-and-save, godot-validation all exist in the session catalog; on disk they're in .dsh/skills). Let me list the .dsh/skills directory.
+dsh: reasoning:
+Important: `.gitignore` contains `*.uid` — meaning .uid files generated by new scripts are ignored, and don't dirty git status. Good. `.godot/` is also ignored.
+
+Note: `*.png.mp4` and `/tmp/` are ignored… whatever, fine.
+
+All facts collected. Key design decisions for the plan:
+
+Scope notes: permitted files = data/**, scripts/config/**, tests/**. Things NOT permitted: scripts/io/config_loader.gd (skeleton comment says CFG-001 implements this — but in Phase B scope check, scripts/io is forbidden). So the plan is: implement the loader under scripts/config/ with a unique class_name (e.g., `GameConfigLoader`). Do NOT reuse `class_name ConfigLoader` (duplicate global class = project load error). scripts/io/config_loader.gd is left untouched (its comment mentions CFG-001 but Phase B cannot modify it; record as a risk/deferred item — the io skeleton can be rewired in a future ticket or by a human).
+
+Deliverables:
+- data/fish_species.json — copy of examples/fish_species.json (values unchanged; SDD states that weight/price placeholder changes require owner approval, so this must not be altered).
+- data/runtime_config.json — copy of examples/runtime_config.json (20/60/30/10 as approved initial values).
+- scripts/config/fish_species_config.gd (class FishSpeciesConfig) + scripts/config/runtime_config.gd (class RuntimeConfig), or a single scripts/config/game_config.gd? Keep it minimal: a single script scripts/config/config_validation.gd with class `ConfigValidation`? Let's think about the interface:
+
+Per INTERFACES_AND_DATA §1:
+- Species validation: id unique + snake_case pattern, name_zh non-empty, rarity enum, catch_weight > 0, base_price integer ≥ 0, asset_key non-empty; catalog_version == 1; species count ≥ 1 (~3 expected; SDD says ~3; test asserts exactly 3 data files).
+- Runtime: config_version==1, visible_fps==30, min<=max, ranges 1..86400, basket_capacity ≥ 1 integer; species ≥ 1.
+- On failure: explicit reason code, no silent default values.
+
+Design: two RefCounted classes:
+- `scripts/config/fish_species_config.gd` → `class_name FishSpeciesCatalog`, static/instance method `load_catalog(path) -> Dictionary {ok: bool, error_code: String, species: Array}` — pure JSON parsing + validation: parse JSON with FileStore+JSON.parse_string, error → ok=false; schema shape check; id pattern `^[a-z][a-z0-9_]*$`; duplicate id detection; weight>0; price integer and >=0; rarity is enum; count>=1; catalog_version==1.
+- `scripts/config/runtime_config.gd` → `class_name RuntimeConfig`, `load_config(path) -> {ok, error_code, config}`: fields present, visible_fps==30, version==1, min/max within [1,86400], min<=max, basket_capacity integer >=1.
+- Gate helper `can_start_economy(catalog_ok, runtime_ok) -> bool` returns false on any error — the contract T-CONF-01 uses to say "阻止经济系统启动 (blocks economy system startup)": the API returns an ok=false + error code that FSM/ECO must check.
+
+No class_name collisions: `ConfigLoader` exists in io; `FishSpeciesCatalog` and `RuntimeConfig` are new names — need to verify they don't already exist: not in the skeleton list (GameState, FishingSystem, GameController, ConfigLoader, SaveService, EventLog, PlatformAdapter, DesktopWindow, CatPresenter). Safe.
+
+Tests: tests/unit/test_cfg001_config.gd extends SceneTree, same pattern as CORE-001 smoke: on pass, print "CFG001 CONFIG PASS" and quit(0); on failure, print "CFG001 CONFIG FAIL: <step>" and quit(1). Fixtures: tests/unit/fixtures/cfg001/*.json — negative fixtures: duplicate id, zero/negative weight, negative price, min>max, malformed JSON (bad syntax), unknown rarity, missing field, wrong version. Positive: data/fish_species.json + data/runtime_config.json load OK, exactly 3 species, ids unique, weight total > 0, runtime 20/60/30/10.
+
+Important: the tests must not write to user:// or write anything. Fixtures are committed under tests/** — permitted.
+
+JSON numeric parsing in Godot: JSON.parse_string returns floats for numbers; to validate the integer-ness of base_price: check `float(int(v)) == float(v)`. Godot parses JSON numbers as float (int if no decimal? Godot 4's JSON.parse_string actually returns int for integer literals! In Godot 4, JSON numbers are parsed as float… no, if integer, int? Godot's JSON parser returns float for "8.5" and int for "8"? Yes, Godot 4's JSON returns int if the number has no fractional part. Good; validation: `v is int or (v is float and is_equal_approx and fract==0)`. In the plan, write this as a type-check invariant, no need to over-specify, but Phase B needs it — note it as guidance.
+
+Test command (test_cmd to put in queue):
+`/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --script res://tests/unit/test_cfg001_config.gd`
+Expected exit code: 0. Also re-run CORE-001 smoke `--script res://tests/unit/test_core001_smoke.gd` expecting 0 (regression, ensures the new global class doesn't break project load).
+
+Wait — one gotcha: `--script res://tests/...` needs the flag `--script`; CORE-001's test_cmd used `--script` (line 137 of TASKS) — yes `--script res://tests/unit/test_core001_smoke.gd`. Good.
+
+Rollback: git checkout/rm of newly untracked files under data/, scripts/config/, tests/ (all new; no changes to tracked files). No destructive operations.
+
+Risks:
+- icon.svg.import is regenerated by the user's editor (CORE-001's blocked reason L-1) — Phase B's headless run may also trigger regeneration of `.godot/` and icon.svg.import; `.godot/` is ignored; `icon.svg.import` is tracked, so `M`? Actually icon.svg.import is tracked and exists; regeneration might make it dirty → scope gate false positive. Mitigation: runner-owned exemptions handled on the runner side; Phase B records but does not commit. Not my problem as Phase A; record as a risk.
+- Duplicate class_name collision → use new names (FishSpeciesCatalog, RuntimeConfig).
+- Godot's JSON parses 10 as int, etc.; keep validation lenient on type, strict on value.
+- data/** and scripts/config/** are new directories — allowed.
+- No config/ directory — ARCHITECTURE suggested config/ but queue permits data/; queue's allow list takes precedence (Phase B enforces), record deviation in the plan doc; ARCHITECTURE says layout is "建议 (proposal)", actual naming must be recorded in the ticket — our plan does so.
+- Economy parameters: copy from examples, no changes — no approval needed.
+- Don't touch tasks/APPROVALS.md, queue.json (tools/** is outside permitted scope; Phase B must not edit queue.json even if test_cmd is empty — scheduler fills it in; record test_cmd in plan/report).
+
+Hmm, wait — queue.json's test_cmd is empty. Phase B is enforced by runner; who fills test_cmd? In CORE-001, queue.json had test_cmd filled (retries=1). The runner itself updates queue.json (RUNNER_OWNED). Phase A/B should not edit it. Our plan lists the proposed test command; scheduler uses it. No problem.
+
+Acceptance-mapping: T-CONF-01 subcases → test steps. Plus AGENTS.md §4 external JSON validation, INTERFACES §1, SDD V01-F01/V01-W03 (visible_fps=30 unchanged), DECISION SDD-171.
+
+Line 2 of plan.md must verbatim quote the AGENTS.md line. Candidate: "- 外部 JSON 配置必须验证；非法 species ID、负权重/价格、重复 ID、存档格式损坏都要有明确失败路径。" Wait, is this exact line in the injected AGENTS.md? §4 has: "- 外部 JSON 配置必须验证；非法 species ID、负权重/价格、重复 ID、存档格式损坏都要有明确失败路径。" — yes, verbatim. But plan.md line 1 is the title; line 2 must be the quote. Instruction: "plan.md 第二行必须原样引用 AGENTS.md 中的一行规则 (line 2 of plan.md must verbatim quote one rule line from AGENTS.md)". Make line 1 the title and line 2 the quote. To be safe, no blank line between? "第二行" = line 2. So line 1 is the title, line 2 is the quote line. The quote includes the leading "- " as it appears in AGENTS.md — "原样引用 (verbatim quote)" means as-is; include the full line text. Wrap in blockquote? If I write "> - 外部...", it's not the original line as-is. Safer to have line 2 exactly: - 外部 JSON 配置必须验证；非法 species ID、负权重/价格、重复 ID、存档格式损坏都要有明确失败路径。 with the leading "- " exactly. That is verbatim line as-is. Good.
+
+Let me verify the exact line in the actual AGENTS.md file (the injected copy might differ). Read the file to check.
+dsh: reasoning:
+Line 38 has been confirmed verbatim. Next, write plan.md. The directory tasks/evidence/CFG-001 already exists (empty). Write the file.
+
+Structure of plan.md:
+- Line 1: Title
+- Line 2: Verbatim line from AGENTS.md
+- Objective (purpose)
+- Read-only actual-measurement record (commands + exit codes)
+- Files to be changed (Phase B) — within the scope of data/**, scripts/config/**, tests/**
+- Interfaces and invariants
+- Exact test commands and expected exit codes
+- Risks and rollback
+- Acceptance item mapping
+- Explanation of scope deviations (config/ vs data/, the io skeleton cannot be modified)
+
+Write it in Chinese in a comprehensive and well-organized manner.
+dsh: reasoning:
+Confirm that line 2 is the quoted line verbatim, word for word, and confirm that the file is the only change to git status.
+dsh: reasoning:
+The 2nd line of the plan is a blank line (the title is line 1, then a blank line, and the quoted text is line 3). The requirement is "the 2nd line of plan.md must verbatim quote one rule line from AGENTS.md" — so the 2nd line must be a verbatim quotation. Need to delete the blank line between the title and the quote. Furthermore, the diff check output EXIT=1 and no match was displayed — because line 2 is a blank line. Fix: edit the file and delete the blank line between line 1 and the quote line.
+dsh: reasoning:
+Let me check one more time.
+dsh: reasoning:
+All done. Final summary. Phase A constraints have been adhered to:
+- Read-only except for the single permitted plan.md
+- No sub-agents, workflows, or background jobs (only used inline bash read-only commands)
+- No reading or writing of APPROVALS.md
+- No git write operations (only git status / log)
+- plan.md has been created; line 2 is a verbatim quote from AGENTS.md
+
+This ticket is within the already-frozen scope of v0.1, no requirement changes, no destructive operations, no high-risk decisions (the two deviations are already recorded, both already justified by the ARCHITECTURE self-description and the queue's allowlist; needs_human=false). Therefore, the final line: PHASE-A-DONE.
