@@ -1,0 +1,406 @@
+Phase A 完成。摘要如下：
+
+## 执行概要（全程只读 + 唯一允许写入）
+
+**读取核对**：AGENTS.md（并遵守）、`tasks/TASKS.md` CORE-001 行与状态记录、SDD_v0.1、DECISION_REGISTER、ARCHITECTURE、INTERFACES_AND_DATA、ACCEPTANCE_TESTS、TECH_SPIKE、DEV_LOG、HARNESS_LOCAL_SETUP、REQUIREMENTS_CHANGELOG；按 AGENTS.md §5 经 skill 工具实际加载 `godot-validation` 与 `fishing-state-and-save`。未读取/未修改 `tasks/APPROVALS.md`。
+
+**只读实测**（命令+退出码已如实写入 plan.md §2）：
+- 根目录**无** project.godot/scenes/scripts；`tests/spike/overlay/` 为 SPIKE-001 独立工程（Godot 4.7.2 实测 `4.7.2.stable.official.ed1daf0bf`，exit 0）
+- spike `main.tscn` 引用 `res://scripts/...` 相对自身根 → 根工程建立后有嵌套依赖冲突，方案为 `tests/spike/.gdignore` 隔离（DEV_LOG R-02 用户已批准）
+- Godot 4.7.2 CLI 实测存在 `-s/--script`、`--check-only`、`--quit-after`、`--import`
+- 预先存在的未提交用户工作（3 个 spike report JSON，+1597 行 GUI 证据）已如实上报为 R-B，未触碰；HEAD=`2316ce0` 已授权 CORE-001 规划
+
+**计划文档**：`tasks/evidence/CORE-001/plan.md` 已写入，第 2 行原样引用 AGENTS.md 规则行；内容含目标、仅限允许清单的新建文件清单（project.godot、icon.svg、scenes/main.tscn、scripts 分层骨架、tests/spike/.gdignore、tests/unit 冒烟测试）、接口不变量、精确 test_cmd（两段 headless 命令，预期均退出码 0）、风险与回滚（全为新建文件，可整体删除/revert 复原）、验收条目映射（含如实声明未覆盖条目归属后续票）。
+
+**范围验证**：git status 确认除工单允许的 `tasks/evidence/CORE-001/plan.md` 外零新增改动；无任何 git 写操作、无子 Agent/委派/后台任务。
+
+本票为既有批准范围内的纯脚手架工单，无需求变更/破坏性操作/高风险决策，无需上报人工裁定。
+
+PHASE-A-DONE
+
+---STDERR---
+dsh: reasoning:
+Let me start by understanding the task. I'm the Phase A (read-only planning) agent for ticket CORE-001 on AUTO-001 scheduler: minimal Godot project/module and headless test entry.
+
+Constraints:
+- Read-only except writing the plan document to /Users/rain/DevGame/Fishing/tasks/evidence/CORE-001/plan.md
+- No sub-agents, no delegation, no workflows, no background tasks
+- No reading/modifying tasks/APPROVALS.md; no git write operations
+- If approval is needed, output "BLOCKED: <reason>" on the final line; otherwise output "PHASE-A-DONE"
+
+Steps:
+1. Read AGENTS.md (already injected into context — but should verify compliance; it's already been read and it's in context. Re-reading it might be a good idea to quote lines exactly for plan.md line 2. It's in context but I should confirm exact lines. The injected content looks complete.)
+2. Read the CORE-001 section and docs in tasks/TASKS.md: SDD_v0.1, DECISION_REGISTER, ACCEPTANCE_TESTS, TECH_SPIKE, DEV_LOG, HARNESS_LOCAL_SETUP. Also AGENTS.md says to read ARCHITECTURE.md, INTERFACES_AND_DATA.md, REQUIREMENTS_CHANGELOG.md as well.
+3. Read-only verification: project file structure, existence of code/scenes/scripts, git status and recent log; record commands and exit codes.
+4. Write the plan to tasks/evidence/CORE-001/plan.md.
+5. Line 2 of plan.md must verbatim quote a single line of rules from AGENTS.md.
+
+Per AGENTS.md section 5, I should also check for the presence of skills: godot-overlay, fishing-state-and-save, godot-validation. The skill catalog indicates these exist. This task is a planning task for a minimal Godot project + headless test entry. Should I load the godot-validation skill? The task clearly corresponds to godot-validation (running headless tests). Also fishing-state-and-save relates to the FSM. But this is read-only planning. The system reminder says to load applicable skills before acting on the task's actions. Loading skills just loads instructions, it's read-only. Maybe I'll load godot-validation — it's most relevant to the "headless test entry". Let me keep it light: the ticket is about a minimal project + headless test entry, so I'll load the godot-validation skill. Actually, the planning phase — the skill's instructions would guide Phase B's implementation, but it would help to have accurate headless commands in the plan. Let me check the docs first.
+
+Wait — do skills exist in .dsh/skills? AGENTS.md says to enumerate skills and report if they don't exist. The available_skills catalog lists godot-overlay, fishing-state-and-save, godot-validation as session skills, so they're discoverable. But I should also verify that the files exist under <project>/.dsh/skills/ — a read-only check.
+
+Let me plan tool calls:
+
+Batch 1 (independent reads):
+- Read tasks/TASKS.md
+- Bash: ls of project structure, git status, git log (read-only git commands are fine)
+- Read docs files
+
+Let's start. First, list files to see what exists.
+
+Commands to run (read-only):
+- `ls -la /Users/rain/DevGame/Fishing`
+- `git -C /Users/rain/DevGame/Fishing status --porcelain` and `git -C ... log --oneline -10`
+- Check the Godot binary: `which godot; godot --version` (read-only)
+- Enumerate .dsh/skills
+
+Then read docs.
+
+Also check whether tasks/evidence/CORE-001/ exists — the only thing I'm allowed to write is plan.md. If the directory doesn't exist, I'd need to create it. Does the "only permitted write" allow creating the evidence directory? Writing a file creates a directory. Presumably the parent directory tasks/evidence exists. Let me verify.
+
+About the skills: should I call the skill tool for godot-validation and fishing-state-and-save? The instructions say "if the user names a skill, or if the task clearly corresponds to a skill's description, call the skill tool with the exact skill name before performing the task's actions." The task (a minimal Godot project + headless test entry) clearly corresponds to godot-validation ("reproducible Godot 4 headless...run acceptance tests") and godot-gdscript/godot-nodes-scenes might too. To be safe I'll load godot-validation, and since CORE-001's minimal project probably includes a FishingSystem skeleton, maybe also fishing-state-and-save. Let me first look at TASKS.md to know the ticket's scope, then load the applicable skills.
+
+Actually, to be cautious and efficient: first read the repo structure and TASKS.md, then load skills, then docs, then write the plan.
+
+Let's get started.
+dsh: reasoning:
+There's no project.godot at the root, and no scenes/ or scripts/ directories either — CORE-001 probably creates them. The tests/ directory exists and has a spike subdirectory. Let me check the structure, tasks/TASKS.md, docs, and .dsh/skills.
+dsh: reasoning:
+project.godot doesn't exist yet — CORE-001 creates the minimal Godot project. The evidence directory for CORE-001 exists (empty). Read TASKS.md for the CORE-001 ticket, and also read the docs. Also check .dsh/skills (read the godot-validation SKILL.md that defines the headless test entry command), and check the availability of the Godot binary.
+
+Let's read TASKS.md first.
+dsh: reasoning:
+CORE-001 ticket: "Minimal Godot project/module and test entry | SPIKE-001 | main scene, layered modules, headless auto-test foundation | Godot with no syntax/import errors". The detailed section of CORE-001 does not exist in TASKS.md aside from the table row — only SPIKE-001, FSM-001, ECO/SAVE, SIM, REL are described in detail. The table row is the ticket definition. The allowed file scope given in my prompt: project.godot, icon.svg, scenes/**, scripts/**, tests/**.
+
+Note: tests/** is included in the allowed scope, but the spike lives at tests/spike/overlay — Phase B must not overwrite the existing spike, and the ticket says "不要覆盖已有场景与 project.godot (do not overwrite existing scenes and project.godot)" (this is for SPIKE-001). For CORE-001, create a project.godot at the root (currently does not exist).
+
+Next, read the docs: SDD_v0.1, DECISION_REGISTER, ACCEPTANCE_TESTS, TECH_SPIKE, DEV_LOG, HARNESS_LOCAL_SETUP. Also, per AGENTS.md §1, ARCHITECTURE, INTERFACES_AND_DATA, REQUIREMENTS_CHANGELOG too. Plus SKILLS_INTEGRATION as well. And the SPIKE-001-FIX-002 evidence's report/phaseA.out to get context on the spike's status (SPIKE-001 is a dependency, and the last commit "Accept overlay spike and authorize CORE-001 planning" indicates approval has been given).
+
+Also check the godot-validation skill (relevant: headless test entry). And check the Godot binary's version. Additionally check the runner's queue.json to understand how AUTO-001 runs test_cmd (test command format: `/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing/...`)? Actually, the runner's test_cmd runs headless Godot with a path. In CORE-001, the test entry will likely be either a separate test scene executed via `--headless --path <root> --script res://tests/...`, or a `--quit-after` run. Let's check the runner to see what the Phase B test command should look like.
+
+Let's read the docs in parallel batches. Use the read tool for text files. Multiple parallel calls to read are fine.
+
+CORE-001 的工单行在 TASKS.md 中已确认（第 9 行，依赖 SPIKE-001，验收标准为"Godot 无语法/导入错误"），最新提交已接受该 spike，并批准了 CORE-001 计划。接下来，我将阅读相关文档。
+dsh: reasoning:
+Alright, next I'll read ACCEPTANCE_TESTS, TECH_SPIKE, DEV_LOG, and HARNESS_LOCAL_SETUP. Also ARCHITECTURE and INTERFACES_AND_DATA (since AGENTS.md §1 states that CORE-related work must read them). Plus REQUIREMENTS_CHANGELOG as well. I'll read them in parallel.
+dsh: reasoning:
+I'll read DEV_LOG.md, HARNESS_LOCAL_SETUP.md, ARCHITECTURE.md, INTERFACES_AND_DATA.md. Also, the phaseA.out/report.md from SPIKE-001-FIX-002 that's in the evidence folder is a possibility (as a reference for the format). Furthermore, I'll read the .dsh/skills for the SKILL.md of godot-validation (related to the test entry design), and tools/auto/runner.py to check how test_cmd is executed. Also examples/runtime_config.json and the schema (interface-related). First, I'll read DEV_LOG and HARNESS_LOCAL_SETUP.
+dsh: reasoning:
+Next, read ARCHITECTURE.md and INTERFACES_AND_DATA.md (required by AGENTS.md §1), and check the spike project (tests/spike/overlay — its project.godot, scenes/scripts. Because CORE-001 needs to either isolate it with .gdignore or migrate it). Also, check the runner to understand how Phase B executes test_cmd (the format). Furthermore, also check examples/runtime_config.json and the skills in .dsh/skills (the SKILL.md of godot-validation and fishing-state-and-save — these match the task. The system reminder says to load relevant skills via the skill tool). The task clearly corresponds to the godot-validation and fishing-state-and-save skills. These should be loaded via the skill tool.
+
+Order: first read ARCHITECTURE + INTERFACES_AND_DATA, then check the spike directory and the runner, and after that load the skills.
+dsh: reasoning:
+What I need now:
+1. REQUIREMENTS_CHANGELOG.md (AGENTS.md §1 instructs me to read this).
+2. The spike project structure tests/spike/overlay (project.godot, etc.) — to know what exists and what CORE-001 should isolate/migrate. Also, note R-02: at the time of CORE-001, either isolate via .gdignore or migrate into the proper scene. But wait — the permitted file scope is `project.godot, icon.svg, scenes/**, scripts/**, tests/**` — tests/** is permitted, so I can add a .gdignore under tests/spike/overlay (it falls within the permitted scope under tests/**).
+3. tools/auto/runner.py — how Phase B runs test_cmd (what exit code is expected). Also queue.json to check the CORE-001 entry.
+4. Load the godot-validation and fishing-state-and-save skills via the skill tool (matching the task).
+5. Check the Godot binary version in real time (read-only) and check the contents of tests/spike/overlay.
+6. The .dsh/skills directory exists — check the SKILL.md file.
+
+Additionally, check the report file in tasks/evidence/SPIKE-001-FIX-002 and the _runner directory (untracked). Also check the format of phaseA.out from the previous evidence — strictly speaking not necessary but it gives me the format of Phase A. Actually, my prompt precisely specifies the format of plan.md. Good.
+
+Also, the spike's report/*.json is shown as modified in git status — it was modified by the GUI test (runtime writes? no, the report is inside the repo). Not my concern. Just record it as an existing dirty state.
+
+Let me batch things: reading REQUIREMENTS_CHANGELOG, ls of tests/spike/overlay, reading queue.json and the relevant parts of runner.py, checking the Godot version.
+
+Note: Running Godot --version is read-only. AUDIT-001 records that when I probed --do-string a Godot process lingered, but just --version is fine and harmless.
+dsh: reasoning:
+Godot 4.7.2 confirmed. The spike is a standalone project with its own project.godot inside tests/spike/overlay. Important consideration: if I create a root project.godot, the sub-project inside tests/spike/overlay might end up being included in the root project's scan as well. Godot handles nested project.godot files... actually, Godot 4 scans all folders and imports resources; a nested folder with its own project.godot gets imported into the parent project as well (unless it's ignored via .gdignore, Godot doesn't automatically ignore nested folders that contain project.godot). Also, .gd files inside the sub-project are just scripts, no problem. The spike's scripts reference res:// paths within their own project, which will break in the root project's context... actually, scripts with relative paths like preload("res://scripts/overlay_window.gd") will resolve to the root project's res://scripts/..., which could cause import errors when the root project scans main.tscn inside the spike. .tscn files get imported as resources... a .tscn inside a subfolder gets imported by the parent project as a PackedScene, but it isn't parsed deeply enough to fail on missing script dependencies at import time... actually, could the root project fail with "Parse Error" on scripts inside tests/spike? GDScript files are compiled on load, not on import. The scene main.tscn gets imported — the dependencies are resolved at instantiation time.
+
+To be safe, the plan should include placing a `.gdignore` file inside tests/spike/overlay — this falls within the allowed scope of tests/**. That was explicitly stated in DEV_LOG R-02: "CORE-001 时再以 .gdignore 隔离或迁移为正式场景" (at CORE-001 time, isolate via .gdignore or migrate to a proper scene). Good — this is user-approved.
+
+Also note: runtime report JSONs (capability.json, etc.) are currently modified in git status — these were modified by the GUI test run (the spike writes the report). This is a pre-existing dirty state, not my fault. I must record it in the plan as existing user work that must not be overwritten (AGENTS.md §3: 修改前确认未提交的用户工作 (before modification, confirm uncommitted user work)).
+
+Next, read the spike's project.godot and scripts to understand the conventions (Godot 4 config_version, features). Read runner.py and queue.json to understand Phase B's test command mechanism. Read the SKILL.md of the godot-validation and fishing-state-and-save skills via the skill tool — per the system reminder, I need to load the skills via the skill tool before executing task actions. Load both: godot-validation (test entry) and fishing-state-and-save (FSM/save interfaces for module skeleton). godot-overlay is spike-specific, and CORE-001 is about minimal project + test entry — the relevance to overlay is lower, but UI-001 is where it'll be handled. Load godot-validation and fishing-state-and-save.
+dsh: reasoning:
+The CORE-001 queue entry: status is ready, test_cmd is empty — I need to propose a test_cmd in the plan. Phase B will probably use the one I propose. The allowed_files in the queue match the scope in my prompt.
+
+Next, to know how test_cmd is evaluated (expected exit code 0), I'll read runner.py. After that, I'll read the SKILL.md of the godot-validation and fishing-state-and-save skills with the skill tool. Actually, the skill tool loads the full instructions, and the SKILL.md files are in the project's .dsh/skills. Let me call the skill tool for the two relevant skills (godot-validation, fishing-state-and-save). Also, it might be a good idea to read the spike script to check the style. Let me run the runner and read the main part of overlay_window.gd (to know its user:// usage and that adding a .gdignore to tests/spike/overlay/ is fine).
+dsh: reasoning:
+Next, let's read the continuation of runner.py and check how Phase B determines test success (the exit code of test_cmd) and how it performs scope checking. I'll read the lines around Phase B / test execution.
+dsh: reasoning:
+Read through the test execution part and check how the exit code of test_cmd is being checked (expected value is 0).
+dsh: reasoning:
+Key points of the Phase B runner mechanism:
+- test_cmd is executed with cwd=ROOT (repo root), and exit code 0 is required.
+- Scope check: modified files must match allowed_files' in_glob (glob `tests/**` matches paths starting with `tests/`, and additionally `tasks/evidence/**` is always allowed, .godot ignored, RUNNER_OWNED is untracked).
+
+Important: The existing dirty files `M tests/spike/overlay/report/capability.json`, `observed_state.json`, `variant_matrix.json` are inside `tests/**` — these fall within CORE-001's allowed scope (tests/**), so they won't violate the scope. However, these are outputs of a user-modified spike. Furthermore, the untracked `tasks/evidence/_runner/` is RUNNER_OWNED — no problem.
+
+Wait — these modified report/*.json files: the runner's commit_success does `git add` on all modified files matching allowed_files... but that's the human's problem (reviewing the queue before exec_ready). In my plan I should note it like this: these 3 modified files are GUI execution outputs inside tests/**. Phase B should not revert them (they are uncommitted user work). It should record them, and they fall within the allowed scope. AGENTS.md says "修改前确认未提交的用户工作" (before modifying, confirm uncommitted user work) — record it honestly.
+
+Now, the crucial design decision for CORE-001: create a root project.godot at the repo root. Problems:
+
+1. Running `Godot --headless --path /Users/rain/DevGame/Fishing` — Godot imports the whole project, including tests/spike/overlay (nested project). The nested project.godot doesn't auto-exclude itself from the parent's scan — Godot 4 imports files inside subfolders regardless. `main.tscn` inside the spike imports fine as a PackedScene resource. The spike's .gd scripts compile only if referenced/loaded... does headless project import scan scripts and report parse errors? Actually `--import`/first-time run imports resources (.svg, .tscn), and GDScript files are also validated at import time (GDScript's "reimport"? GDScript is compiled on load; the editor's scan reports SCRIPT ERROR/Parse Error). In headless run, Godot does the equivalent of `--headless --editor --quit`... on first headless run of a project it imports resources (`.godot/.import` gets created), and script errors are emitted. To satisfy "Godot 无语法/导入错误" (no syntax/import errors in Godot), we should test with `--headless --editor --quit` (full import) plus also `--headless --quit` or the test scene run.
+
+2. The spike's scripts reference `user://spike_window.json` — irrelevant to headless.
+
+3. The spike's scripts are inside `tests/spike/overlay/scripts/` — the root project has its own `scripts/**`. The root project's `res://scripts/` is different from the spike's — no name collision issue because res:// maps to the root: the spike's script res://tests/spike/overlay/scripts/overlay_window.gd is a separate file. The spike's main.tscn references its scripts via relative res:// paths, and those resolve correctly even in the root project's context (res://tests/spike/overlay/main.tscn references res://tests/spike/overlay/scripts/...). Hmm — but inside the spike project, its main.tscn references scripts with res:// paths relative to the spike root, e.g. `res://scripts/overlay_window.gd`! In the root project, res://scripts/overlay_window.gd doesn't exist → when the root project imports that .tscn, the dependency is missing → an error is emitted at import time (though maybe not fatal). Let me check the ext_resource path in main.tscn.
+
+Let me check the spike's main.tscn.
+
+Key point: the spike's own project.godot has run/main_scene="res://main.tscn" — if the root project scans the spike's main.tscn, its script's ext_resource is likely `res://scripts/overlay_window.gd`, which collides with the root's own `scripts/` folder → parse error. That's exactly why R-02 stated "CORE-001 时再以 .gdignore 隔离或迁移为正式场景" (at CORE-001 time, either isolate with .gdignore or migrate to a formal scene) (user-approved). So the plan: add `tests/spike/overlay/.gdignore` (empty file, allowed under tests/**) so the root project's scanner completely ignores that folder.
+
+Caveat: does .gdignore make the editor skip a folder in the FileSystem dock and also skip importing files inside it? Yes, .gdignore excludes a folder from the project scan (files inside aren't imported/scanned by the parent project). The spike remains runnable standalone via `--path tests/spike/overlay` (Godot 4 respects .gdignore? Running with --path pointing at that directory, that directory becomes the project root, and .gdignore inside the project root is ignored? Hmm, the .gdignore file is inside the spike directory itself. When run with --path at that directory, that directory is the project root. I think .gdignore affects scanning of that folder when it's a subfolder of the project being scanned; when the project root is the spike itself, .gdignore is at the project root — does Godot still load project.godot and scripts directly even if the root has .gdignore? Actually, does .gdignore even prevent folder scanning when it's at the project root? The editor scans from the res:// root. If .gdignore exists at the res:// root, it might skip everything. Risk!
+
+Safer alternative: put the spike inside tests/spike/overlay, and make the root's .gdignore a sibling... can't, the spike is already inside tests/. Option: put `.gdignore` in the parent `tests/spike/` folder → then the root project skips all of tests/spike, but tests/** includes unit/integration tests — those need scanning. We want the root project to scan tests/unit, tests/integration, but not tests/spike. If .gdignore is in tests/spike/ → root skips tests/spike (including the spike) — good; but tests/unit/** is outside tests/spike so it's still scanned. Wait, does a .gdignore at tests/spike/ exclude tests/spike/** from the root's scan? Yes.
+
+But when running with --path tests/spike/overlay, the root is the spike directory itself and the .gdignore is in its parent (tests/spike/) — the parent isn't scanned. So the spike keeps working standalone. This is the cleaner solution: `tests/spike/.gdignore` — within allowed scope (tests/**).
+
+Hmm, but does Godot 4's --headless run require resources to be imported? On first run of the root project, it imports. .gdignore folders are excluded from import. Fine.
+
+Actually wait — does a .gdignore inside tests/spike/ (with content only in subdirectories, no direct files) work? Yes, .gdignore marks the directory containing the file as ignored; the entire directory tree is excluded.
+
+But also: when running the spike standalone with --path tests/spike/overlay, its root is the overlay directory and the .gdignore at tests/spike/ is out of scope → no effect. Good.
+
+4. Icon: default project.godot references icon.svg via `run/icon.svg`? The queue's allowed includes `icon.svg` at root — Godot 4's default template uses `config/icon="res://icon.svg"`. Need to create a minimal icon.svg (or omit the icon line). Minimal valid SVG is fine. Godot imports .svg via its SVG importer (built-in, no addon).
+
+5. Test entry: propose test_cmd. Runner runs test_cmd from repo root with shell=True. Must exit 0 if everything is OK. Design a GDScript test runner as `SceneTree`-based script: `tests/unit/test_core_001.gd` extends SceneTree, `_init()` runs assertions and calls `quit(0/1)`. Godot 4: `godot --headless --path . --script tests/unit/test_core_001.gd`? Does `--script` (or `-s`) run a script inheriting MainLoop/SceneTree? Godot 4: `-s, --script <script>` — run after loading project? Hmm: `godot --headless -s res://tests/test_core_001.gd` — the script must inherit MainLoop (or SceneTree). In 4.x, if it extends SceneTree, then `--script` with a res:// path works. Common pattern:
+
+```
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --script res://tests/unit/test_smoke.gd --quit-after 2
+```
+
+Hmm, with -s you call quit(exit_code) inside _initialize. Godot 4's script mode: the script class must inherit MainLoop/SceneTree. `extends SceneTree`, override `_initialize()` and call `quit(0)`.
+
+But does `-s` run without loading project.godot? No — `--path` + `-s` loads the project, then runs the script instead of the main scene. Yes, `--script` requires the project to be loaded; res:// scripts can preload other project scripts. Good.
+
+Simplest, most robust CORE-001 test gate ("Godot 无语法/导入错误" (no syntax/import errors in Godot)):
+- Command A: `Godot --headless --path . --import` (Godot 4.4+ supports `--import`? 4.7 — is `--import` a flag since 4.4? AUDIT recorded CLI: --headless, --path, --scene, --max-fps, --rendering-driver. It didn't mention --import. Godot 4.7 should have `--import` (added in 4.4: "--import: Perform the execution of the resource import(s) or export(s) and exit." Hmm, I think 4.4+ had it). But I can't just assume 4.7's CLI flags — I can verify read-only with `--help`! Let me check `Godot --help | grep -i import`.
+- Command B: run a smoke test script that loads the main scene and each core module script, asserts no errors, and exits 0.
+
+test_cmd is a single shell command (shell=True) — can be joined with `&&`. Example:
+
+```
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --import && /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --script res://tests/unit/test_core001_smoke.gd
+```
+
+But wait — headless run of the main scene: run/main_scene is scenes/main.tscn; running with `--quit-after N` will render frames on the headless display server. A smoke script via -s is deterministic; the return value of `quit()` becomes the exit code. Need to verify: does Godot 4's `-s` exit code propagate from SceneTree.quit(exit_code)? Yes, quit(p_exit_code=0).
+
+Also, smoke script should check: ResourceLoader.exists + load of scenes/main.tscn; load scripts; instantiate the main scene; validate GameState/FishingSystem skeleton invariants? Keep it minimal per the ticket's scope: "主场景、分层模块、headless 自动测试基础" (main scene, layered modules, foundation for headless auto-testing) — scaffold of layered modules (scripts/core/game_state.gd etc., class_name only, minimal) — but avoid scope creep. CORE-001 = main scene + minimal module skeletons + headless test entry. CFG-001 will do config validation; FSM-001 will do the FSM. So Phase B should create minimal skeletons:
+
+- project.godot (root), config_version=5, main scene res://scenes/main.tscn, 30 FPS via application/run/max_fps? Godot 4: `application/run/max_fps`? `application/run/low_processor_mode`... In Godot 4.x, project setting `application/run/max_fps` (engine.max_fps default 0). Yes, `application/run/max_fps=30` exists in 4.x. SDD: visible 30 FPS. Set application/run/max_fps=30.
+- icon.svg minimal.
+- scenes/main.tscn: root Node2D with a placeholder Label or Sprite2D + a script res://scripts/core/game_controller.gd attached. Keep minimal; no business logic.
+- scripts/: per ARCHITECTURE, skeletons with class_name and doc comments, each compiles. Minimal: game_controller.gd, game_state.gd (Resource or RefCounted, with invariants: wallet_gold non-negative, etc. — but keep minimal: placeholders with fields), fishing_system.gd, config_loader.gd, save_service.gd, event_log.gd, platform_adapter.gd/desktop_window.gd, cat_presenter... that's a lot; maybe just the core three + io stubs. ARCHITECTURE suggests scripts/core/{game_controller,game_state,fishing_system}.gd, scripts/io/{config_loader,save_service,event_log}.gd, scripts/platform/{platform_adapter,desktop_window}.gd, scripts/presentation/cat_presenter.gd.
+
+For the "最小模块" (minimal modules) skeleton, Phase B can create all as near-empty classes (class_name X extends RefCounted/Node, with TODO comments noting later tickets). This matches the ARCHITECTURE layout that the ticket's "分层模块" (layered modules) demands. Note: don't implement FSM/economy logic — those are later tickets.
+
+- tests/unit/test_core001_smoke.gd: extends SceneTree; _initialize(): load all skeleton scripts and main.tscn, instantiate, add to root, print PASS lines, quit(0); on failure print FAIL and quit(1).
+
+Additionally .gdignore at tests/spike/ to isolate the spike from the root scan (user-approved in DEV_LOG R-002).
+
+Wait — actually, do I really need a full skeleton set? Minimum acceptance criterion for the ticket: "Godot 无语法/导入错误" (no syntax/import errors in Godot). Main deliverables: 主场景、分层模块、headless 自动测试基础 (main scene, layered modules, headless auto-testing foundation). Let me plan a minimal set:
+
+- project.godot (root): name "Fishing", config_version=5, features PackedStringArray("4.7"), main scene, max_fps=30, icon res://icon.svg, window 220x160 borderless transparent? No — the window/overlay settings belong to UI-001 (DesktopWindow). Keep window settings minimal; transparent borderless can wait until UI-001. Hmm, but the spike has proven the capability, so we could also set the transparent borderless window now. Keep CORE-001 minimal: default window; UI-001 migrates the spike's window settings. Actually main.tscn at root will be a plain Node2D; UI-001 will build the overlay. That's fine — the headless test just needs to load without errors.
+
+Phase B file list:
+1. `project.godot` — root project (config_version=5, name "Fishing", main_scene res://scenes/main.tscn, max_fps=30, icon res://icon.svg, features "4.7").
+2. `icon.svg` — minimal placeholder SVG (16x16 rect).
+3. `scenes/main.tscn` — minimal scene: root Node2D name "Main" with script res://scripts/core/game_controller.gd attached; child Label placeholder.
+4. `scripts/core/game_controller.gd` (extends Node, class_name GameController) — no-op coordination skeleton.
+5. `scripts/core/game_state.gd` (extends RefCounted, class_name GameState) — skeleton fields with authoritative-state note (wallet_gold=0 etc.), no transaction logic.
+6. `scripts/core/fishing_system.gd` (extends RefCounted, class_name FishingSystem) — enum for states IDLE..SETTLEMENT, no logic (FSM-001).
+7. `scripts/io/config_loader.gd`, `scripts/io/save_service.gd`, `scripts/io/event_log.gd` — RefCounted skeletons (CFG-001/SAVE-001/LOG-001).
+8. `scripts/platform/platform_adapter.gd`, `scripts/platform/desktop_window.gd` (extends Node), `scripts/presentation/cat_presenter.gd` — skeletons (UI-001).
+9. `tests/spike/.gdignore` — empty file, excludes spike from root scan (user-approved R-02).
+10. `tests/unit/test_core001_smoke.gd` — SceneTree script: load all .gd + main.tscn, instantiate the scene, verify GameState defaults (wallet_gold==0, basket empty), print `CORE001 PASS` and quit(0); on failure print FAIL + quit(1).
+
+Hmm, should I create all skeleton files? More files = more risk of syntax errors from the Phase B agent. But ARCHITECTURE §7 layout is a suggestion and says "实际文件命名必须记录在工单" (actual file naming must be recorded in tickets). Minimum approach: fewer files. Deliverables "分层模块" (layered modules) suggest layering: core/io/platform/presentation/tests. Compromise: keep the full skeleton set — each file is tiny (5–15 lines).
+
+Risk: `class_name` collisions? None, since no other projects are scanned (spike is excluded via .gdignore — important. Spike scripts don't have class_name? Need to verify. If spike scripts have class_name and the spike is .gdignore'd, they aren't scanned → no collision either way. Let me quickly read spike scripts for context).
+
+Another risk: running the root project headless for the first time creates a `.godot/` cache at repo root — the runner's ignored() treats `path.startswith(".godot")` as ignored. Check that .gitignore covers .godot/. Let me check .gitignore.
+
+Also, running the smoke test writes nothing to user:// — fine. But headless run of project import: Godot may try to import icon.svg — the built-in svg importer works in headless.
+
+Also, main scene in project.godot: running with `-s res://tests/unit/...` doesn't run the main scene. Two-stage test command: `--import` (or editor quit) + `-s` smoke. Let me check `--help` output to see what flags exist for import in 4.7 (AUDIT says --headless --path --scene --max-fps --rendering-driver exist; doesn't mention --import; let me verify with --help, read-only).
+
+Also check: does `--script` accept `res://` or need absolute paths? `-s res://tests/unit/test_core001_smoke.gd` is standard.
+
+Also, `--quit-after N` with `--scene res://scenes/main.tscn` would be an alternative smoke (runs 3 frames then exits 0). Combining:
+
+test_cmd = `Godot --headless --path <root> --import && Godot --headless --path <root> -s res://tests/unit/test_core001_smoke.gd`
+
+Expected exit code 0. If `--import` is unsupported → first run of `-s` will auto-import on load anyway? On the first headless run of a project without a .godot/ cache, Godot 4 imports resources at startup before running the script (editor-like scan? no — a run in run-mode doesn't do a full import; it only imports .import-required resources when needed. Actually a headless run without a .godot cache does the import scan — "ERROR: Cannot open file 'res://.godot/...'"... hmm. In Godot 4, running an unimported project from the command line: does it perform a resource import on first run? Known behavior: first run of a project without a .godot folder works; resources with missing import files get imported on load (svg is imported on demand). Missing .godot is mostly fine; the editor does a full scan. To strictly enforce "no import errors", `--headless --editor --quit` does a full editor scan + import and exits. This is a classic CI trick: `godot --headless --editor --quit` imports everything and prints errors; exit code... may exit non-zero on missing deps. Let me use `--editor --quit`? In 4.x, `--quit` = "Quit after the first iteration". Editor mode + headless + quit is commonly used for CI import checks.
+
+Let me verify with --help which flags exist. Also check that the `--import` flag exists in 4.7.
+
+Also, expected exit code on failure: smoke script prints FAIL and quit(1) → runner detects non-zero → retry. Fine.
+
+One more scope note: Phase B writes plan-allowed files; runner adds tasks/TASKS.md + evidence — runner-owned, allowed.
+
+Another: `Godot --headless --path <root>` run without -s will run main scene main.tscn and never exit (game loop). So test_cmd must use `-s` (script quits) or `--quit-after`. Let me design test_cmd:
+
+```
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --import && /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing -s res://tests/unit/test_core001_smoke.gd
+```
+
+I can actually test these commands read-only right now! But creating project.godot isn't allowed — I can't create a root project. I can still verify whether `--import` exists via `--help`. Also, running the spike project headless with -s and a nonexistent res:// script would — create .godot inside the spike directory (side effect!). Not allowed. So I'll limit myself to `--help`.
+
+Hmm, careful: even `Godot --headless --version` is safe (verified, exit 0). Running with --path on the spike would create .godot cache → side effect → forbidden in Phase A. So: --help only.
+
+Let me check the --help for the import flag, and read the spike's scripts (read-only) for class_name / preload style, and the root's .gitignore for .godot.
+dsh: reasoning:
+Godot 4.7.2 CLI flags verified:
+- `-s, --script <script>` (X = also works in export template / run mode)
+- `--check-only` — "Parse only for errors and exit (used with --script)" (ideal as a syntax gate for each .gd)
+- `--import` (E = editor only) — "Launches the editor, waits for resource imports to finish, then exits" — a perfect import gate under headless.
+- `--quit` / `--quit-after <int>`.
+- `.gitignore` already ignores `.godot/` and `*.uid` — good, no scope contamination from import caches. (Note: the runner also treats `.godot` as ignored.)
+
+Next, read the spike script and check whether class_name is used (potential for global class collisions) and whether main.tscn references res:// scripts (parent scan issue).
+dsh: reasoning:
+Confirmed a serious risk: the spike's `main.tscn` references `res://scripts/overlay_window.gd` — if we create a `scripts/` folder at the root and make that the project, when the root project scans `tests/spike/overlay/main.tscn`, the dependency `res://scripts/overlay_window.gd` will resolve to the root's scripts directory, but that file won't exist there → import/dependency error. Therefore, isolation via `.gdignore` inside `tests/spike/` is necessary (permitted under tests/**; user-approved DEV_LOG R-02 states "at CORE-001 time, isolate with .gdignore or migrate to a formal scene").
+
+Wait, grep's EXIT was the exit code of the last command (grep found nothing → grep exit 1… the displayed EXIT:0 is actually `echo EXIT:$?` after grep — did grep output nothing? No wait, there's "---" followed by grep output being empty, then EXIT:0. Hmm, if grep found nothing it should be exit 1. It output EXIT:0 — did grep match? No, there's no output after ---. Actually, the output of head -30 included the full content of main.tscn (file is probably 30 lines). Then the grep output was empty but exit 0? grep… wait, if the output is empty and exit 0 that's weird. Probably the `load_steps` line in main.tscn matched "load(" … no, grep was only on scripts/*.gd. The "load(" pattern — the spike scripts probably contain load( or preload… but nothing was output? Because of head -20? No, that's not it. Whatever — grep's exit 0 means at least one line matched; maybe the output got mixed into head's output? No, it wasn't. Let's not obsess over this too much; quickly check whether the spike scripts use class_name (collision risk with root project's global classes: if the spike directory gets scanned by the root, global class duplicates will error out; if .gdignore is used it'll be excluded either way). For accuracy's sake, quickly verify.
+dsh: reasoning:
+No class_name inside the spike script (grep -c 0 → no class_name exists; the exit 1 is from grep -c not finding a match, so no problem).
+
+Also, per AGENTS.md §5, load the fishing-state-and-save skill (related to the GameState/FishingSystem skeleton). After that, should I also quickly read those SKILL.md's via the skill tool? According to the instructions, loading is done via the skill tool. godot-validation has been loaded. Load fishing-state-and-save — since it's a module for CORE-001 to be scaffolded.
+
+Additionally, for interface verification, also check the config values in examples/runtime_config.json (needed for plan invariants). And also examples/fish_species.json. Read both.
+dsh: reasoning:
+All the necessary information is gathered. Another read-only check: `git status` shows 3 modified report JSONs inside tests/spike/overlay/report/ — pre-existing uncommitted user work (generated by a GUI run). They live inside tests/**, so they're within CORE-001's allowed scope (allowed scope) — the runner's scope check won't flag them, and they'll get included in commit_success's git add (since they match tests/**)… This is a pre-existing runner behavior, not something I should fix. But I'll flag it as a risk in the plan (these will get swept into the CORE-001 commit. If a human reviews, it's acceptable, or they might choose to commit them separately beforehand).
+
+Also, untracked `tasks/evidence/_runner/` = RUNNER_OWNED, so it gets skipped. No problem.
+
+Do a quick check of the contents of the 3 modified report files and describe them honestly in the plan? A light peek is fine (read-only). It's probably runtime output updated by the GUI test. Let me check with a diff stat.
+
+Also verify that tasks/evidence/CORE-001/ is empty (it existed as an empty directory).
+
+After that, write plan.md. The second line must quote a line from AGENTS.md verbatim. Good candidate: "- **单 Agent 串行**：禁止启动子 Agent、fork、并行工作流、第二个大型模型。若标准预设仍暴露委派工具，**不要调用**。" — a verbatim quote from AGENTS.md §0. Or something from §2/§4. Requirement: "plan.md 第二行必须原样引用 AGENTS.md 中的一行规则". I'll place the quote on the 2nd line of the file.
+
+To be precise, let me re-verify the exact text of AGENTS.md — it was injected via system-reminder, but to be safe I should read the actual file (the injected text should match, but for a verbatim quote the file is authoritative). I'll read the first few lines of AGENTS.md.
+dsh: reasoning:
+All read-only evidence has been collected. Line 9 of AGENTS.md matches the injected copy (verbatim): "- **Single-agent serial**: Launching child agents, forks, parallel workflows, or a second large model is forbidden. If the standard preset still exposes delegation tools, **do not call them**."
+
+Now going to write plan.md to /Users/rain/DevGame/Fishing/tasks/evidence/CORE-001/plan.md. Line 2 = the verbatim-quoted line.
+
+Planning the content structure per the instructions:
+- Goal (objective)
+- Files to change (within allowed scope: project.godot, icon.svg, scenes/**, scripts/**, tests/**)
+- Interfaces and invariants
+- Precise test commands and expected exit codes
+- Risks and rollback procedure
+- Acceptance criteria mapping
+
+Also include the read-only evidence (commands + exit codes) collected in Phase A. Write it in Chinese. Details:
+
+Files for Phase B:
+1. `project.godot` (root): config_version=5, config/name="Fishing", run/main_scene="res://scenes/main.tscn", config/features=PackedStringArray("4.7"), application/run/max_fps=30, application/config/icon? Actually, the icon key in Godot 4 is `application/config/icon`? Hmm. In a Godot 4 project the default is `config/icon="res://icon.svg"` inside the [application] section. Right: `config/icon="res://icon.svg"`. And max_fps: `application/run/max_fps=30`. Both inside [application].
+
+Note about 30 FPS: SDD-175 + the 2026-11-11 exception (drag 60) — drag FPS belongs to UI-001; set max_fps=30 at the project level now. This is the fixed approved value and doesn't change requirements.
+
+2. `icon.svg`: a minimal placeholder SVG (e.g. 220x160? Godot's default icon is 128x128; any valid SVG). A temporary placeholder aligned with §4 temporary assets.
+
+3. `scenes/main.tscn`: root Node2D "Main" + script game_controller.gd; a child ColorRect/Label placeholder is optional. Keep minimal.
+
+4. `scripts/core/game_controller.gd` — `class_name GameController extends Node`, _ready does minimal wiring: create GameState instance, print an initialization line. No economic ops.
+5. `scripts/core/game_state.gd` — `class_name GameState extends RefCounted`, fields: save_version=1, revision=0, wallet_gold=0, basket_capacity=10, basket=[], processed ids; comments referencing INTERFACES §3. No sell/catch logic (ECO-001/SAVE-001).
+6. `scripts/core/fishing_system.gd` — `class_name FishingSystem extends RefCounted`, only the state enum {IDLE,CASTING,WAITING,HOOKED,REELING,SETTLEMENT,PAUSED}; no logic (FSM-001).
+7. `scripts/io/config_loader.gd`, `scripts/io/save_service.gd`, `scripts/io/event_log.gd` — minimal RefCounted skeletons with class_name + docstring (CFG-001/SAVE-001/LOG-001).
+8. `scripts/platform/platform_adapter.gd` (RefCounted), `scripts/platform/desktop_window.gd` (Node), `scripts/presentation/cat_presenter.gd` (Node) — minimal skeletons (UI-001).
+9. `tests/spike/.gdignore` — empty file; excludes tests/spike/** from root project scanning. Rationale: the spike's main.tscn references res://scripts/overlay_window.gd (spike-local root) and would resolve to the root project's scripts/ → missing dependency errors in the root scan. Approved by DEV_LOG R-02. Does not affect standalone execution of the spike (--path tests/spike/overlay).
+10. `tests/unit/test_core001_smoke.gd` — `extends SceneTree`, `_initialize()`:
+   - Load all skeleton scripts via load("res://scripts/...") and assert not null;
+   - Load res://scenes/main.tscn, instantiate, assert the root node is named "Main" and is a Node2D, add_child to root, then clean up with queue_free;
+   - GameState default assertions wallet_gold==0, basket empty, basket_capacity==10, save_version==1;
+   - FishingSystem state enum contains SETTLEMENT, etc. (compile-time check via a simple comparison);
+   - On success: print("CORE001 SMOKE PASS"), quit(0); on any failure print("CORE001 SMOKE FAIL: <step>") and quit(1).
+
+Test commands (test_cmd for queue.json, single line, run from repo root, expects exit code 0):
+
+```
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --import && /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing -s res://tests/unit/test_core001_smoke.gd
+```
+
+Wait: `--import` is an editor flag (E flag in help = editor-only). `--headless --import`? Flag list: `--import  E  Starts the editor, waits for any resources to be imported, and then quits.` — used together with `--headless`. The "E" mark means editor-only… In headless, `--headless --editor --quit` is equivalent. `--import` is probably an editor-mode flag; with `--headless` it should be fine. But does `--import` alone imply editor mode? Godot 4.4+: "--import: Starts the editor, waits for resources to be imported, and quits" — it implies editor mode. In Godot 4.x, editor flags require either `-e/--editor` or `--editor`, or are auto-recognized. For safety, the plan will list both: primary is `--headless --editor --quit`, alternative is `--headless --import`. Hmm — the classic CI check is `godot --headless --editor --quit` which starts the editor scan and quits after 1 iteration; exit code 0 on success (though editor mode might return 0 even with errors… actually the editor prints errors but exit code remains 0? Hmm. This is a real concern: the "no import errors" gate should not rely only on exit code but also on grepping for "ERROR" / "SCRIPT ERROR" / "Parse Error" output. But the runner only checks exit code.
+
+More robust: `--check-only --script` per script? `--check-only` "Only parse for errors and quit (use with --script)" — checks syntax of one script per invocation. Chainable across multiple scripts: `godot --headless --path . --check-only --script res://scripts/core/game_state.gd && godot ... ` — many invocations, long command, but deterministic exit code (non-zero if parse error).
+
+Alternative: a smoke script loads everything via `load()` — a load error in the script under -s mode → Godot prints an error, but does the script itself abort and exit code become non-zero? If a script has a parse error, -s can't execute it and Godot exits non-zero. For scene/script load errors: ResourceLoader.exists / load returns null → the script prints FAIL and quit(1). That's deterministic. Scene dependency errors (missing script) cause load() to return null or partially load. So the smoke script handles the "no errors" gate deterministically via exit code.
+
+Import gate: `--editor --quit` may not reliably convert import errors into a non-zero exit code. But smoke's `load("res://icon.svg")`? Icon is not loaded by the script. Importing icon.svg only matters for export. The real gate: scripts parse, scene loads and instantiates.
+
+test_cmd design (two phases, both must be 0):
+1. `Godot --headless --path ROOT --quit-after 2` — runs the actual main scene headless for 2 frames: catches main-scene errors; exit code 0. (Running the main scene = real "main scene" acceptance criteria). GameState/GC ready only prints, so safe under headless.
+2. `Godot --headless --path ROOT -s res://tests/unit/test_core001_smoke.gd` — unit smoke; deterministic exit code.
+
+Plus optionally `--check-only` per core script. Can also chain a loop inside a shell one-liner — queue's test_cmd is a shell string; a `for` loop works but keep it simple. Proposal:
+
+```
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit-after 2 && /Applications/Godot.app/Contents/MacOS/Godot --headless --path . -s res://tests/unit/test_core001_smoke.gd
+```
+
+cwd=root is cwd=self.root so relative `--path .` is fine; but for clarity use absolute paths.
+
+Expected exit code: 0 on success; smoke failure → 1; project not found → 1? etc.
+
+Note: first run creates `.godot/` at root — .gitignore already ignores it and the runner's ignored() treats `.godot` as ignored. No scope violation.
+
+Risks and rollback:
+- R1: nested spike collision → mitigated by tests/spike/.gdignore (approved R-02). Verify the spike still runs standalone (Phase B must not run it… actually can run the spike headless test after adding .gdignore to prove non-breakage — but that creates a .godot in the spike directory (ignored, but). Running the spike writes report/*.json? The spike's main scene on GUI run rewrites the reports and writes user://spike_window.json. Under headless, capability_probe might rewrite report/capability.json? That's the repo file inside the spike — modifying it would be a change to the user's uncommitted reports. Better: don't re-run the spike in Phase B; .gdignore only affects the parent scan. Note this in the plan.
+- R2: existing dirty files tests/spike/overlay/report/*.json (user's GUI evidence, ~1597 insertions) are within tests/** — the Phase B runner commit will auto-include them. Options: human commits them before flipping the ticket to exec_ready, or accepts their inclusion. Flag as a human decision. Not a blocker: within approved scope; no data loss. But AGENTS.md §3 says to verify uncommitted user work before changes — Phase B must not modify/revert them.
+- R3: `--check-only`/`-s` behavior differences; Phase B should run the exact test_cmd and record the exit code; if `--quit-after 2` unexpectedly hangs (main scene runs forever without auto-exit — quit-after handles that), timeout… runner session has a 1800s timeout. No problem.
+- R4: global class name collision if .gdignore fails — smoke run will surface it; fallback: rename or delete spike main.tscn to move the spike out (forbidden without approval). Keep .gdignore approach.
+- Rollback: Phase B commit can be reverted; or delete the uncommitted new files (all new files: project.godot, icon.svg, scenes/, scripts/, tests/unit/, tests/spike/.gdignore) — no existing files modified; spike untouched; docs untouched.
+
+Interfaces and invariants section: state skeletons must not implement economic behavior; GameState is the sole authority (single source of truth); no frame-counting timers; config values are fixed (20–60s, 30fps, capacity 10 are candidate values) — Phase B must not change them; don't create config/ files (that's CFG-001, and config/** is not within this ticket's allowed scope — important: ARCHITECTURE suggests config/fish_species.json but CFG-001's allowed_files are data/** and scripts/config/** — so config JSON loading is deferred to a later ticket; CORE-001 must not create config files).
+
+Acceptance criteria mapping (ticket row CORE-001: minimal acceptance criteria "Godot no syntax/import errors"):
+- V01-T01 (foundation) / ACCEPTANCE_TESTS §1 static config layer: no parse errors from headless script load — smoke exit code 0.
+- T-CONF-01/T-FSM-01 etc. — not yet (later tickets); CORE-001 provides the entry point.
+- SDD V01-W03 30FPS: application/run/max_fps=30 in project.godot (visible FPS value is unchanged).
+- ARCHITECTURE §7 layout: scenes/, scripts/{core,io,platform,presentation}/, tests/{unit,spike}.
+
+Evidence to be recorded in Phase B: test-*.log from runner, phaseB-*.out, git diff.
+
+Also record Phase A read-only evidence (commands and exit codes) in the plan:
+- ls -la root: 0
+- git status --porcelain: 0 (3 modified spike report json + untracked tasks/evidence/_runner/)
+- git log --oneline -15: 0 (HEAD 2316ce0 "Accept overlay spike and authorize CORE-001 planning")
+- find tree: 0 — no project.godot/scenes/scripts at root; spike standalone project present
+- Godot --version: 0 → 4.7.2.stable.official.ed1daf0bf
+- Godot --help (flag check): 0 — --script/-s, --check-only, --import, --quit-after present
+- head/grep of spike main.tscn: res://scripts/* references → nested collision risk confirmed
+- grep -c class_name spike scripts: 0 matches → no global class collisions
+- git diff --stat: 0, 1597 insertions in the 3 report files
+- skills discovered: .dsh/skills/{godot-overlay,fishing-state-and-save,godot-validation}/SKILL.md; godot-validation + fishing-state-and-save loaded via the skills tool; godot-overlay exists (UI-001/spike-specific, not needed for CORE-001 planning).
+
+Any blockers? Ticket CORE-001 needs_human=false, deps SPIKE-001 done. No requirement change — pure scaffolding within the approved scope. .gdignore was explicitly pre-approved (DEV_LOG R-02). Creating the root project.godot was in the plan per ARCHITECTURE §7 ("若不存在，由批准后的技术票创建") — the queue ticket explicitly allows project.godot, and a human set it to status=ready; commit 2316ce0 "authorize CORE-001 planning". No requirement change → not a blocker. End with PHASE-A-DONE.
+
+Another check: runner scope check — the new file `tests/spike/.gdignore` matches tests/** (in_glob "tests/**" → startswith("tests/")). Yes.
+
+Also `--quit-after 2` runs the main scene: no autoload in project.godot; Node2D + Label + ColorRect main scene works fine in headless (headless DisplayServer supports Control). Label is fine.
+
+max_fps: Godot 4 project setting is `application/run/max_fps`. Correct.
+
+Also set `application/boot_error` in project.godot? Not needed.
+
+Do not set window transparent/borderless in the root project (that's UI-001 scope, GUI-approved; keep CORE-001 minimal).
+
+Now writing plan.md. Structure:
+
+```
+# CORE-001 Phase A Plan (read-only planning, AUTO-001)
+- **Single-agent serial**: Launching child agents, forks, parallel workflows, or a second large model is forbidden. If the standard preset still exposes delegation tools, **do not call them>. ← line 2 (verbatim quote)
+```
+
+Line 1: title. Line 2: quoted line. That's fine ("第二行必须原样引用 AGENTS.md 中的一行规则" — the quoted line must be on line 2).
+
+Then each section. Also list exact per-file acceptance criteria and expected exit codes, plus the exact test_cmd string to put into queue.json.
+
+Keep the file reasonably complete but not bloated. Write it.
+
+所有只读证据收集已完成。现在开始创建 Phase A 计划——这是 Phase A 唯一允许的写入操作。
+dsh: reasoning:
+Verify the file, especially line 2, and confirm that no other files have been modified (git status should be the same as before, just with the plan.md that I was permitted to write added).
+dsh: reasoning:
+Confirmed:
+- Line 2 of plan.md is a verbatim quote from AGENTS.md (matches line 9 of AGENTS.md).
+- Working tree: only the existing 3 modified spike report files (unmodified by me, existing user work) and the permitted `tasks/evidence/CORE-001/plan.md` (evidence directory, also permitted by the runner's scope check). No other changes.
+- No writes to git, no APPROVALS.md access, no sub-agents.
+
+Going to briefly summarize and end with PHASE-A-DONE.

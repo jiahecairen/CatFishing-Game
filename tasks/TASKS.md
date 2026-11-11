@@ -129,3 +129,13 @@ Test result & evidence: tasks/evidence/SPIKE-001-FIX-002/ (会话归档+日志+d
 Risks & unresolved decisions: 见 tasks/evidence/SPIKE-001-FIX-002/phaseA.out 与 report.md
 Recorded by AUTO-001 at 2026-11-11T00:11:48+00:00
 ```
+
+```text
+ID: CORE-001
+Status: In Review（AUTO-001 自动通过测试/范围/批准检查，待人工验收）
+Owner: AUTO-001 scheduler + headless Qwen Flash (serial)
+Executed commands + exit codes: test_cmd=/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --script res://tests/unit/test_core001_smoke.gd -> 0; attempt=1
+Test result & evidence: tasks/evidence/CORE-001/ (会话归档+日志+diff)
+Risks & unresolved decisions: 见 tasks/evidence/CORE-001/phaseA.out 与 report.md
+Recorded by AUTO-001 at 2026-11-11T04:27:42+00:00
+```

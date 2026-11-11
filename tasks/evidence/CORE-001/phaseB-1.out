@@ -1,0 +1,203 @@
+Phase B 完成。摘要：
+
+**实现核对（全部为此前 Phase B 尝试新建、本会话逐项验证符合 plan §3/§9）**
+- `project.godot`（`run/max_fps=30`、主场景入口）、`icon.svg`(+`.import`)、`scenes/main.tscn`、`scripts/{core,io,platform,presentation}/` 9 个纯骨架脚本（零 FSM/经济/存档/UI 实现）、`tests/unit/test_core001_smoke.gd`、`tests/spike/.gdignore`（spike 隔离，R-02 已批准方案）。
+- `git diff --stat` 为空：零已跟踪文件被改动；`tests/spike/overlay/**`（含 3 个 GUI report JSON）完好；`.godot/` 缓存与全部测试日志中零 spike/overlay_window 引用，隔离生效且 spike 独立工程结构未破坏。
+
+**真实测试结果（Godot 4.7.2.stable.official.ed1daf0bf，退出码均为真实命令返回值）**
+| 命令 | 退出码 | 关键输出 |
+|---|---|---|
+| 指定冒烟测试 `--script res://tests/unit/test_core001_smoke.gd` | **0** | `CORE001 SMOKE PASS`，`SCRIPT ERROR` 计数 0 |
+| 主场景加载 `--quit-after 2` | **0** | `CORE001 GameController ready: wallet_gold=0 basket=0 basket_capacity=10` |
+| 9× `--check-only --script …` | 全部 **0** | 逐脚本解析零错误 |
+| 对照复跑（HOME 重定向至证据目录） | **0** | `CORE001 SMOKE PASS`，stderr 0 字节——证实首轮 stderr 的 2 行 `user://logs` ERROR 纯属沙箱对工作区外引擎日志的写入拒绝，非工程问题 |
+
+**合规**：未读取/未修改 `tasks/APPROVALS.md`；未调用任何委派/后台工具；无任何 git 写操作；`tools/**` 只读（建议的 test_cmd 已写入报告 §6 供人工批准后方可入队）。报告已写入 `tasks/evidence/CORE-001/report.md`，含改动清单、命令与退出码、验收映射与遗留风险（L-1 建议 runner 仅按退出码+PASS 行判定，L-2 提交归属待调度器）。
+
+PHASE-B-DONE
+
+---STDERR---
+dsh: reasoning:
+Let's start by reading the plan and understanding the task. First, I'll read AGENTS.md (already injected, but let me confirm), then read plan.md inside the evidence directory.
+
+According to the instructions, I should read AGENTS.md and plan.md. AGENTS.md has been injected. Let me read plan.md and check the project structure.
+
+Re-checking the constraints:
+- Only the following files may be modified: project.godot, icon.svg, icon.svg.import, scenes/**, scripts/**, tests/**; and it's permitted to write to /Users/rain/DevGame/Fishing/tasks/evidence/CORE-001.
+- Reading/modifying tasks/APPROVALS.md is prohibited.
+- Sub-agents, forks, workflows, and background tasks are prohibited. Execute everything serially in this session.
+- git commit/merge/push/stash/reset/clean are prohibited.
+- If there is a scope change not in the plan, a destructive operation, or a high-risk judgment: stop coding and output BLOCKED.
+
+Also, AGENTS.md says to read documents like docs/SDD_v0.1.md — those are read-only checks and are permitted. Since the godot-validation skill is related to running Godot headless tests, it might be a good idea to load it. This task clearly matches "godot-validation" (running a reproducible Godot headless acceptance test). Furthermore, "godot-gdscript" might be needed for writing GDScript. Let me load the godot-validation and godot-gdscript skills.
+
+Let's start by first reading plan.md and exploring the project.
+dsh: reasoning:
+Interesting — the project already has project.godot, icon.svg, scenes/, scripts/, tests/, and there's even a report.md in the evidence directory. It looks like previous Phase B attempts (phaseB-1, phaseB-2) have already been executed. There's a BLOCK_REPORT.md. Let me check the current state: git status, existing files, previous report, BLOCK_REPORT.md, and test logs.
+
+Let me read the key files: BLOCK_REPORT.md, test-1.log, phaseB-2-test-run.log, report.md, and check git status. Also, per AGENTS.md §1, should I load the relevant skills (godot-validation, fishing-state-and-save)? The plan says these skills were loaded in Phase A. In Phase B, the task is running headless verification — clearly matching the godot-validation skill. I should load this. Also, since I'm writing GDScript, godot-gdscript too. AGENTS.md §5 says to enumerate skills and read the relevant ones. Let me load godot-validation (the project's skill), and fishing-state-and-save if needed. Let me load both project skills that the plan says to follow.
+
+First, let me investigate the current state.
+dsh: reasoning:
+In other words, the previous Phase B attempt (phaseB-2) had already created all the files, and the smoke test was passing. The block report mentions a scope-gate issue regarding tools/auto/queue.json (which was modified by the runner itself) and the auto-regeneration of icon.svg.import, but these are issues on the runner side.
+
+Current git status: everything is untracked (project.godot, icon.svg, icon.svg.import, scenes/, scripts/, tests/spike/.gdignore, tests/unit/, tasks/evidence/...). Interestingly, the earlier plan noted that tests/spike/overlay/report/*.json had been modified (M), but now those aren't shown as modified — probably they were committed by the human (commit da612ee "Freeze delegated v0.1 scope and record approvals", etc.). Current diff --stat is empty. Good — meaning the user's GUI evidence was committed by a human, and risk R-B is resolved.
+
+My job in this Phase B run:
+1. Read AGENTS.md (already injected — verify compliance), read plan.md (done), implement according to plan.
+2. Files already exist from the previous attempt. I should verify that their contents match the plan and are correct. Also check the previous report.md. The instructions say to write report.md — it already exists (from the phaseB-2 save). It should be rewritten/updated based on this session's actual verification. Since the instructions explicitly permit writing to the evidence directory, updating report.md is within scope.
+
+Note: BLOCK_REPORT stated that the scope gate judged `M tools/auto/queue.json` as being modified by the runner itself. Currently git status doesn't show tools/auto/queue.json as modified — good, currently clean. icon.svg.import exists as an untracked file — this is within the allowed list (icon.svg.import is explicitly permitted).
+
+Wait — the previous block was because the scheduler's scope gate flagged untracked icon.svg.import... but the current task instructions explicitly permit icon.svg.import. And tools/auto/queue.json is currently unmodified. Therefore there is no blocking condition at the moment.
+
+Plan:
+1. Load skills: godot-validation, fishing-state-and-save (project skills per AGENTS.md §5), and possibly godot-gdscript. AGENTS.md says to enumerate skills and read as needed. Let me check .dsh/skills and load via the skill tool: godot-validation is clearly applicable (running headless verification). fishing-state-and-save is applicable to GameState skeleton design. Load both.
+
+2. Read all existing skeleton files, verify they match plan §3, and check for issues (e.g., missing .uid files are auto-generated by Godot; .uid files are untracked, but are these within the allowed scope? They are inside scripts/** and tests/**, so no problem).
+
+3. Read the previous report.md and the referenced L-0/L-1 items to understand what was pending.
+
+4. Run tests:
+   - Step 1: `Godot --headless --path ... --quit-after 2` (per plan §5. However, the task instructions only list the smoke test command. The plan says to run both; the task says to "run tests in the project root" using the smoke command. Run the smoke command as requested, and additionally run the step 1 main-scene load run and the optional --check-only run, recording the actual exit code for each.)
+   - Verify that the output contains CORE001 SMOKE PASS and that there is no SCRIPT ERROR.
+
+Note: the phaseB-2 log shows errors related to user://logs — these are engine log-file errors (ERROR: Failed to open 'user://logs/...'), which are not SCRIPT ERRORs. User requirement #4: "Confirm that the output contains CORE001 SMOKE PASS and check that there is no SCRIPT ERROR." These user://logs errors are harmless (permissions on the log directory?) but should be recorded. Hmm, why does it fail to open user://logs? Perhaps it's a sandbox restriction on the ~/Library/Application Support directory. The DSH sandbox is workspace-write, and running the Godot binary might be blocked by the bash sandbox from writing outside the workspace? But the logs say it did run. The ERROR is output by Godot itself, probably a permissions issue. These are engine logger errors, not script errors, and don't affect the exit code. I'll record them honestly.
+
+Also check: is a user's Godot editor running (PID 27116 per the block report)? Let me check the current processes. If the editor is running, there might be a .godot import lock. Let me check.
+
+5. Write a report.md to the evidence directory (overwriting the previous one is allowed — it's within the evidence directory, and the instructions say to write report.md). Actually, should I preserve the old report? The instructions say "write /Users/rain/DevGame/Fishing/tasks/evidence/CORE-001/report.md". There's already a saved copy of the same size, report_phaseB2_saved.md. Write a new report.md that reflects this run. Also, save the test log to the evidence directory as evidence (test-*.log is permitted).
+
+6. Do not commit anything.
+
+First, load the skills and read the existing files. Also read the previous report.md and check the L-0/L-1 items and whether there is any pending human disposition. Additionally, check tasks/TASKS.md for the CORE-001 ticket and tools/auto/queue.json's test_cmd (read-only).
+
+Per the plan and AGENTS.md §5, load the two project skills first.
+dsh: reasoning:
+Now, let's read the existing skeleton files, the smoke tests, the previous report.md (to understand the L-0/L-1 pending actions), and the CORE-001 ticket in TASKS.md, and check the Godot process/running editor. Let's load the files all at once.
+dsh: reasoning:
+The python queue.json parse produced no output — maybe the JSON structure is different. Not a big deal. The test_cmd is something the runner/scheduler processes, not something I write (tools/** is not on my allowlist). The sandbox refused ps — no problem, not needed. Actually, the earlier block report was about the user's Godot editor auto-regenerating icon.svg.import. I can check whether the Godot editor is running through another means, but the sandbox refused ps. Not important.
+
+The skeleton files all match plan §3. Next I need to run the actual tests. Plan §5 test_cmd is:
+1. `Godot --headless --path /Users/rain/DevGame/Fishing --quit-after 2` → expect 0 (loads main scene)
+2. `Godot --headless --path /Users/rain/DevGame/Fishing -s res://tests/unit/test_core001_smoke.gd` → expect 0, output must contain "CORE001 SMOKE PASS" and be free of SCRIPT ERROR.
+
+The task instructions specifically request running the smoke test command:
+`/Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/rain/DevGame/Fishing --script res://tests/unit/test_core001_smoke.gd`
+
+Run both (step 1 is per the plan; the human requirement #4 in the plan §9 requires an actual load of the main project + the smoke test). Capture stdout and stderr to evidence logs in the evidence directory. Also, as an optional enhancement, run --check-only on each script.
+
+Note: the previous run had an ERROR from the engine logger about user://logs — the user:// directory is probably ~/Library/Application Support/Godot/... . The DSH sandbox's workspace-write mode might be refusing writes outside the workspace. That would cause those errors. But Godot itself ran. The errors didn't affect the exit code. The user asked me to confirm "no SCRIPT ERROR" — engine logger errors are not SCRIPT ERROR. But I can also try setting a HOME override to redirect user:// inside the workspace. However, HOME modification changes where user:// points. It might be safer to just capture and honestly report. Hmm — but if the sandbox refuses writes to ~/Library, the errors appear in the output and could look like a failure. Let's just run it and capture the output as-is.
+
+Wait — do I even have permission to run Godot in the first place? bash runs in a file sandbox: workspace-write mode allows writes under the workspace. Godot writes .godot/ in the project (within the workspace) and user:// logs in ~/Library (probably refused). The previous phaseB-2 log shows exactly those errors and EXIT=0, so it worked.
+
+Also: the .godot/ directory exists at root. The main scene load run should be done with --quit-after 2 per the plan.
+
+One consideration: the smoke test does root.add_child(main) — in a SceneTree script _initialize, is root the Window root? In a SceneTree script, `root` is the root Window. add_child(main) works. No problem, it worked in the previous run.
+
+Also check .godot and the import files: if the editor was closed, the tests/spike .gdignore means spike isn't scanned. The smoke test's SCRIPTS list does not load spike.
+
+Now execute:
+Command 1: smoke test (as the task demands), capture to evidence/test-smoke-<date>.log, record exit code.
+Command 2: main-scene boot --quit-after 2, capture.
+Command 3: --check-only on each script (optional enhancement).
+
+First write evidence log filenames. Use a fixed naming: test-smoke.log, test-boot.log, test-check-only.log inside the evidence directory. Overwrite the previous ones? The previous ones were phaseB-2-test-run.log / test-1.log. Use new names so as not to clobber past evidence: test-3-smoke.log etc. Actually, simpler: use the timestamp 2026-11-11. Let's run them sequentially (serial, background jobs are forbidden).
+
+Note: run each command in the foreground with a timeout. Godot headless boot could take a few seconds.
+
+Now let's run the smoke test.
+
+所有骨架文件均存在，并与计划 §3 完全匹配。队列/runner 文件保持只读（`tools/**` 为仅可写，不可修改）。此前的 `ps` 调用因运行中的编辑器被沙箱拒绝——不影响验证。现在开始执行实际测试。
+
+**测试 1 —— 所需冒烟测试命令（计划 §5 步骤 2）：**
+dsh: reasoning:
+Smoke test: EXIT_CODE=0, stdout contains "CORE001 SMOKE PASS" and GameController ready line, stderr contains only 2 ERROR lines from the engine logger regarding user://logs (this is the sandbox refusing to write to ~/Library — the engine's own file logger; it's not a SCRIPT ERROR and doesn't affect exit code either).
+
+Per human requirement #4: confirm the output contains CORE001 SMOKE PASS ✓ and confirm no SCRIPT ERROR ✓.
+
+Let me try to see if I can also run it without the user:// log errors to get cleaner output — the errors stem from the DSH sandbox blocking writes to ~/Library/Application Support/Godot. I can verify that user:// resolves there, and can also set --user-data-dir to redirect user data inside the workspace. Godot 4 has a `--user-data-dir <directory>` flag. That way I could demonstrate a run without errors. But the official test_cmd is the one without that flag, and the runner runs that from the repo root. The log errors are environmental (a byproduct of the sandbox) and I'll be honest in reporting them. Still, as a bonus I could also run with --user-data-dir to show a clean run. Let me check --help for this flag... per the plan, the flags --script/--check-only/--quit-after/--import do exist. I'll try --user-data-dir too; if it's unsupported, that command will just fail — either way I'll record it honestly. This is optional; keep it low priority and just note it down.
+
+Next up, test 2: main-scene boot with --quit-after 2 (plan step 1).
+
+Smoke test **exit code 0**, output contains `CORE001 SMOKE PASS`, and **no SCRIPT ERROR**. (The two `ERROR:` lines on stderr are the engine's own file logger failing to write to `user://logs/` outside the workspace — they're sandbox-environment artifacts and not script errors. I'll verify this with a clean run in a separate run using `--user-data-dir`.)
+
+**Test 2 — Main scene load (Plan §5 Step 1):**
+dsh: reasoning:
+Boot execution: EXIT 0, main scene loaded, GameController ready, SCRIPT ERROR 0 cases.
+
+Next, the optional enhanced execution:
+1. Run --check-only for each script.
+2. A single clean smoke run using `--user-data-dir` inside the workspace, to prove that the two logger ERRORs are sandbox-derived (i.e., if the user:// directory is writable, there will be zero ERRORs).
+
+Wait a moment — --user-data-dir will write inside the workspace, but... it'll end up writing to a directory within the workspace. This is permitted by the sandbox (workspace-write), but from a ticket-scope perspective: "只允许修改这些文件… (only these files may be modified…) also permit file writes within the evidence directory." If I write a temporary user data directory under tasks/evidence/CORE-001/, that's within the permitted evidence directory. Use `--user-data-dir tasks/evidence/CORE-001/tmp-userdata`? Hmm, this would create files in the evidence directory, but per instructions that's permitted ("另允许在证据目录…内写文件 (separately, file writes within the evidence directory… are permitted)"). Afterward, should I delete the temp files? Delete files I created myself within the evidence directory — it's safer to just leave them as-is, or to delete them. Leaving them might pollute the evidence; but writing there is permitted. I'll place it under the evidence directory and delete it after execution (since it's my own temp files). Actually, "before any deletion, confirm that the resolved absolute path is the intended target" — no problem, since I created it.
+
+Actually, it might be even simpler: --user-data-dir might take a path relative to cwd (the repo root). I'll pass an absolute path.
+
+First, check the flag's existence: Godot --help | grep user-data-dir. Then run check-only for each of the 9 scripts.
+dsh: reasoning:
+The `--user-data-dir` flag isn't shown in the help output. Let me check the full help for user data directory-related flags — in Godot 4 it's `--user-data-dir <directory>`. grep couldn't find it. Maybe it's listed under a different name, or maybe the help output is localized (in Chinese). Let me try grepping more broadly. Actually, in the grep output above, only quit-after and check-only matched. So --user-data-dir isn't listed. In Godot 4.x, `--user-data-dir <directory>` is an OS feature override, and the help should say "Set the user data directory...". Let me search for "user" in the help.
+dsh: reasoning:
+The `--user-data-dir` flag is not listed in 4.7.2's `--help`. I could still try running with it anyway (unknown flags cause an "Invalid command line argument" error and a non-zero exit code, but I'll just record that as-is). Actually, this is a Godot 4.x feature (`--user-data-dir`) — the help is localized so it might be hidden... The help was in Chinese, but this flag should appear in English. It didn't match "user" in a case-insensitive grep either, so it really isn't listed in the help. Trying an unlisted flag could pollute the evidence trail with a failed command.
+
+Alternative approach to demonstrate that the logger's ERROR is sandbox-derived: the write destination is `user://logs/` → `~/Library/Application Support/Godot/app_userdata/Fishing/` (outside the workspace → rejected by the workspace-write sandbox). This is a clear and honest explanation, and it's also consistent with the fact that the same error appears in the previous phaseB-2 run while the exit code stays at 0. I could try `--user-data-dir` once, and if the engine rejects it, just record it. Actually, an easier and cleaner method: setting `HOME=...` to point to the evidence directory would change the resolution target of `user://`. If HOME is set to a directory under the evidence directory, the sandbox will allow the write. Let's do that — the environment variable doesn't change anything inside the repo.
+
+What I'll do: `HOME=/Users/rain/DevGame/Fishing/tasks/evidence/CORE-001/tmp-home /Applications/Godot.../Godot --headless --path ... --script res://tests/unit/test_core001_smoke.gd`. On macOS, `user://` uses `~/Library/Application Support/Godot/app_userdata/<project name>`. With HOME pointed inside the evidence directory, the logs should be writable → expecting a clean stderr and exit code 0. After that, leave tmp-home as evidence (writing to the evidence directory is permitted). I'll note this.
+
+Next, run `--check-only` per script.
+
+`--user-data-dir` 在 4.7.2 的帮助信息中不存在，所以我改用 `HOME` 重定向到证据目录的临时目录，并对所有 9 个骨架脚本运行 `--check-only`。
+dsh: reasoning:
+The `--check-only` exit code 0 was returned for all 9 scripts. Let me save this output as evidence too. After that, I'll verify a clean run via HOME redirection, then check requirement #5 (the scan behavior of .gdignore — confirm that the root project doesn't scan the spike: the smoke/boot run has no errors regarding res://scripts/overlay_window.gd, and it's also verifiable via the .godot/uid_map.bin / importer cache, or by confirming that main.tscn within the spike isn't referenced). A simpler and more deterministic check: the grep on the boot/stderr shows no mention of overlay_window or spike. Additionally, I can confirm that the spike project can still be recognized as standalone (that its project.godot is untouched) — this is structurally unchanged. The .gdignore at the tests/spike/ level excludes everything below it from the root's scan. And since the spike's own project root is tests/spike/overlay (below the .gdignore? No — the .gdignore is at tests/spike/, and overlay is a subdirectory → it's also excluded from the root scan. When running the spike standalone with --path tests/spike/overlay, its own scan root becomes tests/spike/overlay, and since the .gdignore is above that, the spike is unaffected.)
+
+Also, verify that the spike's files are unmodified: `git status --porcelain` shows no changes to tests/spike/overlay/**. In the earlier `git status`, the only untracked items were tests/spike/.gdignore (new, already permitted) and tests/unit/. And `git diff` is empty → the spike's report JSON is untouched (currently committed to HEAD, and the working tree is clean).
+
+I'll also write the check-only evidence to a file (the loop was echoing to stdout, not to a file). Re-running is wasteful, but instead I can write a summary file. The evidence should be genuine output. I'll re-run the check-only loop and record it to a file — it ran fast (9 × ~2 seconds). Actually, the previous run was real, and I have its output in the transcript. Re-running to persist the log is also real and fine. I'll run it in a way that records to tasks/evidence/CORE-001/test-3-check-only.log.
+
+Next, the HOME redirection run. After that, write the final `git status`/diff --stat + confirm the spike is untouched: `git diff --stat HEAD -- tests/spike` is empty.
+
+One more requirement: human #6 "保留当前 AUTO-001 人工批准门禁 (maintain the current AUTO-001 human-approval gate)" — the dispatcher says the approval record has been confirmed. I do not touch APPROVALS.md (haven't read it). No problem.
+
+Also, per plan §5, the smoke test uses `-s`. The task instructions used `--script`, but they're identical.
+
+Alright, let's run the HOME redirection and record the evidence.
+
+All 9 scripts parse with exit code 0. I'll now record the `--check-only` logs as evidence, and additionally perform verification by overriding `HOME` (the engine's `user://` logs write destination):
+dsh: reasoning:
+The clean HOME execution confirmed the following: exit code 0, CORE001 SMOKE PASS, stderr is completely empty (0 bytes). Therefore, the two ERROR lines from earlier are purely due to the engine's file logger being unable to write to ~/Library (outside the workspace) under the workspace-write sandbox, and are not project issues.
+
+Next, verify requirement #5: that the root project does not scan tests/spike/** (that .gdignore is functioning), and that the spike structure is intact. Check items:
+- That there are no references to spike's scripts in the .godot cache: check the list of `.godot/uid_map.bin` or the importer files. An easier method: grep the smoke/boot stderr for "overlay_window" — nothing.
+- Confirm the spike project is intact: git status shows no changes to tests/spike/overlay; ls tests/spike/overlay shows project.godot etc.; .gdignore exists at tests/spike/.
+- Also confirm that spike's report JSON is unmodified: `git status --porcelain tests/` displays only `?? tests/spike/.gdignore` and `?? tests/unit/`.
+
+Additionally, for the report, also obtain the final git status + diff --stat. And confirm that there is no mention of res://scripts/overlay_window.gd or main.tscn import errors in any of the logs: grep -i "overlay\|spike" across the entire test-3 logs.
+
+After that, write report.md. Also, should tmp-home be kept? It contains things like Library/Application Support/Godot/app_userdata/Fishing/logs. It's evidence of the clean run, and it's inside the evidence directory, so it's permitted. I'll leave it and mention it in the report. The size is probably small (log files). Check the size.
+
+In a clean HOME re-run, **stderr is 0 bytes with exit code 0** — this definitively confirms that the two `ERROR:` lines are purely due to sandbox log writes to `user://` outside the workspace, and are not a project issue.
+
+Next, I'll verify human requirement #5 (that the root project does not scan spikes; that spikes remain untouched) and obtain the final diff for the report:
+dsh: reasoning:
+All verified:
+- Zero mentions of spike/overlay_window in the test log → the root project is not scanning tests/spike/** (the `.gdignore` at the tests/spike/ level is functioning; the .godot cache also contains no references to spike).
+- `git diff --stat` is empty → zero modifications to tracked files; the spike report's JSON is unmodified (currently committed and clean at HEAD).
+- The spike's own project.godot / main.tscn exist as-is; the .gdignore is placed at the tests/spike/ level (above the spike root), so standalone execution via --path tests/spike/overlay is not affected.
+- The final git status shows only untracked additions, all within the allowlist: icon.svg, icon.svg.import, project.godot, scenes/, scripts/, tests/spike/.gdignore, tests/unit/, tasks/evidence/** (evidence + runner-owned _runner).
+
+Note: The .uid files under scripts/** and tests/unit/ are untracked, but they are inside the allowed directories (scripts/**, tests/**) — no issue.
+
+Now going to write report.md. The existing report.md is from a previous attempt. Going to overwrite it with this run's report (writing into the evidence directory is permitted). Contents to include:
+- List of changed files (all newly created; no modifications to tracked files)
+- Executed commands and exit codes (actual ones)
+- Summary of test output
+- Coverage of acceptance criteria
+- Remaining risks
+
+Also mention the approval gate: per the dispatcher, human approval has been recorded; I have not read or written APPROVALS.md. Mention that the previous attempt's L-0/L-1 blockers are resolved: tools/auto/queue.json is not currently modified; icon.svg.import is explicitly permitted under this ticket. Also mention that test_cmd should be written into the queue by a human/runner, and that I have not touched tools/**.
+
+Write report.md right now. After that, output a final summary ending with PHASE-B-DONE.
+dsh: reasoning:
+The report has already been created. Finally, do a final check that report.md exists and that nothing has been touched outside the permitted paths. Actually, the final git status has already been obtained, and the only newly added untracked files are within the permitted paths and evidence. The tmp-home directory is inside evidence (already permitted). Done.
+
+Final output: summary + the last line is PHASE-B-DONE.
