@@ -212,7 +212,8 @@ class Runner:
                 continue
             if path == self.queue_relpath:
                 current = self.file_fingerprint(os.path.join(self.root, path))
-                if current == self._queue_fingerprint:
+                if (self._queue_fingerprint is not None and current is not None
+                        and current == self._queue_fingerprint):
                     continue  # 只豁免与 runner 最近一次读写快照完全一致的队列状态
                 bad.append((xy, path, "队列文件被 runner 会话或外部进程改动"))
                 continue

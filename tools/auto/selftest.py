@@ -203,6 +203,21 @@ def run(_a):
     check("T8d untracked queue 被会话改写也必拦截",
           any(p == "tools/auto/queue.json" and "队列文件" in why for _, p, why in bad))
 
+    # ---- T8e tracked queue 缺少可信初始指纹时 fail closed
+    root = make_sim("t8e-missing-queue-fingerprint", "noop")
+    qpath = write_queue(root, [ticket()])
+    subprocess.run(["git", "-C", root, "-c", "user.email=auto-001@local", "-c",
+                    "user.name=AUTO-001 selftest", "add", "--", "tools/auto/queue.json"],
+                   check=True, capture_output=True, text=True)
+    subprocess.run(["git", "-C", root, "-c", "user.email=auto-001@local", "-c",
+                    "user.name=AUTO-001 selftest", "commit", "-q", "-m", "track queue"],
+                   check=True, capture_output=True, text=True)
+    os.unlink(qpath)
+    R = mk_runner(r, root, qpath, write_approvals(root))
+    _, bad = R.scope_violations(["hello.py"])
+    check("T8e 初始队列指纹缺失时 tracked 删除仍被拦截",
+          any(p == "tools/auto/queue.json" and "队列文件" in why for _, p, why in bad))
+
     # ---- T9 Godot 允许文件的唯一明确导入旁车
     root = make_sim("t9-import-sidecar", "noop")
     qpath = write_queue(root, [ticket(allowed=("icon.svg",))])
