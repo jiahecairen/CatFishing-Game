@@ -295,7 +295,7 @@ Owner approval: Phase B 既有授权有效；项目所有者要求保持人工�
 
 ```text
 ID: SIM-001
-Status: In Review（AUTO-001 自动通过测试/范围/批准检查，待人工验收）
+Status: Done（项目所有者委托自动验收；仅限本模拟工单）
 Owner: AUTO-001 scheduler + headless Qwen Flash (serial)
 Executed commands + exit codes: test_cmd=python3 -B tools/sim/run_sim001_checks.py -> 0; attempt=2
 Test result & evidence: tasks/evidence/SIM-001/ (会话归档+日志+diff)

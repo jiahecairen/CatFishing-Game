@@ -139,3 +139,14 @@
 [2026-11-11T20:09:11+00:00] launch headless session tag=phaseA
 [2026-11-11T20:22:13+00:00] session done tag=phaseA rc=0 archived=True
 [2026-11-11T20:22:13+00:00] SIM-001: plan 完成 → awaiting_approval（人工批准: 编辑 APPROVALS.md 后把 status 改为 exec_ready）
+[2026-11-11T20:29:07+00:00] model gate PASS: health ok; model listed
+[2026-11-11T20:29:07+00:00] approval verified for SIM-001 (ledger sha 3d9d83f3b4778428)
+[2026-11-11T20:29:07+00:00] launch headless session tag=phaseB-1
+[2026-11-11T20:59:09+00:00] session done tag=phaseB-1 rc=-9 archived=True
+[2026-11-11T20:59:20+00:00] SIM-001 test attempt 1 exit=0
+[2026-11-11T20:59:20+00:00] SIM-001 attempt 1 失败 test_rc=0 session_rc=-9 越界=[]
+[2026-11-11T20:59:20+00:00] launch headless session tag=phaseB-2
+[2026-11-11T21:14:02+00:00] session done tag=phaseB-2 rc=0 archived=True
+[2026-11-11T21:14:13+00:00] SIM-001 test attempt 2 exit=0
+[2026-11-11T21:14:13+00:00] SIM-001: 成功 → commit f57f08e
+ → in_review（不 push）
