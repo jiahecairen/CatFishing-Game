@@ -6,6 +6,9 @@ extends RefCounted
 # 不变量：纯 RefCounted 数据层；无 Node/_process、不读写 user://、无文件写入；
 # 负数/NaN/Inf 拒绝（advance 返回 false 且状态不变），绝不部分推进。
 
+const SNAPSHOT_VERSION := 1
+const ERROR_BAD_SNAPSHOT := "BAD_SNAPSHOT"
+
 var _now: float = 0.0
 
 
@@ -25,6 +28,35 @@ func reset() -> void:
 	_now = 0.0
 
 
+## fail-closed 时钟快照（review-followup #4：恢复测试须从独立保存值恢复，而非共享对象）。
+func snapshot_state() -> Dictionary:
+	return {"version": SNAPSHOT_VERSION, "now": _now}
+
+
+## 从 snapshot_state() 恢复。非字典/缺键/版本不符/now 非数值/负/NaN/Inf/多余键
+## → ok=false 且 _now 完全不变（绝不部分恢复）。
+func restore_state(snapshot: Variant) -> Dictionary:
+	if not (snapshot is Dictionary):
+		return {"ok": false, "error_code": ERROR_BAD_SNAPSHOT}
+	var snap: Dictionary = snapshot
+	if snap.size() != 2 or not snap.has("version") or not snap.has("now"):
+		return {"ok": false, "error_code": ERROR_BAD_SNAPSHOT}
+	if not (snap["version"] is int) or int(snap["version"]) != SNAPSHOT_VERSION:
+		return {"ok": false, "error_code": ERROR_BAD_SNAPSHOT}
+	var raw_now: Variant = snap["now"]
+	if not _is_numeric(raw_now):
+		return {"ok": false, "error_code": ERROR_BAD_SNAPSHOT}
+	var seconds := float(raw_now)
+	if not _is_finite(seconds) or seconds < 0.0:
+		return {"ok": false, "error_code": ERROR_BAD_SNAPSHOT}
+	_now = seconds
+	return {"ok": true, "error_code": ""}
+
+
 static func _is_finite(value: float) -> bool:
 	# 纯运算判有限（对齐 CFG-001 先例）：仅有限数使 v - v == 0。
 	return value - value == 0.0
+
+
+static func _is_numeric(value: Variant) -> bool:
+	return value is int or value is float

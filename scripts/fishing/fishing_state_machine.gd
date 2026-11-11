@@ -10,7 +10,8 @@ extends RefCounted
 # - PAUSED/IDLE/SETTLEMENT 期间 tick 不产生事件、不消耗有效时间；负数/NaN/Inf tick 拒绝。
 # - catch_event_id、wait_seconds、鱼种均由注入 DeterministicRng 抽样：同 seed/配置/时钟步/
 #   动作序列 ⇒ 逐事件复现（T-TIME-01/02）。拒绝路径绝不消耗 RNG。
-# - 满篓阻断经 can_cast(GameState) 只读判定；本类绝不写 GameState 的 wallet/basket/
+# - 满篓阻断内置于 request_cast(GameState)（null/满篓/非 IDLE 稳定拒绝、RNG 不动），
+#   can_cast(GameState) 为等价只读查询；本类绝不写 GameState 的 wallet/basket/
 #   processed ids（属 ECO-001）；只发候选事务，绝不扣鱼加币（ARCHITECTURE §2）。
 # - 经济参数（20/60s、30FPS、容量 10、鱼价权重）只经 ConfigGate/配置读取，本类不修改。
 # - 转换白名单外一律拒绝并记稳定错误码 BAD_TRANSITION 入内存 transition_log（不写文件，
@@ -28,14 +29,17 @@ const ERROR_BAD_CHECKPOINT := "BAD_CHECKPOINT"
 const ERROR_BAD_INJECTION := "BAD_INJECTION"
 const ERROR_BAD_EVENT_ID := "BAD_EVENT_ID"
 const ERROR_EVENT_ID_MISMATCH := "EVENT_ID_MISMATCH"
-const ERROR_CANDIDATE_ISSUED := "CANDIDATE_ALREADY_ISSUED"
+const ERROR_CANDIDATE_REPLAYED := "CANDIDATE_REPLAYED"  # 仅记入 transition_log；重试本身是合法幂等重试
 const ERROR_ALREADY_APPLIED := "AlreadyApplied"  # SDD-143 幂等重试（plan §4 原文命名）
+const ERROR_NULL_GAME_STATE := "NULL_GAME_STATE"  # request_cast 收到 null GameState（followup #1）
+const ERROR_BASKET_FULL := "BASKET_FULL"  # request_cast 内部满篓拒绝（followup #1）
+const ERROR_BAD_DURATION := "BAD_DURATION"  # 非有限/非正的阶段时长（followup #5）
 
-# 占位阶段时长（整数秒；OPEN-004 裁定：表现时长不影响 20–60 s 等待与经济。
-# 属实现内常量，不新增配置键——runtime_config schema 固定 5 键，扩键须用户批准）。
-const CASTING_SEC := 1.0
-const HOOKED_SEC := 1.0
-const REELING_SEC := 1.0
+# 占位阶段时长（OPEN-004 已裁定：表现时长可配置且不改钓鱼等待/经济规则——
+# docs/REQUIREMENTS_CHANGELOG.md OPEN-004「已裁定最小实现」）。默认 1 s，可经
+# configure_stage_durations() 在 IDLE 时调整；**不新增 runtime_config 键**
+# （schema 固定 5 键、ConfigGate 逐键校验，扩键须用户批准），故不触碰 data/ 与 schema。
+const DEFAULT_STAGE_SEC := 1.0
 
 ## 内存内结构化转换/拒绝日志（供测试断言与 LOG-001 后续复用；不写任何文件）。
 var transition_log: Array = []
@@ -54,13 +58,24 @@ var _last_acked_event_id := ""
 var _wait_seconds := 0
 var _stage_elapsed := 0.0  # 当前计时阶段已消耗的有效秒数（含上一调用结转的余量）
 var _candidate_issued := false
+var _pending_candidate: Dictionary = {}  # 已签发候选 payload（重试幂等重放，followup #2）
+var _casting_sec: float = DEFAULT_STAGE_SEC
+var _hooked_sec: float = DEFAULT_STAGE_SEC
+var _reeling_sec: float = DEFAULT_STAGE_SEC
 var _log_seq := 0
 
 
 ## 合法启动或从 checkpoint 恢复。catalog/runtime 为 CFG-001 校验器返回信封；
 ## 先过 ConfigGate.can_start_economy，任一非法 → ok=false + "catalog:<CODE>"/"runtime:<CODE>"。
-## recovered_checkpoint == {} 为全新启动；否则按 {state, event_id, wait_seconds,
-## elapsed_effective_seconds} 恰 4 键恢复（PAUSED 无 paused_from 载体，拒绝 BAD_CHECKPOINT）。
+## recovered_checkpoint == {} 为全新启动；否则按 schema v1 恰 4 键 {state, event_id,
+## wait_seconds, elapsed_effective_seconds} 恢复并交叉校验（followup #3）：
+## - PAUSED：schema 无 paused_from 载体 → 拒绝 BAD_CHECKPOINT（snapshot 已改为落暂停前态，
+##   隐藏后重启走该暂停前态续跑；OPEN-001 已裁定：隐藏=暂停≠离线收益）；
+## - IDLE：event_id/wait 必为 null 且 elapsed == 0；
+## - WAITING：event_id 非空字符串、wait 非负整数、elapsed < wait（WAITING 中恒严格小于，
+##   跨越瞬间即结转清零，越界即畸形）；
+## - CASTING/HOOKED/REELING/SETTLEMENT：event_id 非空字符串、wait 必为 null、elapsed ≥ 0；
+## 未知状态名/多余键/类型错 → 一律 BAD_CHECKPOINT，fail-closed 零副作用。
 func initialize(catalog: Dictionary, runtime: Dictionary, rng: DeterministicRng, clock: VirtualClock, recovered_checkpoint: Dictionary) -> Dictionary:
 	# —— 先全部校验，后一次性提交：失败路径零副作用 ——
 	if rng == null or clock == null:
@@ -109,6 +124,9 @@ func initialize(catalog: Dictionary, runtime: Dictionary, rng: DeterministicRng,
 				if not (raw_wait is int) or int(raw_wait) < 0:
 					return _init_fail(ERROR_BAD_CHECKPOINT)
 				resume_wait = int(raw_wait)
+				# 交叉校验：WAITING 内 elapsed 恒严格小于 wait（跨越瞬间即结转清零）。
+				if resume_elapsed >= float(resume_wait):
+					return _init_fail(ERROR_BAD_CHECKPOINT)
 			elif raw_wait != null:
 				return _init_fail(ERROR_BAD_CHECKPOINT)
 
@@ -123,6 +141,7 @@ func initialize(catalog: Dictionary, runtime: Dictionary, rng: DeterministicRng,
 	_current_event_id = resume_event_id
 	_last_acked_event_id = ""
 	_candidate_issued = false
+	_pending_candidate = {}
 	_paused_from = -1
 	_wait_seconds = resume_wait
 	_stage_elapsed = resume_elapsed
@@ -132,6 +151,7 @@ func initialize(catalog: Dictionary, runtime: Dictionary, rng: DeterministicRng,
 
 
 ## 满篓/未初始化/非 IDLE 时不可抛竿（SDD V01-E01、SDD-172；容量 10 仅候选值，只读）。
+## 只读查询版；request_cast(state) 内部执行同一校验，调用方无需先调本函数。
 func can_cast(state: GameState) -> bool:
 	if not _initialized or state == null:
 		return false
@@ -141,14 +161,23 @@ func can_cast(state: GameState) -> bool:
 
 
 ## 仅 IDLE 可抛竿；catch_event_id 与 wait_seconds 均由注入 RNG 确定性抽样（T-TIME-01）。
-## wait_seconds ∈ [ceil(min), floor(max)] 整数秒，当前配置即 20–60；拒绝路径不消耗 RNG。
-func request_cast() -> Dictionary:
+## wait_seconds ∈ [ceil(min), floor(max)] 整数秒，当前配置即 20–60。
+## 门禁内置（followup #1，review §1「满篓由状态机拒绝」）：初始化、GameState 非空、IDLE、
+## basket.size()<basket_capacity 逐条校验；任一失败 → 稳定拒绝码且 **RNG 状态不变**、
+## 不生成 event ID。拒绝码：NOT_INITIALIZED / NULL_GAME_STATE / BAD_TRANSITION / BASKET_FULL。
+func request_cast(state: GameState) -> Dictionary:
 	if not _initialized:
 		_append_log("request_cast", STATE_NAMES[_state], STATE_NAMES[_state], ERROR_NOT_INITIALIZED, "", {})
 		return {"ok": false, "rejected_reason": ERROR_NOT_INITIALIZED, "catch_event_id": "", "wait_seconds": 0}
+	if state == null:
+		_append_log("request_cast", STATE_NAMES[_state], STATE_NAMES[_state], ERROR_NULL_GAME_STATE, _current_event_id, {})
+		return {"ok": false, "rejected_reason": ERROR_NULL_GAME_STATE, "catch_event_id": "", "wait_seconds": 0}
 	if _state != State.IDLE:
 		_append_log("request_cast", STATE_NAMES[_state], STATE_NAMES[_state], ERROR_BAD_TRANSITION, _current_event_id, {})
 		return {"ok": false, "rejected_reason": ERROR_BAD_TRANSITION, "catch_event_id": "", "wait_seconds": 0}
+	if state.basket.size() >= int(state.basket_capacity):
+		_append_log("request_cast", "IDLE", "IDLE", ERROR_BASKET_FULL, "", {})
+		return {"ok": false, "rejected_reason": ERROR_BASKET_FULL, "catch_event_id": "", "wait_seconds": 0}
 	var lo := int(ceilf(float(_config["bite_wait_min_sec"])))
 	var hi := int(floorf(float(_config["bite_wait_max_sec"])))
 	var event_id := "catch-%d-%d" % [_rng.next_int(), _rng.next_int()]
@@ -156,6 +185,7 @@ func request_cast() -> Dictionary:
 	_current_event_id = event_id
 	_last_acked_event_id = ""
 	_candidate_issued = false
+	_pending_candidate = {}
 	# 注意：不清零 _stage_elapsed——上一周期末尾结转的过冲秒属于本次 CASTING 的有效时间，
 	# 丢弃它会让事件时间轴随 tick 步长改变（违反 T-TIME-02 步长不变性）。
 	_emit_transition(State.IDLE, State.CASTING)
@@ -185,7 +215,9 @@ func tick_effective(seconds: float) -> Array[Dictionary]:
 
 
 ## 仅 SETTLEMENT 可调；鱼种由注入 RNG 按 catch_weight/sum 加权确定（可重放）。
-## 只发出候选事务，绝不修改金币/鱼篓（ARCHITECTURE §2）。重复签发 → CANDIDATE_ALREADY_ISSUED。
+## 只发出候选事务，绝不修改金币/鱼篓（ARCHITECTURE §2）。
+## 同一结算事件重试（followup #2，review §3）：不再抽样，返回与首次**逐字段相同的深拷贝**
+## payload（ok=true、code=""），transition_log 记 CANDIDATE_REPLAYED；未提交结算可安全重试。
 func produce_catch_candidate() -> Dictionary:
 	if not _initialized:
 		_append_log("produce_catch_candidate", STATE_NAMES[_state], STATE_NAMES[_state], ERROR_NOT_INITIALIZED, "", {})
@@ -194,8 +226,8 @@ func produce_catch_candidate() -> Dictionary:
 		_append_log("produce_catch_candidate", STATE_NAMES[_state], STATE_NAMES[_state], ERROR_BAD_TRANSITION, _current_event_id, {})
 		return {"ok": false, "code": ERROR_BAD_TRANSITION}
 	if _candidate_issued:
-		_append_log("produce_catch_candidate", "SETTLEMENT", "SETTLEMENT", ERROR_CANDIDATE_ISSUED, _current_event_id, {})
-		return {"ok": false, "code": ERROR_CANDIDATE_ISSUED}
+		_append_log("produce_catch_candidate", "SETTLEMENT", "SETTLEMENT", ERROR_CANDIDATE_REPLAYED, _current_event_id, {})
+		return _pending_candidate.duplicate(true)
 	var total_weight := 0.0
 	for entry in _species:
 		total_weight += float(entry["catch_weight"])
@@ -207,9 +239,7 @@ func produce_catch_candidate() -> Dictionary:
 		if unit < acc:
 			chosen = entry
 			break
-	_candidate_issued = true
-	_append_log("produce_catch_candidate", "SETTLEMENT", "SETTLEMENT", "", _current_event_id, {"species_id": String(chosen["id"])})
-	return {
+	_pending_candidate = {
 		"ok": true,
 		"code": "",
 		"catch_event_id": _current_event_id,
@@ -221,6 +251,9 @@ func produce_catch_candidate() -> Dictionary:
 		},
 		"caught_at_clock": _logical_time(),
 	}
+	_candidate_issued = true
+	_append_log("produce_catch_candidate", "SETTLEMENT", "SETTLEMENT", "", _current_event_id, {"species_id": String(chosen["id"])})
+	return _pending_candidate.duplicate(true)
 
 
 ## 结算幂等提交（SDD-143）：committed=true 且 ID 匹配当前事件 → SETTLEMENT→IDLE；
@@ -244,6 +277,7 @@ func ack_settlement(catch_event_id: String, committed: bool) -> Dictionary:
 		_emit_transition(State.SETTLEMENT, State.IDLE)
 		_current_event_id = ""
 		_candidate_issued = false
+		_pending_candidate = {}
 		_wait_seconds = 0
 		# _stage_elapsed 保留结转余量（见 request_cast 注释）。
 		return {"ok": true, "next_state": "IDLE", "code": ""}
@@ -287,15 +321,47 @@ func resume_if_safe() -> Dictionary:
 
 
 ## 可序列化检查点，镜像 GameState schema v1 的 fishing_checkpoint（供 SAVE-001 使用）。
+## followup #3 语义（schema 不扩键）：
+## - PAUSED 快照落 **暂停前状态**（schema 无 paused_from 载体；pause 从不消耗有效时间，
+##   elapsed/event/wait 与暂停前一致，重启 initialize 走同一状态安全续跑，绝不写 "PAUSED"
+##   造成重启必 BAD_CHECKPOINT 的死路）；
+## - wait_seconds 仅 WAITING 携带（其余计时态 null，initialize 交叉校验依赖此约定）；
+## - IDLE → event/wait=null、elapsed=0；
+## SAVE-001 注意：RNG 运行状态（DeterministicRng.snapshot_state）、Clock 读数
+## （VirtualClock.snapshot_state）与待结算候选（produce_catch_candidate payload）不在
+## 本 schema 内，须由 SAVE-001 在其批准范围内另行持久化方能跨崩溃重放（见 report 移交项）。
 func snapshot_checkpoint() -> Dictionary:
-	var in_cycle := _state == State.CASTING or _state == State.WAITING \
-			or _state == State.HOOKED or _state == State.REELING or _state == State.SETTLEMENT
+	var snap_state := _state
+	if snap_state == State.PAUSED:
+		snap_state = _paused_from  # 暂停必从活动态进入，_paused_from ∈ CASTING..SETTLEMENT
+	var in_cycle := snap_state == State.CASTING or snap_state == State.WAITING \
+			or snap_state == State.HOOKED or snap_state == State.REELING or snap_state == State.SETTLEMENT
 	return {
-		"state": STATE_NAMES[_state],
+		"state": STATE_NAMES[snap_state],
 		"event_id": _current_event_id if in_cycle else null,
-		"wait_seconds": _wait_seconds if in_cycle else null,
-		"elapsed_effective_seconds": _stage_elapsed if in_cycle else 0.0,
+		"wait_seconds": (_wait_seconds if snap_state == State.WAITING else null),
+		"elapsed_effective_seconds": (_stage_elapsed if in_cycle else 0.0),
 	}
+
+
+## 配置占位阶段时长（OPEN-004 已裁定「表现时长可配置且不改钓鱼等待/经济规则」）。
+## 三个值必须均为有限正数，否则 BAD_DURATION 且不改任何值；仅 IDLE 可配置（周期中途
+## 改时长会让已排队阈值失真 → BAD_TRANSITION）。不改 runtime_config schema/数据。
+func configure_stage_durations(casting_sec: float, hooked_sec: float, reeling_sec: float) -> Dictionary:
+	if not _is_finite(casting_sec) or casting_sec <= 0.0 \
+			or not _is_finite(hooked_sec) or hooked_sec <= 0.0 \
+			or not _is_finite(reeling_sec) or reeling_sec <= 0.0:
+		_append_log("configure_stage_durations", STATE_NAMES[_state], STATE_NAMES[_state], ERROR_BAD_DURATION, _current_event_id, {})
+		return {"ok": false, "code": ERROR_BAD_DURATION}
+	if _state != State.IDLE:
+		_append_log("configure_stage_durations", STATE_NAMES[_state], STATE_NAMES[_state], ERROR_BAD_TRANSITION, _current_event_id, {})
+		return {"ok": false, "code": ERROR_BAD_TRANSITION}
+	_casting_sec = casting_sec
+	_hooked_sec = hooked_sec
+	_reeling_sec = reeling_sec
+	_append_log("configure_stage_durations", "IDLE", "IDLE", "", _current_event_id,
+			{"casting_sec": casting_sec, "hooked_sec": hooked_sec, "reeling_sec": reeling_sec})
+	return {"ok": true, "code": ""}
 
 
 func get_state() -> int:
@@ -326,13 +392,13 @@ static func state_name(state: int) -> String:
 func _stage_duration() -> float:
 	match _state:
 		State.CASTING:
-			return CASTING_SEC
+			return _casting_sec
 		State.WAITING:
 			return float(_wait_seconds)
 		State.HOOKED:
-			return HOOKED_SEC
+			return _hooked_sec
 		State.REELING:
-			return REELING_SEC
+			return _reeling_sec
 	return INF  # 理论不可达：调用点已限定计时态
 
 

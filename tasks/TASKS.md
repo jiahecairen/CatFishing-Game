@@ -199,3 +199,13 @@ Test result & evidence: tasks/evidence/FSM-001/ (会话归档+日志+diff)
 Risks & unresolved decisions: 见 tasks/evidence/FSM-001/phaseA.out 与 report.md
 Recorded by AUTO-001 at 2026-11-11T06:07:21+00:00
 ```
+
+```text
+ID: FSM-001
+Status: In Review（AUTO-001 自动通过测试/范围/批准检查，待人工验收）
+Owner: AUTO-001 scheduler + headless Qwen Flash (serial)
+Executed commands + exit codes: test_cmd=python3 -B tests/unit/run_fsm001_checks.py -> 0; attempt=1
+Test result & evidence: tasks/evidence/FSM-001/ (会话归档+日志+diff)
+Risks & unresolved decisions: 见 tasks/evidence/FSM-001/phaseA.out 与 report.md
+Recorded by AUTO-001 at 2026-11-11T07:10:17+00:00
+```

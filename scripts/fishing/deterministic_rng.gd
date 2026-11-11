@@ -9,7 +9,9 @@ extends RefCounted
 
 const MULTIPLIER := 48271
 const MODULUS := 2147483647  # 2^31 - 1（素数）
+const SNAPSHOT_VERSION := 1
 const ERROR_BAD_SEED := "BAD_SEED"
+const ERROR_BAD_SNAPSHOT := "BAD_SNAPSHOT"
 
 var _state: int = 1
 var _seed: int = 1
@@ -45,3 +47,35 @@ func next_int_inclusive(lo: int, hi: int) -> int:
 		return lo
 	var span := hi - lo + 1
 	return lo + int(next_int() % span)
+
+
+## 当前运行状态（1..MODULUS-1）。供测试断言「拒绝路径不消耗 RNG」：拒绝前后读数必相等。
+func get_state() -> int:
+	return _state
+
+
+## fail-closed 运行状态快照（review-followup #4 / review §3「可验证的状态读取/恢复」）。
+## 与 checkpoint 四字段解耦：这是 RNG 续跑载体，SAVE-001 须自行持久化（见 report 移交项）。
+func snapshot_state() -> Dictionary:
+	return {"version": SNAPSHOT_VERSION, "seed": _seed, "state": _state}
+
+
+## 从 snapshot_state() 结果恢复。任一非法（非字典 / 缺键 / 版本不符 / seed 或 state 越界 /
+## 非整数 / 有多余键）→ ok=false 且完全不改内部状态（绝不部分恢复、绝不静默重置）。
+func restore_state(snapshot: Variant) -> Dictionary:
+	if not (snapshot is Dictionary):
+		return {"ok": false, "error_code": ERROR_BAD_SNAPSHOT}
+	var snap: Dictionary = snapshot
+	if snap.size() != 3 or not snap.has("version") or not snap.has("seed") or not snap.has("state"):
+		return {"ok": false, "error_code": ERROR_BAD_SNAPSHOT}
+	if not (snap["version"] is int) or int(snap["version"]) != SNAPSHOT_VERSION:
+		return {"ok": false, "error_code": ERROR_BAD_SNAPSHOT}
+	var raw_seed: Variant = snap["seed"]
+	var raw_state: Variant = snap["state"]
+	if not (raw_seed is int) or not (raw_state is int):
+		return {"ok": false, "error_code": ERROR_BAD_SNAPSHOT}
+	if raw_seed < 1 or raw_seed >= MODULUS or raw_state < 1 or raw_state >= MODULUS:
+		return {"ok": false, "error_code": ERROR_BAD_SNAPSHOT}
+	_seed = int(raw_seed)
+	_state = int(raw_state)
+	return {"ok": true, "error_code": ""}
