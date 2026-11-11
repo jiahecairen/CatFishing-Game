@@ -132,14 +132,52 @@ func _test_mouse_passthrough_polygon_winding() -> bool:
 		Rect2(Vector2(170, 30), Vector2(40, 31)),
 	]
 	var applied := platform.apply_mouse_regions(window, regions)
-	var expected := PackedVector2Array([
-		Vector2(38, 30), Vector2(38, 152), Vector2(210, 152), Vector2(210, 30),
-	])
+	var polygon := window.mouse_passthrough_polygon
 	var correct := applied and not window.mouse_passthrough \
-			and window.mouse_passthrough_polygon == expected
+			and polygon.size() >= 4 \
+			and _polygon_signed_area(polygon) < 0.0 \
+			and Geometry2D.is_point_in_polygon(Vector2(100, 100), polygon) \
+			and Geometry2D.is_point_in_polygon(Vector2(190, 45), polygon) \
+			and Geometry2D.is_point_in_polygon(Vector2(176, 68), polygon) \
+			and not Geometry2D.is_point_in_polygon(Vector2(100, 65), polygon) \
+			and not Geometry2D.is_point_in_polygon(Vector2(206, 20), polygon)
+	var basket_regions := regions.duplicate()
+	basket_regions.append(Rect2(Vector2(6, 52), Vector2(208, 104)))
+	var basket_applied := platform.apply_mouse_regions(window, basket_regions)
+	var basket_polygon := window.mouse_passthrough_polygon
+	correct = correct and basket_applied and not window.mouse_passthrough \
+			and _polygon_signed_area(basket_polygon) < 0.0 \
+			and Geometry2D.is_point_in_polygon(Vector2(20, 70), basket_polygon) \
+			and Geometry2D.is_point_in_polygon(Vector2(100, 100), basket_polygon) \
+			and Geometry2D.is_point_in_polygon(Vector2(190, 45), basket_polygon) \
+			and not Geometry2D.is_point_in_polygon(Vector2(218, 20), basket_polygon)
 	window.free()
-	return _check(correct,
-			"U-region applies the interactive rectangle with the macOS-safe winding")
+	if not _check(correct,
+			"U-region keeps controls clickable while gaps and transparent corners pass through"):
+		return false
+
+	var diagonal_window := Window.new()
+	diagonal_window.size = Vector2i(100, 100)
+	var diagonal_applied := platform.apply_mouse_regions(diagonal_window, [
+		Rect2(Vector2(10, 10), Vector2(20, 20)),
+		Rect2(Vector2(50, 50), Vector2(20, 20)),
+	])
+	var diagonal_polygon := diagonal_window.mouse_passthrough_polygon
+	var diagonal_correct := diagonal_applied and not diagonal_window.mouse_passthrough \
+			and Geometry2D.is_point_in_polygon(Vector2(20, 20), diagonal_polygon) \
+			and Geometry2D.is_point_in_polygon(Vector2(60, 60), diagonal_polygon) \
+			and not Geometry2D.is_point_in_polygon(Vector2(40, 20), diagonal_polygon)
+	diagonal_window.free()
+	return _check(diagonal_correct, "U-region joins diagonal controls with a narrow bridge")
+
+
+func _polygon_signed_area(polygon: PackedVector2Array) -> float:
+	var twice_area := 0.0
+	for point_index in range(polygon.size()):
+		var current := polygon[point_index]
+		var next := polygon[(point_index + 1) % polygon.size()]
+		twice_area += current.x * next.y - next.x * current.y
+	return twice_area * 0.5
 
 
 func _test_click_vs_drag_policy() -> bool:
