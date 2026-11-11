@@ -37,7 +37,8 @@ const ERROR_BAD_DURATION := "BAD_DURATION"  # 非有限/非正的阶段时长（
 
 # 占位阶段时长（OPEN-004 已裁定：表现时长可配置且不改钓鱼等待/经济规则——
 # docs/REQUIREMENTS_CHANGELOG.md OPEN-004「已裁定最小实现」）。默认 1 s，可经
-# configure_stage_durations() 在 IDLE 时调整；**不新增 runtime_config 键**
+# initialize() 可通过可选 stage_durations 设置；configure_stage_durations() 仅在 IDLE 时调整。
+# **不新增 runtime_config 键**
 # （schema 固定 5 键、ConfigGate 逐键校验，扩键须用户批准），故不触碰 data/ 与 schema。
 const DEFAULT_STAGE_SEC := 1.0
 
@@ -66,6 +67,8 @@ var _log_seq := 0
 
 
 ## 合法启动或从 checkpoint 恢复。catalog/runtime 为 CFG-001 校验器返回信封；
+## stage_durations 可选提供 casting_sec/hooked_sec/reeling_sec（省略项默认 1 秒）；
+## 任一未知键、非数值、非有限或非正值均 BAD_DURATION，且不提交任何初始化状态。
 ## 先过 ConfigGate.can_start_economy，任一非法 → ok=false + "catalog:<CODE>"/"runtime:<CODE>"。
 ## recovered_checkpoint == {} 为全新启动；否则按 schema v1 恰 4 键 {state, event_id,
 ## wait_seconds, elapsed_effective_seconds} 恢复并交叉校验（followup #3）：
@@ -76,10 +79,26 @@ var _log_seq := 0
 ##   跨越瞬间即结转清零，越界即畸形）；
 ## - CASTING/HOOKED/REELING/SETTLEMENT：event_id 非空字符串、wait 必为 null、elapsed ≥ 0；
 ## 未知状态名/多余键/类型错 → 一律 BAD_CHECKPOINT，fail-closed 零副作用。
-func initialize(catalog: Dictionary, runtime: Dictionary, rng: DeterministicRng, clock: VirtualClock, recovered_checkpoint: Dictionary) -> Dictionary:
+func initialize(catalog: Dictionary, runtime: Dictionary, rng: DeterministicRng, clock: VirtualClock, recovered_checkpoint: Dictionary, stage_durations: Dictionary = {}) -> Dictionary:
 	# —— 先全部校验，后一次性提交：失败路径零副作用 ——
 	if rng == null or clock == null:
 		return _init_fail(ERROR_BAD_INJECTION)
+	# 只允许本 FSM 的三个表现阶段；缺省项保持 1 秒。先校验临时值，失败时不触碰实例状态。
+	var duration_values := {
+		"casting_sec": DEFAULT_STAGE_SEC,
+		"hooked_sec": DEFAULT_STAGE_SEC,
+		"reeling_sec": DEFAULT_STAGE_SEC,
+	}
+	for key in stage_durations:
+		if not duration_values.has(key):
+			return _init_fail(ERROR_BAD_DURATION)
+		var raw_duration: Variant = stage_durations[key]
+		if not _is_numeric(raw_duration):
+			return _init_fail(ERROR_BAD_DURATION)
+		var duration := float(raw_duration)
+		if not _is_finite(duration) or duration <= 0.0:
+			return _init_fail(ERROR_BAD_DURATION)
+		duration_values[key] = duration
 	if not ConfigGate.can_start_economy(catalog, runtime):
 		var reasons := ConfigGate.blocked_reasons(catalog, runtime)
 		var code := ";".join(reasons)
@@ -145,6 +164,9 @@ func initialize(catalog: Dictionary, runtime: Dictionary, rng: DeterministicRng,
 	_paused_from = -1
 	_wait_seconds = resume_wait
 	_stage_elapsed = resume_elapsed
+	_casting_sec = float(duration_values["casting_sec"])
+	_hooked_sec = float(duration_values["hooked_sec"])
+	_reeling_sec = float(duration_values["reeling_sec"])
 	_initialized = true
 	_append_log("initialize", STATE_NAMES[resume_state], STATE_NAMES[resume_state], "", _current_event_id, {})
 	return {"ok": true, "error_code": "", "state": STATE_NAMES[_state]}

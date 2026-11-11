@@ -662,6 +662,17 @@ func _f13() -> bool:
 		var probe: Dictionary = fsm.configure_stage_durations(bad[0], bad[1], bad[2])
 		if probe.get("ok") != false or probe.get("code") != "BAD_DURATION":
 			return _fail_ret("F13 duration must be finite positive: %s" % [str(bad)])
+	# 按已批准接口用 initialize() 可选字典配置；非法值、未知键、非有限值均 fail-closed。
+	var init_rng: DeterministicRng = RngScript.new()
+	if init_rng.set_seed(62).get("ok") != true:
+		return _fail_ret("F13 init-duration RNG setup")
+	var init_clock: VirtualClock = ClockScript.new()
+	var init_fsm: FishingStateMachine = FsmScript.new()
+	for bad_durations in [{"casting_sec": 0.0}, {"hooked_sec": NAN}, {"reeling_sec": INF}, {"unknown": 1.0}]:
+		var init_bad: Dictionary = init_fsm.initialize(_catalog, _runtime, init_rng, init_clock, {}, bad_durations)
+		if init_bad.get("ok") != false or init_bad.get("error_code") != "BAD_DURATION" \
+				or init_fsm.get_state() != FsmScript.State.IDLE:
+			return _fail_ret("F13 initialize stage_durations must reject invalid entries: %s" % [str(bad_durations)])
 	var e2: Array = fsm.tick_effective(0.5)
 	if e2.size() != 1 or e2[0]["to_state"] != "WAITING" or float(e2[0]["at_clock"]) != 1.0:
 		return _fail_ret("F13 rejections must not change default 1.0 s CASTING duration")
@@ -682,12 +693,10 @@ func _f13() -> bool:
 		return _fail_ret("F13 settle to IDLE")
 	# IDLE 中配置自定义时长 → 事件阈值按配置移动；等待 20–60 与经济完全不受影响。
 	# 用全新实例验证「可配置」不依赖运行史（结转只影响绝对时刻，不影响时长本身）。
-	var parts2 := _make(67)
+	var parts2 := _make(67, {"casting_sec": 2.0, "hooked_sec": 0.5, "reeling_sec": 0.25})
 	if parts2.is_empty():
 		return _fail_ret("F13 setup2")
 	var fsm2: FishingStateMachine = parts2[0]
-	if fsm2.configure_stage_durations(2.0, 0.5, 0.25).get("ok") != true:
-		return _fail_ret("F13 configure in IDLE must succeed")
 	var rc2: Dictionary = fsm2.request_cast(_empty_state())
 	if rc2.get("ok") != true:
 		return _fail_ret("F13 cast after configure")
@@ -712,13 +721,13 @@ func _f13() -> bool:
 # ---- 共享辅助 ----
 
 ## 新建合法启动的 (fsm, rng, clock)；失败返回空数组。
-func _make(seed_value: int) -> Array:
+func _make(seed_value: int, stage_durations: Dictionary = {}) -> Array:
 	var rng: DeterministicRng = RngScript.new()
 	var clock: VirtualClock = ClockScript.new()
 	if rng.set_seed(seed_value).get("ok") != true:
 		return []
 	var fsm: FishingStateMachine = FsmScript.new()
-	if fsm.initialize(_catalog, _runtime, rng, clock, {}).get("ok") != true:
+	if fsm.initialize(_catalog, _runtime, rng, clock, {}, stage_durations).get("ok") != true:
 		return []
 	return [fsm, rng, clock]
 

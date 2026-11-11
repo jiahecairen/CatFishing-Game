@@ -56,7 +56,7 @@ seed=11 千次完整抛竿：wait_seconds 全为 [20,60] 整数，min=20、max=6
 | 2 同一结算事件重试返回深拷贝但逐字段相同的候选 payload，不重复抽样 | F2：`cand2 == cand1` 且 RNG 不动；调用方改写 `cand3.weight_snapshot` 后内部 payload 不受污染（重放仍等于 cand1） | PASS |
 | 3 PAUSED 快照 schema 可表示、重启安全续跑；checkpoint 交叉校验、畸形拒绝；不扩 schema；SAVE-001 移交项记录 | 快照落暂停前态（F6：PAUSED 中快照==暂停前快照，且可被全新三件套恢复）；F9 12 例畸形矩阵全部 `BAD_CHECKPOINT` 且 FSM 留在未初始化 IDLE；schema 未动；移交项见 §6 R-2 | PASS |
 | 4 RNG fail-closed 状态读取/恢复；Clock 可从独立保存值恢复；恢复测试用**新** RNG+新 Clock | RNG/Clock `snapshot_state`/`restore_state`；F9 崩溃侧 `_sim_seed` 用全新 RNG/Clock restore 后与未中断对照组逐事件一致；F12 跨实例续跑一致 + 23 例反例拒绝且不改内部状态 | PASS |
-| 5 CASTING/HOOKED/REELING 时长可配置、验证有限正数、默认 1 s、不改配置/经济/schema | `configure_stage_durations()`；F13：默认精确 1.0 s、0/负/NaN/Inf → `BAD_DURATION` 不改默认、活动态禁改、自定义时长后阈值精确移动、等待仍 20–60 | PASS |
+| 5 CASTING/HOOKED/REELING 时长可配置、验证有限正数、默认 1 s、不改配置/经济/schema | `initialize(..., stage_durations={})` 可选键 `casting_sec`/`hooked_sec`/`reeling_sec`；F13 覆盖默认、完整自定义时长、0/负/NaN/Inf/未知键拒绝及既有 IDLE setter；新鲜隔离回归见 `review-stage-durations.log` | PASS |
 | 6 F4/F5 时间轴纳入候选鱼种；0.5/1/2 s 步长逐字段一致（时刻/事件 ID/等待/鱼种/候选快照） | K 行含 caught_at、species、下一 event ID、wait、base_price、catch_weight、rarity；F4 双跑逐值一致+异种子不同；F5 3600 s 内 436 条时间轴（Python 逐行复刻同一 LCG/结转逻辑独立复核该条数），0.5/1/2 s 三组逐值一致 | PASS |
 | 7 runner 隔离：临时副本+HOME 入临时目录+finally 清理+严格串行+标记校验+禁止主工程跑 Godot | 最终运行实测：`isolated project copy: /var/folders/.../run_fsm001__ye_sjx9/project`、`isolated HOME: .../home`、`cleaned isolated project and HOME`；主工程从未作为 `--path`/cwd | PASS |
 | 8 OPEN-004 表述更正 | 本报告 §6 R-1：以 `docs/REQUIREMENTS_CHANGELOG.md` 为准，OPEN-004 **已裁定**（表现时长可配置且不改等待/经济）；本轮已按其裁定实现可配置时长 | 已更正 |
@@ -82,7 +82,7 @@ seed=11 千次完整抛竿：wait_seconds 全为 [20,60] 整数，min=20、max=6
 
 ## 6. 遗留风险与移交项
 
-- **R-1（更正，followup #8）**：OPEN-004 为**已裁定**（`docs/REQUIREMENTS_CHANGELOG.md`：「已裁定最小实现：…表现时长可配置且不改钓鱼等待/经济规则」）。旧报告 R-1 误写「待人工裁定」，本报告更正；本轮以 `configure_stage_durations()` 落实可配置（默认 1 s，不新增配置键——runtime_config schema 固定 5 键，扩键须用户批准）。
+- **R-1（更正，followup #8）**：OPEN-004 为**已裁定**（`docs/REQUIREMENTS_CHANGELOG.md`：「已裁定最小实现：…表现时长可配置且不改钓鱼等待/经济规则」）。旧报告 R-1 误写「待人工裁定」，本报告更正；原返修提供 `configure_stage_durations()`，后续独立复核又按队列明确 brief 补上 `initialize(..., stage_durations={})` 可选参数（默认 1 s，不新增配置键——runtime_config schema 固定 5 键，扩键须用户批准）。复核记录与实际回归日志见 `review-api-followup.md` 和 `review-stage-durations.log`。
 - **R-2（开放，移交 SAVE-001）**：schema v1 `fishing_checkpoint` 仅 4 字段，不含 RNG 运行状态、Clock 读数与待结算候选。跨崩溃**逐事件重放**需 SAVE-001 在其批准范围内持久化 `DeterministicRng.snapshot_state()`、`VirtualClock.snapshot_state()` 与 pending candidate payload；FSM-001 只提供内存快照，未写任何文件。另：IDLE 态快照按 schema 要求 elapsed=0，崩溃恰发生于 IDLE 结转窗口时重启后事件绝对时刻最多偏移一个 tick 步长（序列/ID 仍确定）。
 - **R-3（开放，移交 ECO-001）**：catch_event_id 幂等键、FSM 侧 `AlreadyApplied` 与候选重放已就绪；ECO-001 落账时须复核同一 catch/sale ID 重试不重复入篮、不重复加币。
 - **R-4（开放）**：浮点 `>=` 阈值比较在二进制精确步长（0.5/1/2 s，实测逐值一致）下确定；非精确步长（如 0.1 s）理论存在一步抖动（wait 恒整数秒、ID 仍确定）。SIM/ECO 引入任意步长前须复核。
