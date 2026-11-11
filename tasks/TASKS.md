@@ -1,6 +1,6 @@
 # v0.1 原子开发工单 / Backlog
 
-**状态：AUDIT-001 = Review（只读审计已完成，待用户放行）；SPIKE-001 = In Progress（仅计划已批准，未写码）；其余工单 = Planned / 未执行。** 状态由 Harness 依据本机真实工程与用户批准更新，见文末「工单状态记录」与 `docs/DEV_LOG.md`。**严格串行**，只有一个本地 Flash。若前置测试失败，不得将依赖工单标记完成。
+**状态：SPIKE-001 系列 = Accepted（桌面 GUI 验收有记录，多显示器未测）；CORE-001 = Accepted；CFG-001 = Accepted；FSM-001 = Ready；其余状态以 `tools/auto/queue.json` 为准。** 逐票证据见下方工单记录与 `docs/DEV_LOG.md`。**严格串行**，只使用一个本地 Flash。若前置测试失败，不得将依赖工单标记完成。
 
 | ID | 标题 | 前置 | 主要交付 | 最小验收 |
 |---|---|---|---|---|
@@ -148,4 +148,30 @@ Executed commands + exit codes: test_cmd=python3 -B tests/unit/run_cfg001_checks
 Test result & evidence: tasks/evidence/CFG-001/ (会话归档+日志+diff)
 Risks & unresolved decisions: 见 tasks/evidence/CFG-001/phaseA.out 与 report.md
 Recorded by AUTO-001 at 2026-11-11T05:00:58+00:00
+```
+
+```text
+ID: CORE-001
+Status: Accepted（项目所有者委托 Codex 验收）
+Owner: Codex delegated reviewer
+Scope / Dependencies / Allowed files: SPIKE-001；project.godot, icon.svg(+合法导入旁车), scenes/**, scripts/**, tests/**。
+Interface & invariants: 最小正式 Godot 工程/模块；不改产品参数。
+Executed commands + exit codes: CORE smoke 既有真实运行=0；本轮隔离副本复跑 `python3 -B tests/unit/run_cfg001_checks.py`，step1 导入=0，step2 CFG=0，step3 CORE=0。
+Test result & evidence: `CORE001 SMOKE PASS`；完整票证据见 `tasks/evidence/CORE-001/`。
+Git diff / commit: `e807f15`；runner 安全门禁修复 `ba21ff0`；无范围外文件。
+Risks & unresolved decisions: GUI 桌面行为属于 SPIKE/UI 验收；本票 headless 入口通过。
+Owner approval: 2026-11-11 持续执行委托。
+```
+
+```text
+ID: CFG-001
+Status: Accepted（项目所有者委托 Codex 验收）
+Owner: Codex delegated reviewer
+Scope / Dependencies / Allowed files: CORE-001；data/**, scripts/config/**, tests/**。
+Interface & invariants: data 与 examples 值一致；20–60s、30 FPS、鱼种价格/权重未调整。
+Executed commands + exit codes: 隔离副本 `python3 -B tests/unit/run_cfg001_checks.py` -> 0；编辑器导入、CFG 测试、CORE 回归逐步退出码均为 0。
+Test result & evidence: `CFG001 RUNNER PASS`、`CFG001 CONFIG PASS`、`CORE001 SMOKE PASS`；`P4` 启动门禁反例测试通过。
+Git diff / commit: `1283e5e`, `1cc44a1`；审查记录见 `tasks/evidence/CFG-001/postcommit-review.md`。
+Risks & unresolved decisions: 篮容量 10 仍是候选初值，不作为已批准平衡结论。
+Owner approval: 2026-11-11 持续执行委托。
 ```

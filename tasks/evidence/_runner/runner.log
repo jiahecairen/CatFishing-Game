@@ -1,0 +1,70 @@
+[2026-11-10T18:56:27+00:00] model gate PASS: health ok; model listed
+[2026-11-10T18:56:27+00:00] launch headless session tag=phaseA
+[2026-11-10T19:04:32+00:00] session done tag=phaseA rc=0 archived=True
+[2026-11-10T19:04:32+00:00] SPIKE-001: plan 完成 → awaiting_approval（人工批准: 编辑 APPROVALS.md 后把 status 改为 exec_ready）
+[2026-11-10T19:04:32+00:00] 无可执行工单（held/awaiting_approval/in_review/blocked 均跳过）
+[2026-11-10T20:01:55+00:00] model gate PASS: health ok; model listed
+[2026-11-10T20:01:55+00:00] APPROVAL MISSING: SPIKE-001 无 Phase B 人工批准记录 → 拒绝启动任何写码会话
+[2026-11-10T20:15:07+00:00] model gate PASS: health ok; model listed
+[2026-11-10T20:15:07+00:00] approval verified for SPIKE-001 (ledger sha a2d3d2986457a406)
+[2026-11-10T20:15:07+00:00] launch headless session tag=phaseB-1
+[2026-11-10T20:39:45+00:00] session done tag=phaseB-1 rc=0 archived=True
+[2026-11-10T20:39:45+00:00] SPIKE-001 test attempt 1 exit=0
+[2026-11-10T20:39:45+00:00] SPIKE-001: 成功 → commit 1f01750
+ → in_review（不 push）
+[2026-11-10T20:39:45+00:00] 无可执行工单（held/awaiting_approval/in_review/blocked 均跳过）
+[2026-11-10T21:15:41+00:00] model gate PASS: health ok; model listed
+[2026-11-10T21:15:41+00:00] FROZEN: SPIKE-001-FIX-001: Phase A 前工作树已越界: [(' M', 'tools/auto/queue.json', '超出 allowed_files')]
+[2026-11-10T21:24:06+00:00] model gate PASS: health ok; model listed
+[2026-11-10T21:24:06+00:00] launch headless session tag=phaseA
+[2026-11-10T21:33:41+00:00] session done tag=phaseA rc=0 archived=True
+[2026-11-10T21:33:41+00:00] SPIKE-001-FIX-001: plan 完成 → awaiting_approval（人工批准: 编辑 APPROVALS.md 后把 status 改为 exec_ready）
+[2026-11-10T22:21:49+00:00] model gate PASS: health ok; model listed
+[2026-11-10T22:21:49+00:00] approval verified for SPIKE-001-FIX-001 (ledger sha 47f7ea87c62dd8e8)
+[2026-11-10T22:21:49+00:00] launch headless session tag=phaseB-1
+[2026-11-10T22:32:16+00:00] session done tag=phaseB-1 rc=0 archived=True
+[2026-11-10T22:32:17+00:00] SPIKE-001-FIX-001 test attempt 1 exit=0
+[2026-11-10T22:32:17+00:00] SPIKE-001-FIX-001: 成功 → commit 6729ca0
+ → in_review（不 push）
+[2026-11-10T23:05:55+00:00] model gate PASS: health ok; model listed
+[2026-11-10T23:05:55+00:00] launch headless session tag=phaseA
+[2026-11-10T23:17:54+00:00] session done tag=phaseA rc=0 archived=True
+[2026-11-10T23:17:54+00:00] SPIKE-001-FIX-002: plan 完成 → awaiting_approval（人工批准: 编辑 APPROVALS.md 后把 status 改为 exec_ready）
+[2026-11-10T23:56:04+00:00] model gate PASS: health ok; model listed
+[2026-11-10T23:56:04+00:00] approval verified for SPIKE-001-FIX-002 (ledger sha f8647a065691552d)
+[2026-11-10T23:56:04+00:00] launch headless session tag=phaseB-1
+[2026-11-11T00:11:48+00:00] session done tag=phaseB-1 rc=0 archived=True
+[2026-11-11T00:11:48+00:00] SPIKE-001-FIX-002 test attempt 1 exit=0
+[2026-11-11T00:11:48+00:00] SPIKE-001-FIX-002: 成功 → commit e4737c3
+ → in_review（不 push）
+[2026-11-11T00:58:56+00:00] model gate PASS: health ok; model listed
+[2026-11-11T00:58:56+00:00] launch headless session tag=phaseA
+[2026-11-11T01:09:37+00:00] session done tag=phaseA rc=0 archived=True
+[2026-11-11T01:09:37+00:00] CORE-001: plan 完成 → awaiting_approval（人工批准: 编辑 APPROVALS.md 后把 status 改为 exec_ready）
+[2026-11-11T02:30:14+00:00] model gate PASS: health ok; model listed
+[2026-11-11T02:30:14+00:00] approval verified for CORE-001 (ledger sha 1ca1706085a33609)
+[2026-11-11T02:30:14+00:00] launch headless session tag=phaseB-1
+[2026-11-11T02:38:04+00:00] session done tag=phaseB-1 rc=0 archived=True
+[2026-11-11T02:38:04+00:00] CORE-001 test attempt 1 exit=0
+[2026-11-11T02:38:04+00:00] CORE-001 attempt 1 失败 test_rc=0 session_rc=0 越界=[('??', 'icon.svg.import', '超出 allowed_files')]
+[2026-11-11T02:38:04+00:00] launch headless session tag=phaseB-2
+[2026-11-11T02:59:17+00:00] session done tag=phaseB-2 rc=0 archived=True
+[2026-11-11T02:59:17+00:00] FROZEN: CORE-001: Agent 报 BLOCKED: BLOCKED: scope 门禁在 attempt 2 必然判定 `M tools/auto/queue.json`（runner 自身弄脏的已跟踪状态文件，RUNNER_OWNED 豁免缺 tracked 分支）与 `?? icon.svg.import`（用户常驻 Godot 编辑器 PID 27116 分钟级自动重建）两项越界；两者均超出本票允许清单（tools/** 禁改）与禁止操作（禁 git commit / 禁终止用户进程），需人工按 report.md L-0/L-1 处置后重跑
+[2026-11-11T04:21:43+00:00] model gate PASS: health ok; model listed
+[2026-11-11T04:21:43+00:00] approval verified for CORE-001 (ledger sha 4104942e5ac8452d)
+[2026-11-11T04:21:43+00:00] launch headless session tag=phaseB-1
+[2026-11-11T04:27:41+00:00] session done tag=phaseB-1 rc=0 archived=True
+[2026-11-11T04:27:42+00:00] CORE-001 test attempt 1 exit=0
+[2026-11-11T04:27:43+00:00] CORE-001: 成功 → commit e807f15
+ → in_review（不 push）
+[2026-11-11T04:32:59+00:00] model gate PASS: health ok; model listed
+[2026-11-11T04:32:59+00:00] launch headless session tag=phaseA
+[2026-11-11T04:40:07+00:00] session done tag=phaseA rc=0 archived=True
+[2026-11-11T04:40:07+00:00] CFG-001: plan 完成 → awaiting_approval（人工批准: 编辑 APPROVALS.md 后把 status 改为 exec_ready）
+[2026-11-11T04:44:20+00:00] model gate PASS: health ok; model listed
+[2026-11-11T04:44:20+00:00] approval verified for CFG-001 (ledger sha 573ffd3841de4ab3)
+[2026-11-11T04:44:20+00:00] launch headless session tag=phaseB-1
+[2026-11-11T05:00:56+00:00] session done tag=phaseB-1 rc=0 archived=True
+[2026-11-11T05:00:58+00:00] CFG-001 test attempt 1 exit=0
+[2026-11-11T05:00:58+00:00] CFG-001: 成功 → commit 1283e5e
+ → in_review（不 push）

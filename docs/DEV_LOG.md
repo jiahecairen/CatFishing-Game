@@ -106,3 +106,12 @@ B/60 > B/30 > A/60 > A/30
 结论：
 桌面透明窗口的核心可行性验证通过。
 未测试项不得记录为 PASS，应在后续开发及发布验收中继续验证。
+
+
+## 2026-11-11 — CORE/CFG delegated acceptance and FSM resume
+
+- Revalidated current tree and local environment; Qwen Flash model ID is listed by the local llama.cpp dispatcher, Godot GUI remains untouched.
+- AUTO-001 synthetic regression T1–T13: all passed. CFG-001 full import/config/CORE wrapper on an isolated current-tree copy: all three Godot steps exit 0, required PASS markers present, no `SCRIPT ERROR`.
+- Accepted CORE-001 (`e807f15`) and CFG-001 (`1283e5e`, follow-up hardening `1cc44a1`) under the project owner's recorded delegation. Queue now records both `done`; FSM-001 is `ready` for Phase A. No ticket code was started in this state transition.
+- Public GitHub `main` push of `1cc44a1` verified at remote SHA `1cc44a1566f3cf04286b57c0cfbc7caca41a0b49`.
+- Existing `tasks/evidence/_runner/runner.log` is retained and tracked for audit continuity; multi-display remains explicitly NOT RUN.
