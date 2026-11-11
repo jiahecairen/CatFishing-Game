@@ -62,3 +62,11 @@ date: 2026-11-11
 scope: icon.svg.import
 notes: 补充批准与既有允许的 icon.svg 配对的 Godot 导入元数据；项目所有者在当前持续执行授权中委托 Codex 审批，runner 仅在文件稳定且索引内容一致时提交。
 END-APPROVAL
+
+BEGIN-APPROVAL ID=CFG-001 PHASE=B
+APPROVED
+by: Codex
+date: 2026-11-11
+scope: data/**, scripts/config/**, tests/**
+notes: 项目所有者在持续执行授权中明确委托 Codex 审查并批准本地 v0.1。按 tasks/evidence/CFG-001/review.md 实施：不改任何配置平衡值；畸形 JSON 使用 JSON.new().parse(text) 并检查返回错误码；tests/unit/run_cfg001_checks.py 必须先执行 Godot 导入，再依次验证 CFG001 CONFIG PASS 和 CORE001 SMOKE PASS，任一 SCRIPT ERROR/FAIL/非零退出即失败。不得修改 examples/**、schemas/**、docs/**、tasks/APPROVALS.md 或范围外文件。
+END-APPROVAL

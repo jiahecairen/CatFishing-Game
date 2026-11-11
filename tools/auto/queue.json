@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-11T04:40:07+00:00",
+  "updated": "2026-11-11T04:44:02+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -53,7 +53,7 @@
     {
       "id": "CFG-001",
       "title": "3 鱼种 JSON + 配置校验",
-      "status": "awaiting_approval",
+      "status": "exec_ready",
       "deps": [
         "CORE-001"
       ],
@@ -62,9 +62,9 @@
         "scripts/config/**",
         "tests/**"
       ],
-      "test_cmd": "",
+      "test_cmd": "python3 -B tests/unit/run_cfg001_checks.py",
       "needs_human": false,
-      "brief": "见 tasks/TASKS.md。"
+      "brief": "按 tasks/evidence/CFG-001/plan.md 与 review.md 实施。必须新增 tests/unit/run_cfg001_checks.py（Python 标准库）：设置 HOME 到本票 evidence 内的临时目录；串行运行 Godot --headless --path <repo> --editor --quit、test_cfg001_config.gd、test_core001_smoke.gd；捕获输出并要求 CFG001 CONFIG PASS / CORE001 SMOKE PASS，拒绝 FAIL 标记、SCRIPT ERROR 和非零退出；全部成功才退出 0。畸形 JSON 用 JSON.new().parse(text) 检查 Error 返回码。仅允许 data/**、scripts/config/**、tests/**；配置值必须与 examples 逐值一致。"
     },
     {
       "id": "FSM-001",
