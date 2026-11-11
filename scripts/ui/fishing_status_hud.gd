@@ -1,3 +1,4 @@
+class_name FishingStatusHUD
 extends Control
 # UI-001：紧凑钓鱼状态 HUD（plan §2/§4.2/§4.4）。金币、鱼篓 n/capacity、FSM 状态名一律
 # 只读自 FishingSession.status_view()（权威 = GameState），HUD 不记账、不计时。
@@ -7,17 +8,20 @@ extends Control
 # 调用零视觉差异，R-U8 依赖此性质）。
 
 signal retry_requested()
+signal hide_requested()
 
 var _gold_label: Label
 var _basket_label: Label
 var _state_label: Label
 var _banner: Label
 var _retry_button: Button
+var _hide_button: Button
 var _last_text := ""
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE  # HUD 只读展示，不拦截桌面点击
+	_add_status_plate()
 	_gold_label = _make_label(Vector2(8, 2), "金币: 0")
 	_basket_label = _make_label(Vector2(8, 16), "鱼篓: 0/10")
 	_state_label = _make_label(Vector2(8, 30), "状态: -")
@@ -26,6 +30,9 @@ func _ready() -> void:
 	_banner.position = Vector2(8, 46)
 	_banner.size = Vector2(204, 14)
 	_banner.add_theme_color_override("font_color", Color(1.0, 0.45, 0.35))
+	_banner.add_theme_color_override("font_outline_color", Color(0.03, 0.04, 0.06, 0.95))
+	_banner.add_theme_constant_override("outline_size", 2)
+	_banner.add_theme_font_size_override("font_size", 10)
 	_banner.visible = false
 	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_banner)
@@ -37,6 +44,31 @@ func _ready() -> void:
 	_retry_button.visible = false
 	_retry_button.pressed.connect(_on_retry_pressed)
 	add_child(_retry_button)
+	_hide_button = Button.new()
+	_hide_button.name = "HideOverlayButton"
+	_hide_button.text = "隐藏"
+	_hide_button.position = Vector2(164, 26)
+	_hide_button.size = Vector2(38, 18)
+	_hide_button.add_theme_font_size_override("font_size", 9)
+	_hide_button.add_theme_color_override("font_color", Color("243447"))
+	_hide_button.pressed.connect(func(): hide_requested.emit())
+	add_child(_hide_button)
+
+
+func _add_status_plate() -> void:
+	var plate := Panel.new()
+	plate.name = "StatusPlate"
+	plate.position = Vector2(2, 0)
+	plate.size = Vector2(208, 48)
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.055, 0.085, 0.12, 0.9)
+	style.border_color = Color(0.34, 0.58, 0.64, 0.75)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(7)
+	plate.add_theme_stylebox_override("panel", style)
+	add_child(plate)
+	move_child(plate, 0)
 
 
 ## 只读渲染（不产生任何业务副作用）。
@@ -73,6 +105,9 @@ func _make_label(at: Vector2, text: String) -> Label:
 	label.size = Vector2(140, 14)
 	label.text = text
 	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_color_override("font_color", Color(0.96, 0.98, 1.0))
+	label.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.05, 0.96))
+	label.add_theme_constant_override("outline_size", 1)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(label)
 	return label
@@ -80,3 +115,9 @@ func _make_label(at: Vector2, text: String) -> Label:
 
 func _on_retry_pressed() -> void:
 	retry_requested.emit()
+
+
+func hide_button_rect() -> Rect2:
+	if not is_instance_valid(_hide_button):
+		return Rect2()
+	return _hide_button.get_global_rect()

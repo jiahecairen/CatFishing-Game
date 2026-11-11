@@ -83,11 +83,39 @@ def _load_json(relative_path):
         return json.load(handle)
 
 
+def _project_setting_values(section, key):
+    values = []
+    current_section = None
+    with open(os.path.join(ROOT, "project.godot"), "r", encoding="utf-8") as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line or line.startswith(";"):
+                continue
+            if line.startswith("[") and line.endswith("]"):
+                current_section = line[1:-1]
+                continue
+            if current_section != section:
+                continue
+            setting_key, separator, value = line.partition("=")
+            if separator and setting_key.strip() == key:
+                values.append(value.split(";", 1)[0].strip().lower())
+    return values
+
+
 def _preflight():
     problems = []
     for relative_path in DELIVERABLES:
         if not os.path.isfile(os.path.join(ROOT, relative_path)):
             problems.append("missing deliverable: " + relative_path)
+
+    try:
+        transparency_setting = _project_setting_values(
+            "display", "window/per_pixel_transparency/allowed")
+        if transparency_setting != ["true"]:
+            problems.append(
+                "project value-lock: display/window/per_pixel_transparency/allowed must occur once and be true")
+    except OSError as exc:
+        problems.append("project value-lock unreadable: " + repr(exc))
 
     for name in ("fish_species.json", "runtime_config.json"):
         try:

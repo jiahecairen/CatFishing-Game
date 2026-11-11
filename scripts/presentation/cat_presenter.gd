@@ -1,4 +1,18 @@
 class_name CatPresenter
 extends RefCounted
-# UI-001 实现：临时猫/船占位 sprite 的可视化呈现，整数像素缩放与锚点一致（AGENTS.md §4）。
-# 可视化与业务拆分：金额/鱼篓权威数据只在 GameState，Presenter 不另立账本。本票仅骨架。
+# Creates the procedural placeholder and reports its interactive rectangle. It owns no game state.
+
+const CatVisualScript := preload("res://scripts/ui/cat_boat_visual.gd")
+const CAT_POSITION := Vector2(38, 76)
+
+
+func create_visual(parent: Control) -> CatBoatVisual:
+	var visual: CatBoatVisual = CatVisualScript.new()
+	visual.name = "CatBoat"
+	visual.position = CAT_POSITION
+	parent.add_child(visual)
+	return visual
+
+
+func interaction_rect(visual: Control) -> Rect2:
+	return visual.get_global_rect() if is_instance_valid(visual) else Rect2()

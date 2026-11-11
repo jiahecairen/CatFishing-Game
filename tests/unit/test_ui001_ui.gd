@@ -1,6 +1,9 @@
 extends SceneTree
 # UI-001 headless integration checks for FishingSession. All save IO uses explicit temporary dirs.
 const SessionScript := preload("res://scripts/ui/fishing_session.gd")
+const BasketMenuScript := preload("res://scripts/ui/basket_menu.gd")
+const HudScript := preload("res://scripts/ui/fishing_status_hud.gd")
+const ControllerScript := preload("res://scripts/core/game_controller.gd")
 const SAVE_NAME := "game_state.json"
 const UTC := "2026-11-11T00:00:00Z"
 
@@ -9,7 +12,13 @@ var _dir_seq := 0
 
 
 func _initialize() -> void:
-	for step in [_test_boot_fail_closed, _test_catch_and_crash_recovery, _test_sales_and_price_snapshot,
+	if not _check(ProjectSettings.get_setting("display/window/per_pixel_transparency/allowed", false) == true,
+			"UI transparency must allow per-pixel alpha"):
+		return
+	await process_frame
+	for step in [_test_basket_selection_survives_new_catch, _test_hide_control_and_reactivation,
+			_test_boot_fail_closed,
+			_test_catch_and_crash_recovery, _test_sales_and_price_snapshot,
 			_test_save_failure_retry, _test_full_basket_and_fps, _test_hide_and_window_checkpoint]:
 		if not step.call():
 			_cleanup_dirs()
@@ -17,6 +26,61 @@ func _initialize() -> void:
 	_cleanup_dirs()
 	print("UI001 UI PASS")
 	quit(0)
+
+
+func _test_basket_selection_survives_new_catch() -> bool:
+	var menu = BasketMenuScript.new()
+	root.add_child(menu)
+	var names := {"river_carp": "江鲤", "silver_perch": "银斑鲈"}
+	var first_fish := {"instance_id": "selected-carp", "species_id": "river_carp", "sale_price_at_catch": 8}
+	var new_fish := {"instance_id": "new-perch", "species_id": "silver_perch", "sale_price_at_catch": 16}
+	menu.update_items([first_fish], names, false)
+	var checkbox := menu.get_node_or_null("Rows/FishScroll/FishRows/Fish_selected-carp") as CheckBox
+	if not _check(is_instance_valid(checkbox), "U-selection find first fish checkbox"):
+		menu.free()
+		return false
+	checkbox.button_pressed = true
+	menu.update_items([first_fish, new_fish], names, false)
+	var selected := menu.selected_instance_ids()
+	var preserved := _check(selected == ["selected-carp"],
+			"U-selection retain selected fish when a new catch refreshes the basket")
+	menu.free()
+	return preserved
+
+
+func _test_hide_control_and_reactivation() -> bool:
+	var hud = HudScript.new()
+	root.add_child(hud)
+	var requested := [false]
+	hud.hide_requested.connect(func(): requested[0] = true)
+	var hide_button := hud.get_node_or_null("HideOverlayButton") as Button
+	if not _check(is_instance_valid(hide_button) and hud.hide_button_rect().size.x > 0.0,
+			"U-hide overlay control exists inside the interactive region"):
+		hud.free()
+		return false
+	hide_button.pressed.emit()
+	if not _check(requested[0], "U-hide overlay button emits a pause-and-hide request"):
+		hud.free()
+		return false
+
+	hud.free()
+	var policy_controller = ControllerScript.new()
+	var restores_hidden_window := policy_controller._should_restore_after_focus(
+			Node.NOTIFICATION_APPLICATION_FOCUS_IN, true, true, false)
+	var restores_window_focus := policy_controller._should_restore_after_focus(
+			Node.NOTIFICATION_WM_WINDOW_FOCUS_IN, true, false, false)
+	var waits_until_window_is_restored := not policy_controller._should_restore_after_focus(
+			Node.NOTIFICATION_WM_WINDOW_FOCUS_IN, true, true, false)
+	var ignores_hide_transition := not policy_controller._should_restore_after_focus(
+			Node.NOTIFICATION_WM_WINDOW_FOCUS_IN, true, false, true)
+	var ignores_focus_out := not policy_controller._should_restore_after_focus(
+			Node.NOTIFICATION_APPLICATION_FOCUS_OUT, true, false, false)
+	var keeps_visible_window := not policy_controller._should_restore_after_focus(
+			Node.NOTIFICATION_APPLICATION_FOCUS_IN, false, false, false)
+	policy_controller.free()
+	return _check(restores_hidden_window and restores_window_focus and waits_until_window_is_restored
+			and ignores_hide_transition and ignores_focus_out and keeps_visible_window,
+			"U-hide app focus restores minimized window; window focus waits for OS unminimize")
 
 
 func _test_boot_fail_closed() -> bool:
