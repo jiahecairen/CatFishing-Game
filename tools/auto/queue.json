@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-11T04:21:24+00:00",
+  "updated": "2026-11-11T04:27:43+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -31,7 +31,7 @@
     {
       "id": "CORE-001",
       "title": "最小 Godot 工程/模块及 headless 测试入口",
-      "status": "exec_ready",
+      "status": "in_review",
       "deps": [
         "SPIKE-001"
       ],
