@@ -26,6 +26,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
 
@@ -372,43 +373,103 @@ class Runner:
         if not t.get("test_cmd"):
             return 127  # 无测试命令一律视为失败，禁止静默通过
         command = t["test_cmd"]
-        import_command = None
         try:
             argv = shlex.split(command)
         except ValueError:
             argv = []
         smoke_script = "res://tests/unit/test_core001_smoke.gd"
-        if argv and os.path.basename(argv[0]).lower().startswith("godot"):
-            for i, arg in enumerate(argv[:-1]):
-                if arg == "--script" and argv[i + 1] == smoke_script:
-                    import_command = argv[:i] + argv[i + 2:] + ["--editor", "--quit"]
-                    break
+        is_core_smoke = (
+            argv and os.path.basename(argv[0]).lower().startswith("godot") and
+            any(argv[i] in ("--script", "-s") and argv[i + 1] == smoke_script
+                for i in range(len(argv) - 1))
+        )
+
+        temp_dir = None
+        cwd = self.root
+        env = None
+        test_command = command
+        import_command = None
+        if is_core_smoke:
+            temp_dir = tempfile.mkdtemp(prefix="auto001-core-smoke-")
+            project_copy = os.path.join(temp_dir, "project")
+
+            def copy_ignored(directory, names):
+                ignored = {name for name in names
+                           if name in (".git", ".godot", "__pycache__") or name.endswith(".pyc")}
+                if os.path.realpath(directory) == os.path.realpath(os.path.join(self.root, "tasks")):
+                    ignored.add("evidence")
+                return ignored
+
+            try:
+                shutil.copytree(self.root, project_copy, ignore=copy_ignored)
+                home = os.path.join(temp_dir, "home")
+                os.makedirs(home)
+                sensitive_markers = ("API_KEY", "ACCESS_KEY", "PRIVATE_KEY", "TOKEN",
+                                     "SECRET", "PASSWORD", "CREDENTIAL")
+                env = {key: value for key, value in os.environ.items()
+                       if not any(marker in key.upper() for marker in sensitive_markers)}
+                env["HOME"] = home
+                env["XDG_CONFIG_HOME"] = os.path.join(home, ".config")
+                env["XDG_CACHE_HOME"] = os.path.join(home, ".cache")
+                cwd = project_copy
+                test_command = self.with_godot_project_path(argv, project_copy)
+                for i, arg in enumerate(argv[:-1]):
+                    if arg in ("--script", "-s") and argv[i + 1] == smoke_script:
+                        import_command = self.with_godot_project_path(
+                            argv[:i] + argv[i + 2:] + ["--editor", "--quit"], project_copy)
+                        break
+            except OSError as exc:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                self.log(f"{t['id']} test attempt {attempt} isolated project copy failed: {exc}")
+                with open(os.path.join(ev, f"test-{attempt}.log"), "w", encoding="utf-8") as f:
+                    f.write(f"ISOLATED_COPY_FAIL={exc}\nEXIT=1\n")
+                return 1
 
         chunks = []
-        if import_command:
-            imported = subprocess.run(import_command, cwd=self.root, capture_output=True, text=True)
-            import_output = imported.stdout + "\n---STDERR---\n" + imported.stderr
-            chunks.append("=== GODOT IMPORT PREFLIGHT ===\n" + import_output +
-                          f"\nIMPORT_EXIT={imported.returncode}\n")
-            if imported.returncode != 0 or self.has_script_error(import_output):
-                with open(os.path.join(ev, f"test-{attempt}.log"), "w", encoding="utf-8") as f:
-                    f.write("\n".join(chunks) + f"\nEXIT={imported.returncode or 1}\n")
-                self.log(f"{t['id']} test attempt {attempt} import preflight failed")
-                return imported.returncode or 1
+        try:
+            if import_command:
+                imported = subprocess.run(import_command, cwd=cwd, env=env,
+                                          capture_output=True, text=True)
+                import_output = imported.stdout + "\n---STDERR---\n" + imported.stderr
+                chunks.append("=== GODOT IMPORT PREFLIGHT ===\n" + import_output +
+                              f"\nIMPORT_EXIT={imported.returncode}\n")
+                if imported.returncode != 0 or self.has_script_error(import_output):
+                    effective_rc = imported.returncode or 1
+                    with open(os.path.join(ev, f"test-{attempt}.log"), "w", encoding="utf-8") as f:
+                        f.write("\n".join(chunks) + f"\nEXIT={effective_rc}\n")
+                    self.log(f"{t['id']} test attempt {attempt} import preflight failed")
+                    return effective_rc
 
-        p = subprocess.run(command, shell=True, cwd=self.root, capture_output=True, text=True)
-        test_output = p.stdout + "\n---STDERR---\n" + p.stderr
-        chunks.append("=== TEST ===\n" + test_output)
-        effective_rc = p.returncode
-        if import_command and (
-                "CORE001 SMOKE PASS" not in p.stdout or
-                "CORE001 SMOKE FAIL" in p.stdout or
-                self.has_script_error(test_output)):
-            effective_rc = effective_rc or 1
-        with open(os.path.join(ev, f"test-{attempt}.log"), "w", encoding="utf-8") as f:
-            f.write("\n".join(chunks) + f"\nEXIT={effective_rc}\n")
-        self.log(f"{t['id']} test attempt {attempt} exit={effective_rc}")
-        return effective_rc
+            p = subprocess.run(test_command, shell=not isinstance(test_command, list),
+                               cwd=cwd, env=env, capture_output=True, text=True)
+            test_output = p.stdout + "\n---STDERR---\n" + p.stderr
+            chunks.append("=== TEST ===\n" + test_output)
+            effective_rc = p.returncode
+            if is_core_smoke and (
+                    "CORE001 SMOKE PASS" not in p.stdout or
+                    "CORE001 SMOKE FAIL" in p.stdout or
+                    self.has_script_error(test_output)):
+                effective_rc = effective_rc or 1
+            with open(os.path.join(ev, f"test-{attempt}.log"), "w", encoding="utf-8") as f:
+                f.write("\n".join(chunks) + f"\nEXIT={effective_rc}\n")
+            self.log(f"{t['id']} test attempt {attempt} exit={effective_rc}")
+            return effective_rc
+        finally:
+            if temp_dir:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+
+    @staticmethod
+    def with_godot_project_path(argv, project_root):
+        command = list(argv)
+        for index, arg in enumerate(command[1:], start=1):
+            if arg == "--path" and index + 1 < len(command):
+                command[index + 1] = project_root
+                return command
+            if arg.startswith("--path="):
+                command[index] = "--path=" + project_root
+                return command
+        command[1:1] = ["--path", project_root]
+        return command
 
     @staticmethod
     def has_script_error(output):

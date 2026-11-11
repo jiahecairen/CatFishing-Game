@@ -219,6 +219,11 @@ def run(_a):
 
     # ---- T10 CORE 冒烟测试必须先导入、输出 PASS 且无 SCRIPT ERROR
     root = make_sim("t10-smoke-contract", "noop")
+    with open(os.path.join(root, "project.godot"), "w") as f:
+        f.write("config_version=5\n")
+    os.makedirs(os.path.join(root, ".godot"), exist_ok=True)
+    with open(os.path.join(root, ".godot", "must_not_copy"), "w") as f:
+        f.write("editor cache\n")
     qpath = write_queue(root, [ticket()])
     R = mk_runner(r, root, qpath, write_approvals(root))
     ev = os.path.join(root, "tasks/evidence/SIM-T-01")
@@ -226,27 +231,63 @@ def run(_a):
     smoke_ticket = ticket(test_cmd=("/Applications/Godot.app/Contents/MacOS/Godot --headless "
                                     f"--path {root} --script res://tests/unit/test_core001_smoke.gd"))
     calls = []
-    fake_result = {"stdout": "CORE001 SMOKE PASS\\n", "stderr": ""}
+    copy_observation = {}
+    fake_result = {"stdout": "CORE001 SMOKE PASS\n", "stderr": ""}
     fake_import_result = {"stdout": "Godot import complete\\n", "stderr": ""}
     original_run = subprocess.run
+    secret_env_name = "AUTO001_SELFTEST_API_KEY"
+    had_secret_env = secret_env_name in os.environ
+    previous_secret_env = os.environ.get(secret_env_name)
+
+    def path_arg(call):
+        cmd = call[1]
+        for i, arg in enumerate(cmd[:-1]):
+            if arg == "--path":
+                return cmd[i + 1]
+        return next((arg.split("=", 1)[1] for arg in cmd if arg.startswith("--path=")), None)
 
     def fake_run(command, **kwargs):
-        if isinstance(command, list):
-            calls.append(("import", command))
+        if isinstance(command, list) and "--editor" in command:
+            calls.append(("import", command, kwargs))
+            project_path = path_arg(calls[-1])
+            copy_observation.update({
+                "path": bool(project_path and project_path != root and os.path.isdir(project_path)),
+                "project_file": bool(project_path and os.path.isfile(os.path.join(project_path, "project.godot"))),
+                "git_excluded": bool(project_path and not os.path.exists(os.path.join(project_path, ".git"))),
+                "godot_cache_excluded": bool(project_path and not os.path.exists(os.path.join(project_path, ".godot"))),
+                "evidence_excluded": bool(project_path and not os.path.exists(os.path.join(project_path, "tasks", "evidence"))),
+            })
             return subprocess.CompletedProcess(command, 0, fake_import_result["stdout"], fake_import_result["stderr"])
-        calls.append(("test", command))
+        calls.append(("test", command, kwargs))
         return subprocess.CompletedProcess(command, 0, fake_result["stdout"], fake_result["stderr"])
 
     try:
+        os.environ[secret_env_name] = "selftest sentinel"
         subprocess.run = fake_run
         rc = R.run_test(smoke_ticket, ev, 1)
-        first = calls[0][1] if calls and calls[0][0] == "import" else []
-        check("T10a CORE 冒烟先跑 Godot editor 导入", rc == 0 and
-              "--editor" in first and "--quit" in first and smoke_ticket["test_cmd"] in calls[-1][1])
+        import_call = next((call for call in calls if call[0] == "import"), None)
+        test_call = next((call for call in calls if call[0] == "test"), None)
+        isolated_path = path_arg(import_call) if import_call else None
+        copy_checks = dict(copy_observation)
+        copy_ok = all(copy_checks.values())
+        env_import = import_call[2].get("env", {}) if import_call else {}
+        env_test = test_call[2].get("env", {}) if test_call else {}
+        isolated_env = bool(import_call and test_call and
+                            import_call[2].get("cwd") == isolated_path and
+                            test_call[2].get("cwd") == isolated_path and
+                            env_import.get("HOME", "") != os.path.expanduser("~") and
+                            secret_env_name not in env_import and
+                            env_import == env_test)
+        check("T10a CORE 先在隔离副本导入，再执行 smoke", rc == 0 and
+              import_call is not None and test_call is not None and
+              "--editor" in import_call[1] and "--quit" in import_call[1] and
+              path_arg(test_call) == isolated_path and copy_ok and isolated_env,
+              f"rc={rc}; copy_checks={copy_checks}; isolated_env={isolated_env}")
+        check("T10a2 CORE 测试结束后删除临时副本", bool(isolated_path) and not os.path.exists(isolated_path))
         fake_result["stdout"] = "Godot Engine started but script did not run\\n"
         rc_missing = R.run_test(smoke_ticket, ev, 2)
         check("T10b 缺少 CORE001 SMOKE PASS 即失败", rc_missing != 0)
-        fake_result["stdout"] = "CORE001 SMOKE PASS\\n"
+        fake_result["stdout"] = "CORE001 SMOKE PASS\n"
         fake_result["stderr"] = "SCRIPT ERROR: parse failed\\n"
         rc_script_error = R.run_test(smoke_ticket, ev, 3)
         check("T10c 有 SCRIPT ERROR 即失败，即使退出码为零", rc_script_error != 0)
@@ -257,6 +298,10 @@ def run(_a):
               len(calls) == 1 and calls[0][0] == "import")
     finally:
         subprocess.run = original_run
+        if had_secret_env:
+            os.environ[secret_env_name] = previous_secret_env
+        else:
+            os.environ.pop(secret_env_name, None)
 
     # ---- T11 自动提交只提交白名单路径，保留预先暂存的越界文件
     root = make_sim("t11-commit-whitelist", "noop")
