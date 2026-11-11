@@ -87,3 +87,12 @@ date: 2026-11-11
 scope: scripts/economy/**, tests/**
 notes: 项目所有者在持续执行授权中委托 Codex 审查并批准本地 v0.1。仅按 tasks/evidence/ECO-001/plan.md 与 review.md 实施；强制满足重复实例 ID 去重、事务重试幂等与异参冲突、捕获价格快照、失败零副作用、金币溢出防护、持久化门只收深拷贝且仅 bool true 可发布、ledger snapshot/restore fail-closed，以及隔离副本先导入再串行回归。不得改 GameState 源码、schema、配置数值、SaveService、UI 或文档；ECO 不写盘、不触碰 user://。
 END-APPROVAL
+
+
+BEGIN-APPROVAL ID=SAVE-001 PHASE=B
+APPROVED
+by: Codex
+date: 2026-11-11
+scope: scripts/save/**, schemas/game-save.schema.json, examples/save_v01.json, tests/**
+notes: 项目所有者在持续执行授权中委托 Codex 审查并批准本地 v0.1。仅按 tasks/evidence/SAVE-001/plan.md 与 review.md 实施；强制完整持久化 GameState、ECO ledger、RNG/Clock、checkpoint 和 pending candidate；pending candidate 必须固定合法 UTC 时间并与已验证鱼种快照一致；坏 main 不得覆盖唯一有效 .bak；故障注入含 legacy_copy。仅限 scope 列出的路径，临时副本先导入后串行运行 SAVE/ECO/CORE/CFG/FSM，PASS 恰一次、无 FAIL/SCRIPT ERROR、真实退出码为 0。不得改经济参数、GameState/FSM/ECO/UI/日志、审批账本或 SDD 范围。
+END-APPROVAL

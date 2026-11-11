@@ -97,3 +97,7 @@
 [2026-11-11T08:55:35+00:00] ECO-001 test attempt 1 exit=0
 [2026-11-11T08:55:35+00:00] ECO-001: 成功 → commit 2cf0ada
  → in_review（不 push）
+[2026-11-11T09:17:32+00:00] model gate PASS: health ok; model listed
+[2026-11-11T09:17:32+00:00] launch headless session tag=phaseA
+[2026-11-11T09:35:04+00:00] session done tag=phaseA rc=0 archived=True
+[2026-11-11T09:35:04+00:00] SAVE-001: plan 完成 → awaiting_approval（人工批准: 编辑 APPROVALS.md 后把 status 改为 exec_ready）
