@@ -122,3 +122,11 @@ B/60 > B/30 > A/60 > A/30
 - Local Qwen Flash Phase A completed with exit 0; plan is in `tasks/evidence/FSM-001/plan.md`.
 - Independent review required: current GameState passed into cast gating; exact threshold/backlog semantics; deterministic RNG and idempotent candidate restoration; malformed checkpoint fail-closed; Godot tests run only in an isolated temporary project copy because the main GUI editor remains open.
 - Phase B approved under the explicit owner delegation; approval and exact test command are committed in the FSM progress commit.
+
+## 2026-11-11 — ECO-001 review and acceptance
+
+- Rechecked the economy implementation and review fixes; fail-closed reinitialization, the signed-64-bit float boundary, and unique PASS-marker enforcement each have regression coverage.
+- `python3 -B tests/unit/run_eco001_checks.py` passed in an isolated project copy: import, ECO, CORE, CFG, FSM all exit 0 with required markers and no `SCRIPT ERROR`.
+- `python3 -B tools/auto/runner.py selftest` passed 40/40, including tracked-queue tamper protection, icon import ownership, import-before-smoke, exact whitelist commit, and concurrent import freeze behavior.
+- Accepted ECO-001 under the project owner's recorded delegation. Review fix commit: `29032fd`; detailed evidence: `tasks/evidence/ECO-001/acceptance.md`.
+- No active global freeze was changed. The runner log and queue state are included in this acceptance checkpoint so the tracked worktree state is preserved.

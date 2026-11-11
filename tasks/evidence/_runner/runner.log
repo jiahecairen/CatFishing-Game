@@ -90,3 +90,10 @@
 [2026-11-11T07:28:26+00:00] launch headless session tag=phaseA
 [2026-11-11T07:39:45+00:00] session done tag=phaseA rc=0 archived=True
 [2026-11-11T07:39:45+00:00] ECO-001: plan 完成 → awaiting_approval（人工批准: 编辑 APPROVALS.md 后把 status 改为 exec_ready）
+[2026-11-11T07:59:39+00:00] model gate PASS: health ok; model listed
+[2026-11-11T07:59:39+00:00] approval verified for ECO-001 (ledger sha 9790076d37a03912)
+[2026-11-11T07:59:39+00:00] launch headless session tag=phaseB-1
+[2026-11-11T08:55:33+00:00] session done tag=phaseB-1 rc=0 archived=True
+[2026-11-11T08:55:35+00:00] ECO-001 test attempt 1 exit=0
+[2026-11-11T08:55:35+00:00] ECO-001: 成功 → commit 2cf0ada
+ → in_review（不 push）

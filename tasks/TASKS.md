@@ -232,3 +232,16 @@ Test result & evidence: tasks/evidence/ECO-001/ (会话归档+日志+diff)
 Risks & unresolved decisions: 见 tasks/evidence/ECO-001/phaseA.out 与 report.md
 Recorded by AUTO-001 at 2026-11-11T08:55:35+00:00
 ```
+
+```text
+ID: ECO-001
+Status: Accepted（项目所有者委托 Codex 独立验收）
+Owner: Codex delegated reviewer; Phase B implementation by single local Qwen session
+Scope / Dependencies / Allowed files: FSM-001 Accepted；scripts/economy/**、tests/**；审查证据 tasks/evidence/ECO-001/**。
+Interface & invariants: 唯一鱼实例、有限鱼篓、幂等 catch/sale、参数冲突识别、价格快照、金币溢出防护；持久化门仅在 bool true 后发布；ledger 恢复 fail-closed。
+Executed commands + exit codes: `python3 -B tests/unit/run_eco001_checks.py` -> 0（隔离导入/ECO/CORE/CFG/FSM 全过）；`python3 -B tools/auto/runner.py selftest` -> 0（40/40）；`git diff --check` -> 0。
+Test result & evidence: `tasks/evidence/ECO-001/report.md`、`review-followup.md`、`acceptance.md`。
+Git diff / commit: 实现 `2cf0ada`；独立复核修正 `29032fd`；验收与队列状态记录在当前提交。
+Risks & unresolved decisions: 实际原子存档、ledger+FSM checkpoint 持久化与故障注入由 SAVE-001 承接；UI/日志由后续工单实现。
+Owner approval: 项目所有者 2026-11-11 持续执行委托；本地 v0.1 逐票独立验收。
+```
