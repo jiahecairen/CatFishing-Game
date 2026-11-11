@@ -32,3 +32,7 @@ The project has the six planned display settings plus `display/window/per_pixel_
 ## Automated validation
 
 `python3 -B tests/unit/run_ui001_checks.py` passed after import-first validation. The runner reported exactly one PASS marker for UI-001, SAVE-001, ECO-001, FSM-001, CORE-001, and CFG-001, with zero exit codes and no `SCRIPT ERROR`.
+
+## Visual render check
+
+A subsequent GUI run from the same isolated project copy showed the compact status HUD, cat, and boat rendered over the editor canvas. The cropped capture is `macos-overlay-render.png`; it excludes the surrounding desktop. This confirms the CORE-001 placeholder-only/blank presentation is gone in the current UI build. It does not cover the remaining manual items G-UI-1, G-UI-2, G-UI-3, and G-UI-5 through G-UI-8.
