@@ -120,7 +120,7 @@
     {
       "id": "UI-001",
       "title": "临时素材 + 最小 UI/售鱼/拖动",
-      "status": "awaiting_approval",
+      "status": "exec_ready",
       "deps": [
         "SAVE-001",
         "SPIKE-001"
@@ -135,7 +135,7 @@
         "project.godot",
         "tests/**"
       ],
-      "test_cmd": "",
+      "test_cmd": "python3 -B tests/unit/run_ui001_checks.py",
       "needs_human": true,
       "brief": "Phase A plan reviewed against v0.1 docs and existing SPIKE/FSM/ECO/SAVE interfaces. Phase B scope: scenes/**, scripts/ui/**, scripts/core/game_controller.gd, scripts/platform/desktop_window.gd, scripts/platform/platform_adapter.gd, scripts/presentation/cat_presenter.gd, project.godot (only the six SPIKE-matching display keys if Mac GUI proves runtime transparency ineffective), and tests/**. Implement placeholder cat/boat, status HUD, basket selected/all sale, durable-commit-only UI, platform window click-through/drag/30 FPS visible and 60 FPS only during drag, hide/resume checkpointing, and visible save-error retry. Preserve fail-closed fresh-save detection and pending-candidate crash recovery; use non-identifying random sale IDs. No economy/FSM/save/config/GameState/schema/data/IO/tools/approval-ledger edits, no formal AI art, no LOG/SIM scope. Test only in isolated copy: import first, each Godot child requires exit 0, exactly one ticket PASS marker, no corresponding FAIL marker and no SCRIPT ERROR. needs_human=true for Mac GUI acceptance."
     },

@@ -96,3 +96,11 @@ date: 2026-11-11
 scope: scripts/save/**, schemas/game-save.schema.json, examples/save_v01.json, tests/**
 notes: 项目所有者在持续执行授权中委托 Codex 审查并批准本地 v0.1。仅按 tasks/evidence/SAVE-001/plan.md 与 review.md 实施；强制完整持久化 GameState、ECO ledger、RNG/Clock、checkpoint 和 pending candidate；pending candidate 必须固定合法 UTC 时间并与已验证鱼种快照一致；坏 main 不得覆盖唯一有效 .bak；故障注入含 legacy_copy。仅限 scope 列出的路径，临时副本先导入后串行运行 SAVE/ECO/CORE/CFG/FSM，PASS 恰一次、无 FAIL/SCRIPT ERROR、真实退出码为 0。不得改经济参数、GameState/FSM/ECO/UI/日志、审批账本或 SDD 范围。
 END-APPROVAL
+
+BEGIN-APPROVAL ID=UI-001 PHASE=B
+APPROVED
+by: Codex delegated reviewer
+date: 2026-11-11
+scope: scenes/**, scripts/ui/**, scripts/core/game_controller.gd, scripts/platform/desktop_window.gd, scripts/platform/platform_adapter.gd, scripts/presentation/cat_presenter.gd, project.godot, tests/**
+notes: 委托目标授权自动审批；计划独立审查通过，范围与隔离验收命令已核对；GUI验收保留人工证据。
+END-APPROVAL
