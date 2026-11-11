@@ -15,6 +15,7 @@
   T10 CORE smoke 先导入并要求 PASS、无 SCRIPT ERROR，导入错误也拒绝
   T11 自动 commit 只包含白名单路径，保留其他预暂存文件
   T12 Godot 并发改写导入旁车时拒绝 commit
+  T13 解冻日志记录委托执行者，不伪称人类操作
 """
 import importlib
 import json
@@ -301,6 +302,20 @@ def run(_a):
     race_rc = R.commit_success(qdata, ticket(allowed=("icon.svg",)), ev, 1, 0)
     check("T12 并发改写导入旁车时冻结且不 commit",
           race_rc == 66 and git_n_commits(root) == 1)
+
+    # ---- T13 解冻审计记录应区分委托执行者与直接人工命令
+    root = make_sim("t13-unfreeze-audit", "noop")
+    qpath = write_queue(root, [ticket()])
+    R = mk_runner(r, root, qpath, write_approvals(root))
+    qdata = R.q()
+    qdata["frozen"] = {"reason": "selftest simulated freeze"}
+    R.save_q(qdata)
+    unfreeze_rc = R.cmd_unfreeze("selftest delegated recovery")
+    q_after = R.q()
+    check("T13 解冻元数据如实记录 actor/原因",
+          unfreeze_rc == 0 and not q_after.get("frozen") and
+          q_after.get("unfrozen", {}).get("actor") == "Codex (delegated by project owner)" and
+          q_after.get("unfrozen", {}).get("reason") == "selftest delegated recovery")
 
     # ---- T2 批准解析
     root = make_sim("t2-approval", "noop")

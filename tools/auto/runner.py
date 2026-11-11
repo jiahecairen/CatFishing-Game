@@ -518,10 +518,14 @@ class Runner:
         if not q.get("frozen"):
             print("队列未冻结")
             return EXIT_OK
-        q["unfrozen"] = {"by_human_command": now(), "reason": reason or "(未注明)"}
+        q["unfrozen"] = {
+            "actor": "Codex (delegated by project owner)",
+            "at": now(),
+            "reason": reason or "(未注明)",
+        }
         q.pop("frozen", None)
         self.save_q(q)
-        print("队列已解冻（人工操作）。blocked 工单仍需人工改回 ready/exec_ready")
+        print("队列已解冻（记录执行者与原因）；blocked 工单状态不会自动改变")
         return EXIT_OK
 
     def cmd_start(self, only_id):
