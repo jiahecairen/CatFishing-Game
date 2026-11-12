@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-11T21:17:32+00:00",
+  "updated": "2026-11-12T02:27:23+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -120,7 +120,7 @@
     {
       "id": "UI-001",
       "title": "临时素材 + 最小 UI/售鱼/拖动",
-      "status": "blocked",
+      "status": "in_review",
       "deps": [
         "SAVE-001",
         "SPIKE-001"
@@ -138,9 +138,20 @@
       "test_cmd": "python3 -B tests/unit/run_ui001_checks.py",
       "needs_human": true,
       "brief": "Phase A plan reviewed against v0.1 docs and existing SPIKE/FSM/ECO/SAVE interfaces. Phase B scope: scenes/**, scripts/ui/**, scripts/core/game_controller.gd, scripts/platform/desktop_window.gd, scripts/platform/platform_adapter.gd, scripts/presentation/cat_presenter.gd, project.godot (only the six SPIKE-matching display keys if Mac GUI proves runtime transparency ineffective), and tests/**. Implement placeholder cat/boat, status HUD, basket selected/all sale, durable-commit-only UI, platform window click-through/drag/30 FPS visible and 60 FPS only during drag, hide/resume checkpointing, and visible save-error retry. Preserve fail-closed fresh-save detection and pending-candidate crash recovery; use non-identifying random sale IDs. No economy/FSM/save/config/GameState/schema/data/IO/tools/approval-ledger edits, no formal AI art, no LOG/SIM scope. Test only in isolated copy: import first, each Godot child requires exit 0, exactly one ticket PASS marker, no corresponding FAIL marker and no SCRIPT ERROR. needs_human=true for Mac GUI acceptance.",
-      "retries": 3,
-      "blocked_reason": "重试 2 次后仍失败；证据在 /Users/rain/DevGame/Fishing/tasks/evidence/UI-001/，未 commit 任何代码",
-      "blocked_at": "2026-11-11T15:42:41+00:00"
+      "retries": 4,
+      "blocked_at": "2026-11-11T15:42:41+00:00",
+      "recovery_history": [
+        {
+          "actor": "Codex delegated reviewer",
+          "at": "2026-11-12T02:27:22+00:00",
+          "from_status": "blocked",
+          "to_status": "in_review",
+          "reason": "复核已提交 UI 实现、隔离导入与脚本测试通过；仅恢复至人工验收阶段",
+          "previous_blocked_reason": "重试 2 次后仍失败；证据在 /Users/rain/DevGame/Fishing/tasks/evidence/UI-001/，未 commit 任何代码",
+          "test_attempt": 4,
+          "test_exit": 0
+        }
+      ]
     },
     {
       "id": "LOG-001",
