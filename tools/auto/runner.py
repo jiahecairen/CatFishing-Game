@@ -59,6 +59,7 @@ class Runner:
         self.log_dir = os.path.join(self.root, "tasks/evidence/_runner")
         self.lock = os.path.join(self.log_dir, "runner.lock")
         self.pause_flag = os.path.join(self.log_dir, "PAUSE")
+        self._baseline_changes = self.changed_state_snapshot()
 
     # ---------- 基础设施 ----------
     def log(self, msg):
@@ -196,6 +197,46 @@ class Runner:
             xy, path = line[:2], line[3:].strip().strip('"')
             files.append((xy, path))
         return files
+
+    def changed_state_snapshot(self):
+        files = self.changed_files()
+        if files is None:
+            return None
+        snapshot = {}
+        for xy, path in files:
+            if (self.ignored(path) or path == self.queue_relpath
+                    or path.startswith("tasks/evidence/_runner/")):
+                continue
+            snapshot[path] = (xy, self.file_fingerprint(os.path.join(self.root, path)))
+        return snapshot
+
+    def changes_since_start(self, files=None):
+        if self._baseline_changes is None:
+            return None, ["启动时无法读取 Git 工作树"]
+        if files is None:
+            files = self.changed_files()
+        if files is None:
+            return None, ["提交前无法读取 Git 工作树"]
+
+        current = {path: xy for xy, path in files}
+        conflicts = []
+        for path, (baseline_xy, baseline_hash) in self._baseline_changes.items():
+            current_hash = self.file_fingerprint(os.path.join(self.root, path))
+            if current.get(path) != baseline_xy or current_hash != baseline_hash:
+                conflicts.append(path)
+                continue
+            if (not path.startswith("tasks/evidence/")
+                    and path != "tasks/APPROVALS.md"):
+                conflicts.append(path + "（启动前已有的非证据改动）")
+
+        new_files = []
+        for xy, path in files:
+            if (path in self._baseline_changes or self.ignored(path)
+                    or path == self.queue_relpath
+                    or path.startswith("tasks/evidence/_runner/")):
+                continue
+            new_files.append((xy, path))
+        return new_files, conflicts
 
     @staticmethod
     def ignored(path):
@@ -477,6 +518,10 @@ class Runner:
         return re.search(r"(?im)^\s*SCRIPT ERROR:", output) is not None
 
     def commit_success(self, q, t, ev, attempt, trc):
+        _, baseline_conflicts = self.changes_since_start()
+        if baseline_conflicts:
+            self.block(q, t, f"提交前已有文件被会话改动或工作树启动前已有代码变更，拒绝混合提交: {baseline_conflicts}")
+            return EXIT_BLOCKED
         # 先记录 TASKS.md（Git 可追踪的状态变更），再一次性 commit
         rec = (
             f"\n```text\nID: {t['id']}\nStatus: In Review（AUTO-001 自动通过测试/范围/批准检查，待人工验收）\n"
@@ -489,7 +534,10 @@ class Runner:
         tasks_md = os.path.join(self.root, "tasks/TASKS.md")
         with open(tasks_md, "a", encoding="utf-8") as f:
             f.write(rec)
-        files = self.changed_files_all()
+        files, baseline_conflicts = self.changes_since_start()
+        if baseline_conflicts or files is None:
+            self.block(q, t, f"提交前已有文件被会话改动，拒绝混合提交: {baseline_conflicts}")
+            return EXIT_BLOCKED
         allowed = t.get("allowed_files", [])
         add = [p for _, p in files if p == "tasks/TASKS.md" or p.startswith(f"tasks/evidence/{t['id']}/")
                or self.allowed_icon_import(p, allowed)

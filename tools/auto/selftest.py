@@ -13,7 +13,7 @@
   T8 tracked/untracked queue 归属校验，tools/auto 其他文件仍受范围保护
   T9 仅允许随 icon.svg 生成的 icon.svg.import
   T10 CORE smoke 先导入并要求 PASS、无 SCRIPT ERROR，导入错误也拒绝
-  T11 自动 commit 只包含白名单路径，保留其他预暂存文件
+  T11 自动 commit 只包含本次白名单改动，保留其他预暂存和既有证据文件
   T12 Godot 并发改写导入旁车时拒绝 commit
   T13 解冻日志记录委托执行者，不伪称人类操作
 """
@@ -345,6 +345,28 @@ def run(_a):
           commit_rc == 0 and set(shown) == {"hello.py", "icon.svg", "icon.svg.import", "tasks/TASKS.md"}, str(shown))
     check("T11b 越界预暂存文件保留且未混入 commit", "evil.txt" not in shown and "evil.txt" in staged,
           f"commit={shown}; staged={staged}")
+
+    # ---- T11c 启动前已存在的未跟踪工单证据不得被本次提交带入
+    root = make_sim("t11c-preserve-existing-evidence", "noop")
+    qpath = write_queue(root, [ticket(allowed=("hello.py",))])
+    ev = os.path.join(root, "tasks/evidence/SIM-T-01")
+    os.makedirs(ev, exist_ok=True)
+    preexisting = os.path.join(ev, "user-session.jsonl.zst")
+    with open(preexisting, "wb") as f:
+        f.write(b"pre-existing user evidence\\n")
+    qdata = json.load(open(qpath))
+    R = mk_runner(r, root, qpath, write_approvals(root))
+    with open(os.path.join(root, "hello.py"), "w") as f:
+        f.write("def add(a, b): return a + b\\n")
+    rc = R.commit_success(qdata, ticket(allowed=("hello.py",)), ev, 1, 0)
+    shown = subprocess.run(["git", "-C", root, "show", "--format=", "--name-only", "HEAD"],
+                           check=True, capture_output=True, text=True).stdout.splitlines()
+    porcelain = subprocess.run(["git", "-C", root, "status", "--porcelain=v1", "--untracked-files=all"],
+                               check=True, capture_output=True, text=True).stdout
+    check("T11c 启动前未跟踪证据保留且不进入本次 commit",
+          rc == 0 and preexisting not in shown and
+          "tasks/evidence/SIM-T-01/user-session.jsonl.zst" in porcelain,
+          f"commit={shown}; status={porcelain.splitlines()}")
 
     # ---- T12 导入期间被 Godot 编辑器改写时拒绝自动提交
     root = make_sim("t12-import-race", "noop")

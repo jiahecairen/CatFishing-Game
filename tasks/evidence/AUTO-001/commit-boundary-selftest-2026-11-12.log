@@ -1,0 +1,84 @@
+PASS T1a 越界文件被识别
+PASS T1b APPROVALS.md 改动永远越界
+PASS T8a runner 更新 tracked queue 不触发越界
+PASS T8b 会话改写 tracked queue 必被拦截
+PASS T8c tools/auto 其他文件仍受范围门禁保护
+PASS T8d untracked queue 被会话改写也必拦截
+PASS T8e 初始队列指纹缺失时 tracked 删除仍被拦截
+PASS T9a icon.svg.import 随允许的 icon.svg 归属
+PASS T9b 其他 import 文件不因旁车规则获豁免
+[2026-11-12T02:16:24+00:00] SIM-T-01 test attempt 1 exit=0
+PASS T10a CORE 先在隔离副本导入，再执行 smoke — rc=0; copy_checks={'path': True, 'project_file': True, 'git_excluded': True, 'godot_cache_excluded': True, 'evidence_excluded': True}; isolated_env=True
+PASS T10a2 CORE 测试结束后删除临时副本
+[2026-11-12T02:16:24+00:00] SIM-T-01 test attempt 2 exit=1
+PASS T10b 缺少 CORE001 SMOKE PASS 即失败
+[2026-11-12T02:16:24+00:00] SIM-T-01 test attempt 3 exit=1
+PASS T10c 有 SCRIPT ERROR 即失败，即使退出码为零
+[2026-11-12T02:16:24+00:00] SIM-T-01 test attempt 4 import preflight failed
+PASS T10d 导入阶段脚本错误时不执行 smoke
+[2026-11-12T02:16:24+00:00] SIM-T-01: 成功 → commit 966a608
+ → in_review（不 push）
+PASS T11a 自动提交只含白名单及 icon 对应导入旁车 — ['hello.py', 'icon.svg', 'icon.svg.import', 'tasks/TASKS.md']
+PASS T11b 越界预暂存文件保留且未混入 commit — commit=['hello.py', 'icon.svg', 'icon.svg.import', 'tasks/TASKS.md']; staged=['evil.txt']
+[2026-11-12T02:16:24+00:00] SIM-T-01: 成功 → commit 018af79
+ → in_review（不 push）
+PASS T11c 启动前未跟踪证据保留且不进入本次 commit — commit=['hello.py', 'tasks/TASKS.md']; status=['?? tasks/APPROVALS.md', '?? tasks/evidence/SIM-T-01/user-session.jsonl.zst', '?? tasks/evidence/_runner/runner.log', '?? tools/auto/queue.json']
+[2026-11-12T02:16:24+00:00] FROZEN: SIM-T-01: Godot 编辑器并发改写导入元数据，拒绝提交: icon.svg.import
+PASS T12 并发改写导入旁车时冻结且不 commit
+队列已解冻（记录执行者与原因）；blocked 工单状态不会自动改变
+PASS T13 解冻元数据如实记录 actor/原因
+PASS T2a 示例占位不算批准
+PASS T2b 人工批准记录通过解析
+PASS T2c 错票号不通过
+[2026-11-12T02:16:24+00:00] model gate PASS: selftest stub
+[2026-11-12T02:16:24+00:00] APPROVAL MISSING: SIM-T-01 无 Phase B 人工批准记录 → 拒绝启动任何写码会话
+PASS T3a 无批准 exit 65 且不启动会话 — rc=65
+PASS T3b 零代码改动 — dirty=[]
+PASS T3c 工单仍为 exec_ready（未被自动批准）
+[2026-11-12T02:16:25+00:00] model gate FAIL: selftest model unavailable → 冻结，不启动任何会话
+PASS T4a 模型不可达 exit 60 — rc=60
+PASS T4b 队列被冻结
+PASS T4c 未发起任何会话
+[2026-11-12T02:16:25+00:00] model gate PASS: selftest stub
+[2026-11-12T02:16:25+00:00] approval verified for SIM-T-01 (ledger sha 975d21ea9a866226)
+[2026-11-12T02:16:25+00:00] launch headless session tag=phaseB-1
+[2026-11-12T02:16:27+00:00] session done tag=phaseB-1 rc=0 archived=False
+[2026-11-12T02:16:27+00:00] SIM-T-01 test attempt 1 exit=0
+[2026-11-12T02:16:27+00:00] SIM-T-01: 成功 → commit 1a44330
+ → in_review（不 push）
+PASS T5a 成功路径 exit 0 — rc=0
+PASS T5b 代码文件由会话写出
+PASS T5c 自动 commit 生成
+PASS T5d TASKS.md 含 AUTO-001 记录
+PASS T5e 状态 in_review
+PASS T5f 证据齐全(test/session-tag/out)
+[2026-11-12T02:16:27+00:00] model gate PASS: selftest stub
+[2026-11-12T02:16:27+00:00] approval verified for SIM-T-01 (ledger sha 975d21ea9a866226)
+[2026-11-12T02:16:27+00:00] launch headless session tag=phaseB-1
+[2026-11-12T02:16:29+00:00] session done tag=phaseB-1 rc=0 archived=False
+[2026-11-12T02:16:29+00:00] SIM-T-01 test attempt 1 exit=1
+[2026-11-12T02:16:29+00:00] SIM-T-01 attempt 1 失败 test_rc=1 session_rc=0 越界=[]
+[2026-11-12T02:16:29+00:00] launch headless session tag=phaseB-2
+[2026-11-12T02:16:31+00:00] session done tag=phaseB-2 rc=0 archived=False
+[2026-11-12T02:16:31+00:00] SIM-T-01 test attempt 2 exit=1
+[2026-11-12T02:16:31+00:00] SIM-T-01 attempt 2 失败 test_rc=1 session_rc=0 越界=[]
+[2026-11-12T02:16:31+00:00] launch headless session tag=phaseB-3
+[2026-11-12T02:16:33+00:00] session done tag=phaseB-3 rc=0 archived=False
+[2026-11-12T02:16:33+00:00] SIM-T-01 test attempt 3 exit=1
+[2026-11-12T02:16:33+00:00] SIM-T-01 attempt 3 失败 test_rc=1 session_rc=0 越界=[]
+[2026-11-12T02:16:33+00:00] FROZEN: SIM-T-01: 重试 2 次后仍失败；证据在 /private/var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/dsh-auto-001-selftest-ee2z87ez/t6-retry/tasks/evidence/SIM-T-01/，未 commit 任何代码
+PASS T6a 重试耗尽后 exit 66 — rc=66
+PASS T6b 共 3 次尝试(首跑+2 重试) — ['test-1.log', 'test-2.log', 'test-3.log']
+PASS T6c 无自动 commit 失败代码
+PASS T6d 队列冻结
+PASS T6e BLOCK_REPORT 与 diff 证据保留
+[2026-11-12T02:16:33+00:00] model gate PASS: selftest stub
+[2026-11-12T02:16:33+00:00] approval verified for SIM-T-01 (ledger sha 975d21ea9a866226)
+[2026-11-12T02:16:33+00:00] launch headless session tag=phaseB-1
+[2026-11-12T02:16:35+00:00] session done tag=phaseB-1 rc=0 archived=False
+[2026-11-12T02:16:35+00:00] FROZEN: SIM-T-01: APPROVALS.md 在会话期间被改动 — 疑似伪造批准
+PASS T7a 篡改账本 → Blocked+冻结 — rc=66
+PASS T7b 冻结原因含伪造
+PASS T7c 不 commit 任何内容
+
+ALL PASS — report: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/dsh-auto-001-selftest-ee2z87ez/report.txt
