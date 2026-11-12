@@ -121,3 +121,11 @@ date: 2026-11-12
 scope: scripts/io/event_log.gd, scripts/ui/fishing_session.gd, tests/**
 notes: 项目所有者持续执行授权并在当前目标中明确委托自动审批。已审查 tasks/evidence/LOG-001/plan.md 与第 9 节修订；日志限于 user://logs，字段白名单、UTC 日/字节轮换、跨重启序号恢复、严格清理匹配、fail-soft 事务接入与隔离导入测试均为强制条件。不改冻结的 v0.1 经济/存档/范围参数。
 END-APPROVAL
+
+BEGIN-APPROVAL ID=REL-001 PHASE=B
+APPROVED
+by: Codex delegated reviewer
+date: 2026-11-12
+scope: tests/**
+notes: 项目所有者持续执行授权并要求自动完成本地 v0.1。批准仅新增 tests/unit/run_rel001_checks.py 串行调用既有隔离回归器并校验已完成的 SIM-001 报告；不得改产品代码/参数。最终接受仍必须等真实可见 Mac 8 小时候选运行、GUI 证据与全部回归完成；队列冻结/暂停和审批账本保持有效。
+END-APPROVAL

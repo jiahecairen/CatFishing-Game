@@ -60,3 +60,9 @@
 - 未执行任何 git 写操作/提交；未读 `tasks/APPROVALS.md`；无子 Agent/后台任务；诊断用临时副本已全部删除。
 
 PHASE-B-DONE
+
+## Delegated reviewer follow-up — 2026-11-12
+
+Final review found that a full last sequence (`999999`) could previously advance to a seven-digit filename, which the exact cleanup matcher intentionally ignored. `scripts/io/event_log.gd` now fails closed at that boundary, and `test_log001_log.gd` has an L-4b regression that verifies the existing bytes remain unchanged and no malformed filename is created. `tasks/evidence/LOG-001/test-3.log` records the complete import-first LOG/UI/SAVE/CORE regression, all exit 0 with exact PASS markers and no `SCRIPT ERROR`.
+
+The runner made the original implementation commit `280ce3d`; the delegated review made `fd41f6b` for the boundary fix. Both are present on `origin/main`. The session report's earlier statement that the model made no Git write remains true for the model session; the scheduler committed its passing result automatically. LOG-001 is accepted under the owner's continuing delegation. The report's earlier GUI-pending note is superseded by the later UI-001 acceptance review.

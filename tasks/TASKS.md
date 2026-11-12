@@ -322,3 +322,33 @@ Test result & evidence: tasks/evidence/LOG-001/ (会话归档+日志+diff)
 Risks & unresolved decisions: 见 tasks/evidence/LOG-001/phaseA.out 与 report.md
 Recorded by AUTO-001 at 2026-11-12T03:52:34+00:00
 ```
+
+```text
+ID: UI-001
+Status: Accepted（项目所有者持续执行委托；Codex delegated reviewer 核对 G-UI-1…8 隔离 Mac 证据并完成验收）
+Owner: Codex delegated reviewer
+Executed commands + exit codes: test-final-2026-11-12.log -> UI/SAVE/ECO/FSM/CORE/CFG 均 exit 0、唯一 PASS、无 SCRIPT ERROR。
+Test result & evidence: tasks/evidence/UI-001/delegated-review-2026-11-12.md 与 acceptance-reconciliation-2026-11-12.md。
+Risks & unresolved decisions: Finder 覆盖层使用 Finder 与原生探针；全屏使用原生 AppKit 探针；生产存档未触碰。未改变 20–60 秒/30 FPS/容量 10。
+Recorded by Codex delegated reviewer at 2026-11-12.
+```
+
+```text
+ID: LOG-001
+Status: Accepted（项目所有者持续执行委托；Codex delegated reviewer 完成代码与回归审查）
+Owner: Codex delegated reviewer
+Executed commands + exit codes: python3 -B tests/unit/run_log001_checks.py -> 0；LOG/UI/SAVE/CORE 均 exit 0，精确 PASS，无 SCRIPT ERROR。
+Test result & evidence: tasks/evidence/LOG-001/delegated-review-2026-11-12.md、test-3.log；提交 280ce3d、fd41f6b 已推送。
+Risks & unresolved decisions: 六位序号耗尽时 fail-closed；UI 保存失败行为由已接受 UI-001 覆盖。
+Recorded by Codex delegated reviewer at 2026-11-12.
+```
+
+```text
+ID: REL-001
+Status: In Progress（全量聚合器已审查；真实可见 8 小时候选运行中，尚未最终验收）
+Owner: Codex delegated reviewer + AUTO-001 local validation
+Executed commands + exit codes: 6 个既有 runner 逐票 exit 0；新聚合器预检执行 exit 0。正常队列门将复跑聚合器。
+Test result & evidence: tasks/evidence/REL-001/plan.md、review.md、aggregate-prequeue-2026-11-12.log；候选运行开始 2026-11-12T04:02:26Z，动态日志与资源采样完成后再评估。
+Risks & unresolved decisions: 8 小时未完成前不得标记 v0.1 Accepted。
+Recorded by Codex delegated reviewer at 2026-11-12.
+```

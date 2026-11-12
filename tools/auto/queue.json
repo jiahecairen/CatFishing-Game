@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-12T02:58:07+00:00",
+  "updated": "2026-11-12T04:11:23+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -120,7 +120,7 @@
     {
       "id": "UI-001",
       "title": "临时素材 + 最小 UI/售鱼/拖动",
-      "status": "in_review",
+      "status": "done",
       "deps": [
         "SAVE-001",
         "SPIKE-001"
@@ -136,7 +136,7 @@
         "tests/**"
       ],
       "test_cmd": "python3 -B tests/unit/run_ui001_checks.py",
-      "needs_human": true,
+      "needs_human": false,
       "brief": "Phase A plan reviewed against v0.1 docs and existing SPIKE/FSM/ECO/SAVE interfaces. Phase B scope: scenes/**, scripts/ui/**, scripts/core/game_controller.gd, scripts/platform/desktop_window.gd, scripts/platform/platform_adapter.gd, scripts/presentation/cat_presenter.gd, project.godot (only the six SPIKE-matching display keys if Mac GUI proves runtime transparency ineffective), and tests/**. Implement placeholder cat/boat, status HUD, basket selected/all sale, durable-commit-only UI, platform window click-through/drag/30 FPS visible and 60 FPS only during drag, hide/resume checkpointing, and visible save-error retry. Preserve fail-closed fresh-save detection and pending-candidate crash recovery; use non-identifying random sale IDs. No economy/FSM/save/config/GameState/schema/data/IO/tools/approval-ledger edits, no formal AI art, no LOG/SIM scope. Test only in isolated copy: import first, each Godot child requires exit 0, exactly one ticket PASS marker, no corresponding FAIL marker and no SCRIPT ERROR. needs_human=true for Mac GUI acceptance.",
       "retries": 4,
       "blocked_at": "2026-11-11T15:42:41+00:00",
@@ -151,12 +151,22 @@
           "test_attempt": 4,
           "test_exit": 0
         }
+      ],
+      "acceptance_history": [
+        {
+          "actor": "Codex delegated reviewer",
+          "at": "2026-11-12T04:11:23+00:00",
+          "from_status": "in_review",
+          "to_status": "done",
+          "reason": "G-UI-1…8 isolated macOS acceptance evidence reconciled; delegated reviewer accepted UI-001.",
+          "evidence": "tasks/evidence/UI-001/delegated-review-2026-11-12.md"
+        }
       ]
     },
     {
       "id": "LOG-001",
       "title": "本地有限日志 + 错误提示",
-      "status": "exec_ready",
+      "status": "done",
       "deps": [
         "SAVE-001",
         "UI-001"
@@ -168,7 +178,18 @@
       ],
       "test_cmd": "python3 -B tests/unit/run_log001_checks.py",
       "needs_human": false,
-      "brief": "按 tasks/evidence/LOG-001/plan.md 与委托审查修订实施。实现本地 user://logs JSONL，UTC 日期+字节大小轮换、严格文件名清理、限量保留、输出字段白名单且时间戳由 logger 生成。接入成功/失败 catch、sale、save，以及 config_invalid/save_load_failed 安全事件；日志 IO 故障绝不改变经济事务、启动门、存档语义。复用既有非模态保存失败 HUD。仅允许 scripts/io/event_log.gd、scripts/ui/fishing_session.gd、tests/** 与 tasks/evidence/LOG-001/**。test_cmd 必须临时副本+隔离 HOME、Godot import 先行，逐命令检查 exit/PASS/FAIL/SCRIPT ERROR 并回归 LOG/UI/SAVE/CORE。"
+      "brief": "按 tasks/evidence/LOG-001/plan.md 与委托审查修订实施。实现本地 user://logs JSONL，UTC 日期+字节大小轮换、严格文件名清理、限量保留、输出字段白名单且时间戳由 logger 生成。接入成功/失败 catch、sale、save，以及 config_invalid/save_load_failed 安全事件；日志 IO 故障绝不改变经济事务、启动门、存档语义。复用既有非模态保存失败 HUD。仅允许 scripts/io/event_log.gd、scripts/ui/fishing_session.gd、tests/** 与 tasks/evidence/LOG-001/**。test_cmd 必须临时副本+隔离 HOME、Godot import 先行，逐命令检查 exit/PASS/FAIL/SCRIPT ERROR 并回归 LOG/UI/SAVE/CORE。",
+      "retries": 2,
+      "acceptance_history": [
+        {
+          "actor": "Codex delegated reviewer",
+          "at": "2026-11-12T04:11:23+00:00",
+          "from_status": "in_review",
+          "to_status": "done",
+          "reason": "Code review and import-first LOG/UI/SAVE/CORE regression passed; bounded sequence overflow fix verified.",
+          "evidence": "tasks/evidence/LOG-001/delegated-review-2026-11-12.md"
+        }
+      ]
     },
     {
       "id": "SIM-001",
@@ -191,7 +212,7 @@
     {
       "id": "REL-001",
       "title": "全量回归 + 8h 稳定性 + 人工放行",
-      "status": "held",
+      "status": "exec_ready",
       "deps": [
         "SPIKE-001",
         "CORE-001",
@@ -206,9 +227,9 @@
       "allowed_files": [
         "tests/**"
       ],
-      "test_cmd": "",
+      "test_cmd": "python3 -B tests/unit/run_rel001_checks.py",
       "needs_human": true,
-      "brief": "见 tasks/TASKS.md。"
+      "brief": "Run tests/unit/run_rel001_checks.py: serially call CFG/FSM/ECO/SAVE/UI/LOG isolated runners, require each exact PASS marker once, exit 0, no RUNNER FAIL or SCRIPT ERROR, and preflight the completed SIM-001 report for 20 seeds, 1/4/8 virtual hours, deterministic replay, and zero duplicate/full-basket/out-of-range/fault-commit invariants. This ticket also requires the separately recorded visible 8-hour Mac candidate run and final delegated release review; test_cmd alone is not acceptance. No product source/value changes. Only tests/** plus scheduler-owned evidence."
     },
     {
       "id": "SPIKE-001-FIX-001",

@@ -33,4 +33,4 @@ The test directory was restored to `0755`. Clicking **Retry Save** cleared the e
 
 ## Workflow state
 
-Current queue values remain `UI-001=status: blocked`, `needs_human=true`, `LOG-001=status: held`, and `REL-001=status: held`. The UI-001 blocked reason still describes the original failed attempts and says no code was committed; later implementation commits and the evidence above postdate that reason. This report does not rewrite that state or approve the ticket. Queue and approval files were left unchanged, and no remote push was made.
+The original blocked snapshot above predates the later Finder, secondary-display, and full-screen checks. On 2026-11-12, the delegated review in `delegated-review-2026-11-12.md` reconciled those later records and accepted UI-001. Its queue state is now `done`, with `needs_human=false` because the delegated GUI review was completed. The approval ledger and freeze/pause implementation remain intact; no freeze was cleared. LOG-001 is separately accepted, while REL-001 remains open pending the visible eight-hour candidate run and final release review.
