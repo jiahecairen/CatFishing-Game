@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-12T02:27:23+00:00",
+  "updated": "2026-11-12T02:30:00+00:00",
   "note": "AUTO-001 串行工单队列。status 取值: held(人工冻结, 调度器跳过) | ready(可跑 Phase A 只读计划) | awaiting_approval(等人工在 tasks/APPROVALS.md 批准) | exec_ready(已批准, 可跑 Phase B 写码) | in_review(自动检查通过+已 commit, 待人工验收) | done | blocked。allowed_files 为保守占位，人工转 exec_ready 前必须复核；test_cmd 为空时调度器会直接 Blocked。",
   "tickets": [
     {
@@ -156,18 +156,19 @@
     {
       "id": "LOG-001",
       "title": "本地有限日志 + 错误提示",
-      "status": "held",
+      "status": "ready",
       "deps": [
         "SAVE-001",
         "UI-001"
       ],
       "allowed_files": [
-        "scripts/logging/**",
+        "scripts/io/event_log.gd",
+        "scripts/ui/fishing_session.gd",
         "tests/**"
       ],
-      "test_cmd": "",
+      "test_cmd": "python3 -B tests/unit/run_log001_checks.py",
       "needs_human": false,
-      "brief": "见 tasks/TASKS.md。"
+      "brief": "补全 scripts/io/event_log.gd 空骨架并接入 scripts/ui/fishing_session.gd：在 user:// 本地生成 JSONL 结构化日志，按 UTC 日期与文件大小轮换，保留文件数/单文件大小有界；字段只限 timestamp_utc/severity/event/event_id/save_version/result/error_code/elapsed_ms，不写路径、任意原因文本、按键/屏幕/其他应用数据，不联网不上传。记录成功捕获、成功售鱼、捕获/售鱼失败和存档失败；日志故障不得改变经济事务结果。复用现有 HUD 持久非模态存档错误横幅与重试。只改 scripts/io/event_log.gd、scripts/ui/fishing_session.gd、tests/**；测试须临时工程副本、隔离 HOME，先 Godot editor import，再运行新 LOG 测试和 UI/SAVE/CORE 必要回归，逐命令核对退出码、唯一 PASS、无 FAIL/SCRIPT ERROR。"
     },
     {
       "id": "SIM-001",
