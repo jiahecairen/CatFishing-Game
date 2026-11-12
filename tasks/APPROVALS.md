@@ -112,3 +112,12 @@ date: 2026-11-11
 scope: tools/sim/**, tasks/evidence/SIM-001/**
 notes: 项目所有者在持续执行目标中明确委托自动审批并完成本地 v0.1。按 tasks/evidence/SIM-001/plan.md 与 review.md 实施；复用既有 FSM/RNG/Clock/ECO/Save 故障注入接口，生成 20 seeds × 两场景 × 1/4/8 小时虚拟报告；固定 20–60s、30 FPS、鱼种权重/价格与候选容量，任何产品数值不得更改。Godot 仅在临时工程副本和隔离 HOME 运行，报表记录 120 个独立 run 与真实故障注入结果。Phase B 不得修改 scripts/**、data/**、tests/**、queue/runner、产品文档或审批账本。
 END-APPROVAL
+
+
+BEGIN-APPROVAL ID=LOG-001 PHASE=B
+APPROVED
+by: Codex delegated reviewer
+date: 2026-11-12
+scope: scripts/io/event_log.gd, scripts/ui/fishing_session.gd, tests/**
+notes: 项目所有者持续执行授权并在当前目标中明确委托自动审批。已审查 tasks/evidence/LOG-001/plan.md 与第 9 节修订；日志限于 user://logs，字段白名单、UTC 日/字节轮换、跨重启序号恢复、严格清理匹配、fail-soft 事务接入与隔离导入测试均为强制条件。不改冻结的 v0.1 经济/存档/范围参数。
+END-APPROVAL
