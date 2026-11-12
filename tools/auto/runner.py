@@ -13,6 +13,7 @@
 用法：
   python3 tools/auto/runner.py start [--id ID] [--timeout 1800]
   python3 tools/auto/runner.py check|status|log [-n N]|pause|resume|unfreeze --reason "..."
+  python3 tools/auto/runner.py reconcile-review --id ID --reason "..."
   python3 tools/auto/runner.py selftest   # /tmp 合成项目回归（不碰真实工单）
 """
 import argparse
@@ -638,6 +639,108 @@ class Runner:
         print("队列已解冻（记录执行者与原因）；blocked 工单状态不会自动改变")
         return EXIT_OK
 
+    def cmd_reconcile_review(self, tid, reason):
+        if not tid or not reason or not reason.strip():
+            print("需要 --id 和 --reason")
+            return EXIT_USAGE
+        if not self.acquire_lock():
+            self.log("另一实例正持有锁 → exit 75（单实例串行）")
+            return EXIT_LOCK
+        try:
+            q = self.q()
+            if q.get("frozen"):
+                print("队列处于冻结状态；复核命令不会解冻")
+                return EXIT_FROZEN
+            if os.path.exists(self.pause_flag):
+                print("PAUSE 存在；复核命令不会清除暂停")
+                return EXIT_BLOCKED
+            t = self.ticket(q, tid)
+            if t is None or t.get("status") != "blocked":
+                print("只允许复核 status=blocked 的工单")
+                return EXIT_USAGE
+            if not self.approval(tid, "B"):
+                print(f"{tid} 缺少有效 Phase B 批准，拒绝复核")
+                return EXIT_APPROVAL
+            if not t.get("test_cmd"):
+                print(f"{tid} 缺少 test_cmd，拒绝复核")
+                return EXIT_APPROVAL
+            unmet = [dep for dep in t.get("deps", [])
+                     if self.ticket(q, dep) is None or
+                     self.ticket(q, dep).get("status") not in ("in_review", "done")]
+            if unmet:
+                print(f"依赖尚未验收/复核: {unmet}")
+                return EXIT_BLOCKED
+
+            start_files = self.changed_files()
+            if start_files is None:
+                print("无法读取 Git 工作树，拒绝复核")
+                return EXIT_BLOCKED
+            queue_status = {path: xy for xy, path in start_files}.get(self.queue_relpath)
+            tracked_rc, _, _ = self.git("ls-files", "--error-unmatch", self.queue_relpath)
+            if tracked_rc == 0 and queue_status is not None:
+                print("tracked queue 在复核前已有未提交改动；保留原状并拒绝继续")
+                return EXIT_BLOCKED
+
+            files, bad = self.scope_violations(t.get("allowed_files", []))
+            if bad:
+                self.block(q, t, f"复核前范围检查失败: {bad}")
+                return EXIT_BLOCKED
+            ap_hash0 = self.approvals_hash()
+            ev = self.evidence_dir(tid)
+            attempt = max(1, int(t.get("retries", 0) or 0) + 1)
+            while os.path.exists(os.path.join(ev, f"test-{attempt}.log")):
+                attempt += 1
+            trc = self.run_test(t, ev, attempt)
+            if self.approvals_hash() != ap_hash0:
+                self.block(q, t, "复核测试期间 APPROVALS.md 被改动 — 疑似伪造批准")
+                return EXIT_BLOCKED
+            files, bad = self.scope_violations(t.get("allowed_files", []))
+            if trc != 0 or bad:
+                self.block(q, t, f"复核失败 test_rc={trc} violations={bad}")
+                return EXIT_BLOCKED
+
+            previous_reason = t.get("blocked_reason", "")
+            history = t.setdefault("recovery_history", [])
+            history.append({
+                "actor": "Codex delegated reviewer",
+                "at": now(),
+                "from_status": "blocked",
+                "to_status": "in_review",
+                "reason": reason.strip(),
+                "previous_blocked_reason": previous_reason,
+                "test_attempt": attempt,
+                "test_exit": trc,
+            })
+            rc = self.commit_success(q, t, ev, attempt, trc)
+            if rc != EXIT_OK:
+                return rc
+
+            # commit_success records code/evidence first; commit the scheduler-owned
+            # queue transition separately, and only if its exact saved snapshot remains.
+            queue_hash = self.file_fingerprint(self.queue_path)
+            if queue_hash is None or queue_hash != self._queue_fingerprint:
+                self.log(f"{tid}: evidence committed, but queue snapshot changed before status commit")
+                return EXIT_BLOCKED
+            add_rc, _, add_err = self.git("add", "--", self.queue_relpath)
+            index_rc, index_blob, _ = self.git("rev-parse", f":{self.queue_relpath}")
+            work_rc, work_blob, _ = self.git("hash-object", os.path.join(self.root, self.queue_relpath))
+            if (add_rc != 0 or index_rc != 0 or work_rc != 0
+                    or index_blob.strip() != work_blob.strip()
+                    or self.file_fingerprint(self.queue_path) != queue_hash):
+                self.log(f"{tid}: evidence committed, but queue status could not be safely staged: {add_err}")
+                return EXIT_BLOCKED
+            commit_rc, _, commit_err = self.git(
+                "commit", "--only", "--no-verify", "-m",
+                f"AUTO-001 {tid}: record reviewed status", "--", self.queue_relpath)
+            if commit_rc != 0:
+                self.log(f"{tid}: evidence committed, but queue status commit failed: {commit_err}")
+                return EXIT_BLOCKED
+            _, head, _ = self.git("rev-parse", "--short", "HEAD")
+            self.log(f"{tid}: blocked → in_review by delegated review; needs_human preserved; queue commit {head}")
+            return EXIT_OK
+        finally:
+            self.release_lock()
+
     def cmd_start(self, only_id):
         if not self.acquire_lock():
             self.log("另一实例正持有锁 → exit 75（单实例串行）")
@@ -700,7 +803,7 @@ class _Args:
 
 def main():
     ap = argparse.ArgumentParser(description="AUTO-001 串行工单调度器")
-    ap.add_argument("cmd", choices=["start", "check", "status", "log", "pause", "resume", "unfreeze", "selftest"])
+    ap.add_argument("cmd", choices=["start", "check", "status", "log", "pause", "resume", "unfreeze", "reconcile-review", "selftest"])
     ap.add_argument("--root", default=None)
     ap.add_argument("--queue", default=None)
     ap.add_argument("--approvals", default=None)
@@ -727,6 +830,8 @@ def main():
         sys.exit(r.cmd_resume())
     if a.cmd == "unfreeze":
         sys.exit(r.cmd_unfreeze(a.reason))
+    if a.cmd == "reconcile-review":
+        sys.exit(r.cmd_reconcile_review(a.id, a.reason))
 
 
 if __name__ == "__main__":

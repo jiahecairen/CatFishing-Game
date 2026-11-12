@@ -16,6 +16,7 @@
   T11 自动 commit 只包含本次白名单改动，保留其他预暂存和既有证据文件
   T12 Godot 并发改写导入旁车时拒绝 commit
   T13 解冻日志记录委托执行者，不伪称人类操作
+  T14 blocked 复核需 Phase B 批准与测试通过，保留 needs_human；冻结时拒绝
 """
 import importlib
 import json
@@ -398,6 +399,50 @@ def run(_a):
           unfreeze_rc == 0 and not q_after.get("frozen") and
           q_after.get("unfrozen", {}).get("actor") == "Codex (delegated by project owner)" and
           q_after.get("unfrozen", {}).get("reason") == "selftest delegated recovery")
+
+    # ---- T14 blocked 票只能经批准+重测进入 in_review，保留人工门
+    root = make_sim("t14-reconcile-review", "noop", ledger=True)
+    blocked_ticket = ticket(status="blocked")
+    blocked_ticket.update({"needs_human": True, "retries": 3,
+                           "blocked_reason": "stale failure before committed fix"})
+    qpath = write_queue(root, [blocked_ticket])
+    R = mk_runner(r, root, qpath, write_approvals(root))
+
+    def fake_recovery_test(_ticket, evidence_dir, attempt):
+        with open(os.path.join(evidence_dir, f"test-{attempt}.log"), "w") as f:
+            f.write("RECOVERY TEST PASS\\nEXIT=0\\n")
+        return 0
+
+    R.run_test = fake_recovery_test
+    reconcile_rc = R.cmd_reconcile_review("SIM-T-01", "selftest verified approved recovery")
+    q_after = R.q()
+    recovered = R.ticket(q_after, "SIM-T-01")
+    status_after = [line for line in git_dirty(root)
+                    if not line.startswith("?? tasks/evidence/_runner/")]
+    latest_paths = subprocess.run(["git", "-C", root, "show", "--format=", "--name-only", "HEAD"],
+                                  check=True, capture_output=True, text=True).stdout.splitlines()
+    check("T14a blocked 复核后进入 in_review 且保留 needs_human",
+          reconcile_rc == 0 and recovered["status"] == "in_review" and
+          recovered.get("needs_human") is True and
+          recovered.get("recovery_history", [{}])[-1].get("reason") ==
+          "selftest verified approved recovery")
+    check("T14b 复核提交 queue 状态且工作树 clean",
+          "tools/auto/queue.json" in latest_paths and status_after == [],
+          f"latest={latest_paths}; status={status_after}")
+
+    root = make_sim("t14c-reconcile-frozen", "noop", ledger=True)
+    blocked_ticket = ticket(status="blocked")
+    qpath = write_queue(root, [blocked_ticket])
+    qdata = json.load(open(qpath))
+    qdata["frozen"] = {"reason": "must remain frozen"}
+    with open(qpath, "w") as f:
+        json.dump(qdata, f)
+    R = mk_runner(r, root, qpath, write_approvals(root))
+    frozen_rc = R.cmd_reconcile_review("SIM-T-01", "must refuse while frozen")
+    q_after = R.q()
+    check("T14c frozen 队列拒绝复核且不自动解冻",
+          frozen_rc == 76 and bool(q_after.get("frozen")) and
+          q_after["tickets"][0]["status"] == "blocked")
 
     # ---- T2 批准解析
     root = make_sim("t2-approval", "noop")

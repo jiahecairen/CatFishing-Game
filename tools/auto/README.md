@@ -22,6 +22,7 @@ DeepSeek Harness **headless CLI** + 本机 **llama.cpp Qwen3.8-Flash-Next**（�
 | 恢复 | `python3 tools/auto/runner.py resume` |
 | 看最近日志 | `python3 tools/auto/runner.py log -n 40` |
 | 人工解冻 | `python3 tools/auto/runner.py unfreeze --reason "已复核"` |
+| 复核历史 blocked 票（不解冻、不标记 done） | `python3 tools/auto/runner.py reconcile-review --id UI-001 --reason "已复核修复提交和验收证据"` |
 
 ## 一张票的生命周期
 ```
@@ -40,6 +41,8 @@ held ──(人工改 ready)──▶ Phase A 只读计划 ──▶ awaiting_ap
 3. 需求变更 / 破坏性操作（删档、批量重构、push、装依赖）/ 高风险决策 —— Agent 报 `BLOCKED:` 即冻结。
 4. GUI/真机验收（SPIKE-001 的 G-001/G-002、UI、8h 稳定性）：`in_review` 后需你人工验收，再手工置 `done`。
 5. `unfreeze` 解冻。
+
+`reconcile-review` 是受限恢复入口：仅接受已有 Phase B 批准、依赖均为 `in_review/done`、当前未冻结且 fresh `test_cmd` 通过的 `blocked` 票。它记录执行者、原因、旧阻塞原因和测试尝试，将票推进到 `in_review`，保留 `needs_human`；不会清除冻结、写审批账本或标记 `done`。失败仍按原门禁冻结并保留证据。
 
 ## 安全保证（代码级 + selftest T1–T7）
 - 每个 headless 会话必带 `--patch`，绝不回落云默认模型；模型不在 `:9931` 列表即 exit 60 + 冻结。
