@@ -1,0 +1,16 @@
+{
+  "run_id": "20261112T040226Z",
+  "started_utc": "2026-11-12T04:02:26.122448+00:00",
+  "planned_duration_seconds": 28800,
+  "project_copy": "/var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/fishing_rel001_candidate_kusyos8b/project",
+  "isolated_home": "/var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/fishing_rel001_candidate_kusyos8b/home",
+  "godot_version": "4.7.2.stable.official.ed1daf0bf",
+  "macos_version": "27.2.1",
+  "macos_build": "26B131",
+  "renderer": "captured in runtime log after launch",
+  "import_exit": 0,
+  "import_log": "/Users/rain/DevGame/Fishing/tasks/evidence/REL-001/candidate-8h-20261112T040226Z-import.log",
+  "pid": 1583,
+  "runtime_log": "/Users/rain/DevGame/Fishing/tasks/evidence/REL-001/candidate-8h-20261112T040226Z.log",
+  "resource_samples": "/Users/rain/DevGame/Fishing/tasks/evidence/REL-001/candidate-8h-20261112T040226Z-resources.csv"
+}

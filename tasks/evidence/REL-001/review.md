@@ -37,3 +37,12 @@ Verification completed:
 - `python3 -B tests/unit/run_rel001_checks.py` exited 0 after the correction. `aggregate-isolation-fixed-2026-11-12.log` shows CFG/FSM/ECO/SAVE/UI/LOG each used isolated project paths; each exact runner PASS marker and `REL001 RUNNER PASS` appears once; there is no `RUNNER FAIL`, `SCRIPT ERROR`, or `--path /Users/rain/DevGame/Fishing`.
 - `python3 -B tools/auto/runner.py status` reports model gate PASS, unchanged approval-ledger verification, `paused=False`, `frozen=None`, and REL-001 still `exec_ready` with `needs_human=true`. No queue or freeze transition was performed.
 - The separate visible candidate remained alive in its temporary project through this test rerun; no product files or candidate process were changed.
+
+
+## REL-001 final delegated acceptance — 2026-11-12
+
+Reviewer: Codex under the project owner's continuing v0.1 delegation recorded in `tasks/APPROVALS.md`.
+
+Decision: **ACCEPT**. The final aggregate regression exited 0; SIM-001 preflight passed; all six exact suite markers and the aggregate marker occurred once; no runner failure or script error was recorded. The separate visible Mac candidate completed exactly 28,800 seconds with 480 initialized minute samples, no runtime errors, no missing samples, stable observed RSS, and preserved save/event-log invariants. UI-001 G-UI-1 through G-UI-8 already have delegated acceptance. The complete evidence and measurements are in `report.md`, `final-regression-20261112.log`, and the candidate metadata, summary, resource, import, and runtime files.
+
+The delegated reviewer fulfills REL-001's final `needs_human` gate and records this ticket as `done`. The approval ledger itself is not edited. Pause/freeze controls and historical queue audit data remain unchanged; no freeze was cleared.

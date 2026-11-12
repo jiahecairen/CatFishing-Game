@@ -1,0 +1,533 @@
+REL-001 source root: /Users/rain/DevGame/Fishing
+SIM-001 report preflight PASS
+
+===== CFG-001: /opt/homebrew/opt/python@3.15/bin/python3.15 -B /Users/rain/DevGame/Fishing/tests/unit/run_cfg001_checks.py =====
+CFG-001 runner root: /Users/rain/DevGame/Fishing
+Godot binary: /Applications/Godot.app/Contents/MacOS/Godot
+pre-flight: data==examples (value-identical), 12 fixtures present
+isolated project copy: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_cfg001_9ayk2x7c/project
+isolated HOME: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_cfg001_9ayk2x7c/home
+========================================================================
+[step1-import] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_cfg001_9ayk2x7c/project --editor --quit
+[step1-import] exit_code=0
+[step1-import] stdout(tail):
+[  32% ] [90m[1mupdate_scripts_classes[22m | ConfigLoader[39m[0m
+[  35% ] [90m[1mupdate_scripts_classes[22m | EventLog[39m[0m
+[  38% ] [90m[1mupdate_scripts_classes[22m | SaveService[39m[0m
+[  41% ] [90m[1mupdate_scripts_classes[22m | DesktopWindow[39m[0m
+[  44% ] [90m[1mupdate_scripts_classes[22m | PlatformAdapter[39m[0m
+[  47% ] [90m[1mupdate_scripts_classes[22m | CatPresenter[39m[0m
+[  50% ] [90m[1mupdate_scripts_classes[22m | SaveFaults[39m[0m
+[  52% ] [90m[1mupdate_scripts_classes[22m | AtomicSaveService[39m[0m
+[  55% ] [90m[1mupdate_scripts_classes[22m | SaveValidate[39m[0m
+[  58% ] [90m[1mupdate_scripts_classes[22m | BasketMenu[39m[0m
+[  61% ] [90m[1mupdate_scripts_classes[22m | CatBoatVisual[39m[0m
+[  64% ] [90m[1mupdate_scripts_classes[22m | FishingSession[39m[0m
+[  67% ] [90m[1mupdate_scripts_classes[22m | FishingStatusHUD[39m[0m
+[  70% ] [90m[1mupdate_scripts_classes[22m | UIRoot[39m[0m
+[  73% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  76% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  79% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  82% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  85% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  88% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  91% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  94% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing pre-reimport operations...[39m[0m
+[   0% ] [90m[1mreimport[22m | icon.svg[39m[0m
+[  50% ] [90m[1mreimport[22m | Finalizing Asset Import...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing post-reimport operations...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Loading editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Loading editor layout...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Loading docks...[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m
+[step1-import] OK
+========================================================================
+[step2-cfg001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_cfg001_9ayk2x7c/project --script res://tests/unit/test_cfg001_config.gd
+[step2-cfg001] exit_code=0
+[step2-cfg001] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CFG001 CONFIG PASS
+[step2-cfg001] OK
+========================================================================
+[step3-core001-regression] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_cfg001_9ayk2x7c/project --script res://tests/unit/test_core001_smoke.gd
+[step3-core001-regression] exit_code=0
+[step3-core001-regression] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CORE001 SMOKE PASS
+CORE001 GameController ready: wallet_gold=0 basket=0 basket_capacity=10
+[step3-core001-regression] OK
+cleaned isolated project and HOME: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_cfg001_9ayk2x7c
+CFG001 RUNNER PASS
+CFG-001 PASS
+
+===== FSM-001: /opt/homebrew/opt/python@3.15/bin/python3.15 -B /Users/rain/DevGame/Fishing/tests/unit/run_fsm001_checks.py =====
+FSM-001 source root: /Users/rain/DevGame/Fishing
+Godot binary: /Applications/Godot.app/Contents/MacOS/Godot
+pre-flight: deliverables present, data==examples (value-identical), fixtures present
+isolated project copy: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_fsm001_0ywfgvsm/project
+isolated HOME: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_fsm001_0ywfgvsm/home
+========================================================================
+[step1-import] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_fsm001_0ywfgvsm/project --editor --quit
+[step1-import] exit_code=0
+[step1-import] stdout(tail):
+[  32% ] [90m[1mupdate_scripts_classes[22m | ConfigLoader[39m[0m
+[  35% ] [90m[1mupdate_scripts_classes[22m | EventLog[39m[0m
+[  38% ] [90m[1mupdate_scripts_classes[22m | SaveService[39m[0m
+[  41% ] [90m[1mupdate_scripts_classes[22m | DesktopWindow[39m[0m
+[  44% ] [90m[1mupdate_scripts_classes[22m | PlatformAdapter[39m[0m
+[  47% ] [90m[1mupdate_scripts_classes[22m | CatPresenter[39m[0m
+[  50% ] [90m[1mupdate_scripts_classes[22m | SaveFaults[39m[0m
+[  52% ] [90m[1mupdate_scripts_classes[22m | AtomicSaveService[39m[0m
+[  55% ] [90m[1mupdate_scripts_classes[22m | SaveValidate[39m[0m
+[  58% ] [90m[1mupdate_scripts_classes[22m | BasketMenu[39m[0m
+[  61% ] [90m[1mupdate_scripts_classes[22m | CatBoatVisual[39m[0m
+[  64% ] [90m[1mupdate_scripts_classes[22m | FishingSession[39m[0m
+[  67% ] [90m[1mupdate_scripts_classes[22m | FishingStatusHUD[39m[0m
+[  70% ] [90m[1mupdate_scripts_classes[22m | UIRoot[39m[0m
+[  73% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  76% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  79% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  82% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  85% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  88% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  91% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  94% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing pre-reimport operations...[39m[0m
+[   0% ] [90m[1mreimport[22m | icon.svg[39m[0m
+[  50% ] [90m[1mreimport[22m | Finalizing Asset Import...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing post-reimport operations...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Loading editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Loading editor layout...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Loading docks...[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m
+[step1-import] OK
+========================================================================
+[step2-fsm001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_fsm001_0ywfgvsm/project --script res://tests/unit/test_fsm001_fsm.gd
+[step2-fsm001] exit_code=0
+[step2-fsm001] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+FSM001 sample: min=20 max=60 distinct=41
+FSM001 FSM PASS
+[step2-fsm001] OK
+========================================================================
+[step3-core001-regression] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_fsm001_0ywfgvsm/project --script res://tests/unit/test_core001_smoke.gd
+[step3-core001-regression] exit_code=0
+[step3-core001-regression] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CORE001 SMOKE PASS
+CORE001 GameController ready: wallet_gold=0 basket=0 basket_capacity=10
+[step3-core001-regression] OK
+========================================================================
+[step4-cfg001-regression] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_fsm001_0ywfgvsm/project --script res://tests/unit/test_cfg001_config.gd
+[step4-cfg001-regression] exit_code=0
+[step4-cfg001-regression] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CFG001 CONFIG PASS
+[step4-cfg001-regression] OK
+cleaned isolated project and HOME
+FSM001 RUNNER PASS
+FSM-001 PASS
+
+===== ECO-001: /opt/homebrew/opt/python@3.15/bin/python3.15 -B /Users/rain/DevGame/Fishing/tests/unit/run_eco001_checks.py =====
+ECO-001 source root: /Users/rain/DevGame/Fishing
+Godot binary: /Applications/Godot.app/Contents/MacOS/Godot
+pre-flight: deliverables present, value-lock frozen, fixtures present
+isolated project copy: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_eco001_uayucslk/project
+isolated HOME: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_eco001_uayucslk/home
+========================================================================
+[step1-import] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_eco001_uayucslk/project --editor --quit
+[step1-import] exit_code=0
+[step1-import] stdout(tail):
+[  32% ] [90m[1mupdate_scripts_classes[22m | ConfigLoader[39m[0m
+[  35% ] [90m[1mupdate_scripts_classes[22m | EventLog[39m[0m
+[  38% ] [90m[1mupdate_scripts_classes[22m | SaveService[39m[0m
+[  41% ] [90m[1mupdate_scripts_classes[22m | DesktopWindow[39m[0m
+[  44% ] [90m[1mupdate_scripts_classes[22m | PlatformAdapter[39m[0m
+[  47% ] [90m[1mupdate_scripts_classes[22m | CatPresenter[39m[0m
+[  50% ] [90m[1mupdate_scripts_classes[22m | SaveFaults[39m[0m
+[  52% ] [90m[1mupdate_scripts_classes[22m | AtomicSaveService[39m[0m
+[  55% ] [90m[1mupdate_scripts_classes[22m | SaveValidate[39m[0m
+[  58% ] [90m[1mupdate_scripts_classes[22m | BasketMenu[39m[0m
+[  61% ] [90m[1mupdate_scripts_classes[22m | CatBoatVisual[39m[0m
+[  64% ] [90m[1mupdate_scripts_classes[22m | FishingSession[39m[0m
+[  67% ] [90m[1mupdate_scripts_classes[22m | FishingStatusHUD[39m[0m
+[  70% ] [90m[1mupdate_scripts_classes[22m | UIRoot[39m[0m
+[  73% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  76% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  79% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  82% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  85% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  88% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  91% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  94% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing pre-reimport operations...[39m[0m
+[   0% ] [90m[1mreimport[22m | icon.svg[39m[0m
+[  50% ] [90m[1mreimport[22m | Finalizing Asset Import...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing post-reimport operations...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Loading editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Loading editor layout...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Loading docks...[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m
+[step1-import] OK
+========================================================================
+[step2-eco001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_eco001_uayucslk/project --script res://tests/unit/test_eco001_economy.gd
+[step2-eco001] exit_code=0
+[step2-eco001] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ECO001 ECONOMY PASS
+[step2-eco001] OK
+========================================================================
+[step3-core001-regression] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_eco001_uayucslk/project --script res://tests/unit/test_core001_smoke.gd
+[step3-core001-regression] exit_code=0
+[step3-core001-regression] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CORE001 SMOKE PASS
+CORE001 GameController ready: wallet_gold=0 basket=0 basket_capacity=10
+[step3-core001-regression] OK
+========================================================================
+[step4-cfg001-regression] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_eco001_uayucslk/project --script res://tests/unit/test_cfg001_config.gd
+[step4-cfg001-regression] exit_code=0
+[step4-cfg001-regression] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CFG001 CONFIG PASS
+[step4-cfg001-regression] OK
+========================================================================
+[step5-fsm001-regression] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_eco001_uayucslk/project --script res://tests/unit/test_fsm001_fsm.gd
+[step5-fsm001-regression] exit_code=0
+[step5-fsm001-regression] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+FSM001 sample: min=20 max=60 distinct=41
+FSM001 FSM PASS
+[step5-fsm001-regression] OK
+cleaned isolated project and HOME
+ECO001 RUNNER PASS
+ECO-001 PASS
+
+===== SAVE-001: /opt/homebrew/opt/python@3.15/bin/python3.15 -B /Users/rain/DevGame/Fishing/tests/unit/run_save001_checks.py =====
+SAVE-001 source root: /Users/rain/DevGame/Fishing
+Godot binary: /Applications/Godot.app/Contents/MacOS/Godot
+pre-flight: deliverables present, value-lock frozen, v1 example frozen, schema v2 locked, class names unique, fixtures present
+isolated project copy: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_save001_40o61go1/project
+isolated HOME: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_save001_40o61go1/home
+========================================================================
+[step1-import] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_save001_40o61go1/project --editor --quit
+[step1-import] exit_code=0
+[step1-import] stdout(tail):
+[  32% ] [90m[1mupdate_scripts_classes[22m | ConfigLoader[39m[0m
+[  35% ] [90m[1mupdate_scripts_classes[22m | EventLog[39m[0m
+[  38% ] [90m[1mupdate_scripts_classes[22m | SaveService[39m[0m
+[  41% ] [90m[1mupdate_scripts_classes[22m | DesktopWindow[39m[0m
+[  44% ] [90m[1mupdate_scripts_classes[22m | PlatformAdapter[39m[0m
+[  47% ] [90m[1mupdate_scripts_classes[22m | CatPresenter[39m[0m
+[  50% ] [90m[1mupdate_scripts_classes[22m | SaveFaults[39m[0m
+[  52% ] [90m[1mupdate_scripts_classes[22m | AtomicSaveService[39m[0m
+[  55% ] [90m[1mupdate_scripts_classes[22m | SaveValidate[39m[0m
+[  58% ] [90m[1mupdate_scripts_classes[22m | BasketMenu[39m[0m
+[  61% ] [90m[1mupdate_scripts_classes[22m | CatBoatVisual[39m[0m
+[  64% ] [90m[1mupdate_scripts_classes[22m | FishingSession[39m[0m
+[  67% ] [90m[1mupdate_scripts_classes[22m | FishingStatusHUD[39m[0m
+[  70% ] [90m[1mupdate_scripts_classes[22m | UIRoot[39m[0m
+[  73% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  76% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  79% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  82% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  85% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  88% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  91% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  94% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing pre-reimport operations...[39m[0m
+[   0% ] [90m[1mreimport[22m | icon.svg[39m[0m
+[  50% ] [90m[1mreimport[22m | Finalizing Asset Import...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing post-reimport operations...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Loading editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Loading editor layout...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Loading docks...[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m
+[step1-import] OK
+========================================================================
+[step2-save001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_save001_40o61go1/project --script res://tests/unit/test_save001_save.gd
+[step2-save001] exit_code=0
+[step2-save001] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+SAVE001 SAVE PASS
+[step2-save001] OK
+========================================================================
+[step3-eco001-regression] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_save001_40o61go1/project --script res://tests/unit/test_eco001_economy.gd
+[step3-eco001-regression] exit_code=0
+[step3-eco001-regression] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ECO001 ECONOMY PASS
+[step3-eco001-regression] OK
+========================================================================
+[step4-core001-regression] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_save001_40o61go1/project --script res://tests/unit/test_core001_smoke.gd
+[step4-core001-regression] exit_code=0
+[step4-core001-regression] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CORE001 SMOKE PASS
+CORE001 GameController ready: wallet_gold=0 basket=0 basket_capacity=10
+[step4-core001-regression] OK
+========================================================================
+[step5-cfg001-regression] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_save001_40o61go1/project --script res://tests/unit/test_cfg001_config.gd
+[step5-cfg001-regression] exit_code=0
+[step5-cfg001-regression] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CFG001 CONFIG PASS
+[step5-cfg001-regression] OK
+========================================================================
+[step6-fsm001-regression] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_save001_40o61go1/project --script res://tests/unit/test_fsm001_fsm.gd
+[step6-fsm001-regression] exit_code=0
+[step6-fsm001-regression] stdout(tail):
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+FSM001 sample: min=20 max=60 distinct=41
+FSM001 FSM PASS
+[step6-fsm001-regression] OK
+cleaned isolated project and HOME
+SAVE001 RUNNER PASS
+SAVE-001 PASS
+
+===== UI-001: /opt/homebrew/opt/python@3.15/bin/python3.15 -B /Users/rain/DevGame/Fishing/tests/unit/run_ui001_checks.py =====
+UI-001 source root: /Users/rain/DevGame/Fishing
+Godot executable: /Applications/Godot.app/Contents/MacOS/Godot
+isolated project copy: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_ui001_gzoxc54z/project
+isolated HOME: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_ui001_gzoxc54z/home
+========================================================================
+[step1-import] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_ui001_gzoxc54z/project --editor --quit
+[step1-import] exit_code=0
+[step1-import] output tail:
+[  47% ] [90m[1mupdate_scripts_classes[22m | CatPresenter[39m[0m
+[  50% ] [90m[1mupdate_scripts_classes[22m | SaveFaults[39m[0m
+[  52% ] [90m[1mupdate_scripts_classes[22m | AtomicSaveService[39m[0m
+[  55% ] [90m[1mupdate_scripts_classes[22m | SaveValidate[39m[0m
+[  58% ] [90m[1mupdate_scripts_classes[22m | BasketMenu[39m[0m
+[  61% ] [90m[1mupdate_scripts_classes[22m | CatBoatVisual[39m[0m
+[  64% ] [90m[1mupdate_scripts_classes[22m | FishingSession[39m[0m
+[  67% ] [90m[1mupdate_scripts_classes[22m | FishingStatusHUD[39m[0m
+[  70% ] [90m[1mupdate_scripts_classes[22m | UIRoot[39m[0m
+[  73% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  76% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  79% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  82% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  85% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  88% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  91% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  94% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing pre-reimport operations...[39m[0m
+[   0% ] [90m[1mreimport[22m | icon.svg[39m[0m
+[  50% ] [90m[1mreimport[22m | Finalizing Asset Import...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing post-reimport operations...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Loading editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Loading editor layout...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Loading docks...[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m
+
+[step1-import] PASS
+========================================================================
+[step2-ui001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_ui001_gzoxc54z/project --script res://tests/unit/test_ui001_ui.gd --quit-after 3600
+[step2-ui001] exit_code=0
+[step2-ui001] output tail:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+UI001 UI PASS
+
+[step2-ui001] PASS
+========================================================================
+[step3-save001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_ui001_gzoxc54z/project --script res://tests/unit/test_save001_save.gd --quit-after 3600
+[step3-save001] exit_code=0
+[step3-save001] output tail:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+SAVE001 SAVE PASS
+
+[step3-save001] PASS
+========================================================================
+[step4-eco001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_ui001_gzoxc54z/project --script res://tests/unit/test_eco001_economy.gd --quit-after 3600
+[step4-eco001] exit_code=0
+[step4-eco001] output tail:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ECO001 ECONOMY PASS
+
+[step4-eco001] PASS
+========================================================================
+[step5-fsm001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_ui001_gzoxc54z/project --script res://tests/unit/test_fsm001_fsm.gd --quit-after 3600
+[step5-fsm001] exit_code=0
+[step5-fsm001] output tail:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+FSM001 sample: min=20 max=60 distinct=41
+FSM001 FSM PASS
+
+[step5-fsm001] PASS
+========================================================================
+[step6-core001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_ui001_gzoxc54z/project --script res://tests/unit/test_core001_smoke.gd --quit-after 3600
+[step6-core001] exit_code=0
+[step6-core001] output tail:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CORE001 SMOKE PASS
+CORE001 GameController ready: wallet_gold=0 basket=0 basket_capacity=10
+
+[step6-core001] PASS
+========================================================================
+[step7-cfg001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_ui001_gzoxc54z/project --script res://tests/unit/test_cfg001_config.gd --quit-after 3600
+[step7-cfg001] exit_code=0
+[step7-cfg001] output tail:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CFG001 CONFIG PASS
+
+[step7-cfg001] PASS
+UI001 RUNNER PASS
+UI-001 PASS
+
+===== LOG-001: /opt/homebrew/opt/python@3.15/bin/python3.15 -B /Users/rain/DevGame/Fishing/tests/unit/run_log001_checks.py =====
+LOG-001 source root: /Users/rain/DevGame/Fishing
+Godot executable: /Applications/Godot.app/Contents/MacOS/Godot
+isolated project copy: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_log001_digihtbt/project
+isolated HOME: /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_log001_digihtbt/home
+========================================================================
+[step1-import] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_log001_digihtbt/project --editor --quit
+[step1-import] exit_code=0
+[step1-import] output tail:
+[  47% ] [90m[1mupdate_scripts_classes[22m | CatPresenter[39m[0m
+[  50% ] [90m[1mupdate_scripts_classes[22m | SaveFaults[39m[0m
+[  52% ] [90m[1mupdate_scripts_classes[22m | AtomicSaveService[39m[0m
+[  55% ] [90m[1mupdate_scripts_classes[22m | SaveValidate[39m[0m
+[  58% ] [90m[1mupdate_scripts_classes[22m | BasketMenu[39m[0m
+[  61% ] [90m[1mupdate_scripts_classes[22m | CatBoatVisual[39m[0m
+[  64% ] [90m[1mupdate_scripts_classes[22m | FishingSession[39m[0m
+[  67% ] [90m[1mupdate_scripts_classes[22m | FishingStatusHUD[39m[0m
+[  70% ] [90m[1mupdate_scripts_classes[22m | UIRoot[39m[0m
+[  73% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  76% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  79% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  82% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  85% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  88% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  91% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  94% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing pre-reimport operations...[39m[0m
+[   0% ] [90m[1mreimport[22m | icon.svg[39m[0m
+[  50% ] [90m[1mreimport[22m | Finalizing Asset Import...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (1 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing post-reimport operations...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Loading editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Loading editor layout...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Loading docks...[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m
+
+[step1-import] PASS
+========================================================================
+[step2-log001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_log001_digihtbt/project --script res://tests/unit/test_log001_log.gd --quit-after 3600
+[step2-log001] exit_code=0
+[step2-log001] output tail:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+LOG001 LOG PASS
+
+[step2-log001] PASS
+========================================================================
+[step3-ui001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_log001_digihtbt/project --script res://tests/unit/test_ui001_ui.gd --quit-after 3600
+[step3-ui001] exit_code=0
+[step3-ui001] output tail:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+UI001 UI PASS
+
+[step3-ui001] PASS
+========================================================================
+[step4-save001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_log001_digihtbt/project --script res://tests/unit/test_save001_save.gd --quit-after 3600
+[step4-save001] exit_code=0
+[step4-save001] output tail:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+SAVE001 SAVE PASS
+
+[step4-save001] PASS
+========================================================================
+[step5-core001] $ /Applications/Godot.app/Contents/MacOS/Godot --headless --path /var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/run_log001_digihtbt/project --script res://tests/unit/test_core001_smoke.gd --quit-after 3600
+[step5-core001] exit_code=0
+[step5-core001] output tail:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+CORE001 SMOKE PASS
+CORE001 GameController ready: wallet_gold=0 basket=0 basket_capacity=10
+
+[step5-core001] PASS
+LOG001 RUNNER PASS
+LOG-001 PASS
+REL001 RUNNER PASS

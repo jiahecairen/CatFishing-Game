@@ -1,0 +1,10 @@
+Candidate 8h visible runtime start UTC=2026-11-12T04:02:26.122448+00:00
+Godot=4.7.2.stable.official.ed1daf0bf
+macOS=27.2.1 build=26B131
+Project copy=/var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/fishing_rel001_candidate_kusyos8b/project
+Isolated HOME=/var/folders/5m/p8k4z26d7sn0v2zxhvnddfn80000gn/T/fishing_rel001_candidate_kusyos8b/home
+Import exit=0; SCRIPT_ERROR present=False
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 Max (Apple9)
+
+Candidate runtime ended UTC=2026-11-12T12:02:27.868399+00:00 elapsed_seconds=28800.0 exit=-15
