@@ -1,0 +1,1403 @@
+工单 LOG-001 Phase B（第 2 次尝试）完成。
+
+**诊断（先诊断后修，未扩大范围）**：用临时隔离副本 + 隔离 HOME 的真实 Godot 运行逐条复现——
+
+1. **L-1 失败根因**：`_split_lines` 误用 `text.split("\n", true)`（Godot 4 第二参是 `allow_empty`，`true`=保留空元素 ⇒ 行尾换行恒多出一个空元素）。同时实测发现 `JSON.stringify(dict)` 默认按键排序，破坏固定键序合同。
+2. 后续串行迭代又定位并修复：L-4 重启追加断言误要求同文件续写（实测恢复侧正确切未占用序号）；L-6/L-7 自动结算在同一 tick 内穿过 SETTLEMENT，故障注入必须晚于 REELING（快照轮询/时序问题，dbg_l6 实测）；L-5/L-8 误用 `wallet_gold` 键（实际是 `gold`）与 sale-ID 每会话 Crypto nonce 等值假设；L-8 源码 `configure_dir` 被 Godot「对已存在普通文件 `make_dir_recursive_absolute` 返回 OK」的引擎怪癖骗过 ⇒ 补 `DirAccess.open == null ⇒ BAD_DIR` fail-closed；L-8 HUD 需 `await process_frame` 激活场景树（与 UI-001 同法）。
+
+**改动文件**（全部在允许范围内）：`scripts/io/event_log.gd`（2 处源码修复）、`tests/unit/test_log001_log.gd`（6 处测试修复）；`scripts/ui/fishing_session.gd` 与 `run_log001_checks.py` 本次零改动、经全量回归复验。未触碰 APPROVALS.md、TASKS.md、queue.json 等禁改项；无 git 写、无子 Agent、无后台任务；调试临时副本已删除。
+
+**测试（真实命令输出）**：`python3 -B tests/unit/run_log001_checks.py` → **退出码 0**（运行两次均 0，完整日志存 `tasks/evidence/LOG-001/test-2.log`）：step1-import、step2 `LOG001 LOG PASS`、step3 `UI001 UI PASS`、step4 `SAVE001 SAVE PASS`、step5 `CORE001 SMOKE PASS`，末行 `LOG001 RUNNER PASS`。
+
+**证据**：`tasks/evidence/LOG-001/report.md`（改动清单、命令与真实退出码、失败链、验收条目 V01-L01/T-LOG-01/T-UI-01/V01-S02/T-TIME-03 映射、遗留风险）与 `test-2.log` 已写入证据目录。
+
+PHASE-B-DONE
+
+---STDERR---
+dsh: reasoning:
+Let's start by reading the plan and the previous failure logs.
+
+Let me check the environment first.
+dsh: reasoning:
+There are already changes from the previous attempt. Let's read the plan, the test log, and the phaseB-1.out.
+dsh: reasoning:
+The previous failure: `LOG001 LOG FAIL: L1 exactly one JSONL row`.
+
+Let me read the current implementation files: scripts/io/event_log.gd, tests/unit/test_log001_log.gd, tests/unit/run_log001_checks.py, and scripts/ui/fishing_session.gd.
+
+Also, the `cat` on phaseB-1.out timed out? It's only 23 bytes. Weird — the timeout is probably due to the shell environment. Let me retry with read.
+
+Let me read the files.
+dsh: reasoning:
+The failure is "L1 exactly one JSONL row" — the file has multiple lines (or 0 lines). Wait — `lines.size() == 1` failed. `_split_lines` uses `text.split("\n", true)`, which (with allow_empty=false) discards empty lines. So if there's only one record, the file should contain exactly one line.
+
+Hmm, but earlier in L1, `files.size() == 1` passed. That means one log file exists, yet the line count != 1. It could be 0 lines (empty file) or 2 lines.
+
+Wait — record was called once, and it returned ok:true. So the line should have been written. Unless `_append_line` wrote the file but the contents were empty... Hmm, or maybe the read happened too early? No, it's synchronous.
+
+Wait, could it be 2 lines? record() was called once and returned ok. Then `hostile` was rejected. And the last check reads the file again expecting 1 line.
+
+Hmm, let me think about `JSON.stringify` and Dictionary — Godot 4's JSON.stringify produces `{"key":value,...}` with no newlines. So there should be exactly one newline at the end, and split with allow_empty=false → 1 element.
+
+Maybe... `_read_text` uses `file.get_as_text()`. That's fine.
+
+Wait, maybe the file that got read isn't the log file. `_log_files(dir)` in the test uses FILE_PATTERN. files.size()==1 passed.
+
+Hmm, maybe the file was created empty by `_advance_file`? Let's look: `_advance_file` computes path, `while size >= 0 and size + line_bytes > _max_bytes`. Initially `_cur_seq = 0`, path = ...000000.jsonl doesn't exist → size = -1 → loop doesn't run. Returns path. Then `_append_line(path, text)` → FileAccess.open(path, WRITE) → store_string → flush → get_error.
+
+Hmm wait. There's a subtle problem: `FileAccess.open` with WRITE in Godot, then `store_string`, `flush()`, `get_error()`... that's fine.
+
+Actually, wait — maybe the issue is `record()` being called and writing, but then... hold on, in L1 the check that failed is at line 48, "L1 exactly one JSONL row", which comes after `files.size() == 1` on line 44. So one file, wrong line count.
+
+Hmm, maybe the problem is: `raw` was read with `_read_text(dir + String(files[0]))`. `dir` from `_fresh_dir` ends with "/". `files[0]` is a String from the DirAccess listing → String(files[0]) is fine.
+
+Let me actually reproduce it: rather than guessing, I should run the test and debug it myself. But I can't run Godot at the real project path (the plan says Godot is launched only in an isolated copy; the user's editor may generate sidecar imports). Actually, the runner does that. But I can manually create my own temporary copy for debugging — that's allowed since I'm only "modifying" allowed files (the temp directory is outside the project, and writing elsewhere would be a sandbox violation... actually, the sandbox's workspace-write allows modifications under the workspace /Users/rain/DevGame/Fishing. Writing to /var/folders temp may be denied by the sandbox. Hmm, "some platform temp areas may also be writable".)
+
+Wait — actually, the runner itself creates the temp directory under /var/folders. That probably worked in attempt 1.
+
+Let me think about the actual bug more carefully.
+
+Possibility: `JSON.stringify(line)` where the line dict contains null values. In Godot 4, Dictionary iteration order is insertion order, so key order is preserved. OK.
+
+Possibility: `_split_lines` with `text.split("\n", true)` — in Godot 4, `String.split(delimiter, allow_empty=true)`. So `"\n".split("\n", true)` returns an empty Array. Good.
+
+Hmm — but maybe record actually wrote 2 lines? record is called only once... unless `_append_line` was called twice? No.
+
+Let me reconsider: could the file be 0 bytes? If `FileAccess.open(path, FileAccess.WRITE)` succeeded, but store_string fails... it should return an error → record returns ok:false, and L1 would fail earlier at "L1 record ok".
+
+Wait — actually the check at line 44 `files.size() == 1` passed... really? The failure message was "L1 exactly one JSONL row", so yes, lines 36, 41, and 44 all passed.
+
+So one file exists, record returned ok:true, yet the file doesn't have exactly one line.
+
+Oh wait, maybe I've got it. In `_sample_utc`, if there's no utc_override: `Time.get_datetime_string_from_system(true)` returns 19 chars "2026-11-12T03:28:00". Then `text + "Z"`. No problem.
+
+Hmm, `_date_key` uses substr(0,4)+substr(5,2)+substr(8,2) → "20261112". No problem.
+
+Hmm, what about the file naming: `FILE_PREFIX + _cur_date + "-%06d" % _cur_seq + FILE_SUFFIX`. Operator precedence: `"-%06d" % _cur_seq` — in GDScript, does `+` bind tighter than `%`? Let's think! In GDScript the `%` operator (string format) has the same precedence as `*` and `/`, and they have higher precedence than `+` and `-`. So `a + b - "%06d" % _cur_seq + c` is... no wait, the expression is:
+
+`_dir + FILE_PREFIX + _cur_date + "-%06d" % _cur_seq + FILE_SUFFIX`
+
+Since `%` binds tighter than `+`, this becomes `... _cur_date + ("-%06d" % _cur_seq) + FILE_SUFFIX`. Correct.
+
+So the filename = "event_log-20261112-000000.jsonl". Good, matches the pattern.
+
+Hmm. Then what would produce a file with 0 lines, or with 2+ lines?
+
+Wait a moment. What about `_prune()` being called after a successful write in record? It just removes files, doesn't modify anything.
+
+What if `_log_files(dir)` finds a file but the contents contain more than one newline? That's impossible with one record.
+
+Let me reconsider: maybe `record()` wrote the line successfully, then the test reads with `_read_text(dir + String(files[0]))`. `files[0]` is from the `_log_files` Array (untyped Array of Strings from the DirAccess listing — those are Strings). Fine.
+
+Hmm, wait. Is it possible that record actually appended twice, so the file was written twice with the line? `_advance_file` ... `_append_line`... only once.
+
+Actually, hold on! Maybe the real issue is: `FileAccess.open(path, FileAccess.READ_WRITE if exists else FileAccess.WRITE)` — but the test's `_fresh_dir` creates the dir. But in the isolated runner copy, `OS.get_temp_dir()` is — with isolated HOME, `OS.get_temp_dir()` returns a temp inside the isolated HOME. Fine.
+
+Hmm, maybe I should just run and debug. That's the most reliable path. But debug output requires modifying the test file (allowed: tests/**). I could write a small standalone debug script under tests/**... though that'd be an added deliverable. The runner's preflight checks deliverable presence, but probably doesn't reject extra files in tests/. Still, cleaner to debug outside the repo — but the sandbox may block writing outside /Users/rain/DevGame/Fishing.
+
+Actually, wait. Let me first look at the runner and check if it leaves the temp copy around on failure. Look at run_log001_checks.py. And also read fishing_session.gd to check log wiring (log_health(), log_dir in start(), etc.).
+
+Actually — hold on. Let me re-read L1. There's a subtle trap: `_fresh_dir` uses `Time.get_ticks_usec()`, and the dir name includes `_dir_seq`. That's fine.
+
+Hmm, what about `FishScript.timestamp_valid`? Not in the failing part.
+
+Let me look at the key-order check... not the failing part.
+
+OK, another thought: what if `JSON.stringify` output contains a literal `\n`? No.
+
+What if the file contents are an empty string (0 bytes) → `_split_lines("")` → `"".split("\n", true)` returns `[]` → size 0 ≠ 1 → fails at "L1 exactly one JSONL row". This matches! A 0-byte file.
+
+How could we end up with a 0-byte file yet record returned ok:true? If `FileAccess.open(path, WRITE)` creates the file, `store_string(text)` silently fails, and `file.get_error()` returns OK... hmm.
+
+Or: the file was created empty by a prior `_advance_file`/`_size_of`? `_size_of` opens with READ — doesn't create.
+
+Wait, actually! What about a `FileAccess.open(path, WRITE)` in `_append_line` where path is... hmm.
+
+Let me reconsider the whole flow with `_advance_file` returning a path:
+
+```
+var path := _dir + FILE_PREFIX + _cur_date + "-%06d" % _cur_seq + FILE_SUFFIX
+```
+
+Hmm wait, in `_advance_file`, `_dir` is a member; the local var `path` shadows... fine.
+
+Hmm, but here's a real Godot gotcha: `DirAccess.make_dir_recursive_absolute` returns `Error` (int). `!= OK` is fine.
+
+OK — instead of theorizing, let me reproduce. First let me read the runner.
+
+Actually, one more very plausible cause: **the test's `_read_text` uses `file.get_as_text()`, but the file handle in `_size_of` is closed**... fine.
+
+Another very plausible cause: `record()` writes a line, and then the L1 check on line 43-45 `files := _log_files(dir)` → the DirAccess listing also includes... only one file. Then `_read_text` returns text with one "\n" at the end. `text.split("\n", true)` → 1 element. So the check should pass.
+
+Unless... the `text` has 2 newlines: `JSON.stringify(line) + "\n"` — one.
+
+Hmm, unless record() was called twice somewhere. In L1, `log.record(rec)` once.
+
+Wait, is it possible the check order differs? Actually, in the previous attempt the test file may have been different from what's on disk now? The disk file is the current state from attempt 1 (uncommitted changes). The test-1.log shows the failure. Let me just try to reproduce.
+
+Actually — wait. I think I've got it! Look at `_fail()`: it prints and then calls `quit(1)`. But `quit()` in a SceneTree script doesn't stop `_initialize()` immediately — it just requests quitting. The loop in `_initialize()` continues: `if not step.call(): _cleanup_dirs(); return`. OK, it does return. Fine. But the runner's check is "required stdout marker must appear exactly once: LOG001 LOG PASS; failure marker found: LOG001 LOG FAIL". The output only had one FAIL line. Fine.
+
+Hmm, but here's a thought about `quit(0)` at the end of `_initialize`: in Godot 4, with `--script` + `--quit-after 3600`, a SceneTree script's `_initialize()` runs, and `quit(0)` sets the exit code. Good.
+
+Now, let me consider `L-1`'s failure in the context of the runner's isolated HOME. `OS.get_temp_dir()` — in Godot on macOS, `OS.get_temp_dir()` returns the value of the TMPDIR env var, or "/tmp"... Actually, Godot's `OS::get_executable_path`... `get_temp_dir()` returns the system temp dir (from confstr _CS_DARWIN_USER_TEMP_DIR on macOS, or the TMPDIR env var). Godot's `OS_Unix::get_temp_dir()` checks env "TMPDIR" then "/tmp". The runner sets HOME to the isolated home, and may strip TMPDIR → "/tmp". Either way is fine — writable.
+
+I really need to reproduce with actual output. Let me look at the runner and reproduce manually in a debug harness.
+
+Also, I noticed a possible bug candidate in `_advance_file`: after the date-change branch, `_cur_size = 0`, and then at the tail `_cur_size = size if size >= 0 else 0`. Fine.
+
+Let me consider `_max_existing_seq`: `entry.substr(FILE_PREFIX.length() + 9, 6)` → FILE_PREFIX.length()=10, +9 = 19. Filename "event_log-20261112-000000.jsonl": index 0..9 = "event_log-", 10..17 = date (8 chars), 18 = "-", 19..24 = seq. Correct.
+
+OK, let me look at the runner's code and the fishing_session diff. Then I'll reproduce with a minimal debug script.
+
+Actually, one more candidate that could produce a 0-byte file while `ok:true`: **`FileAccess.open(path, FileAccess.WRITE)` then `store_string` then `flush` then `close`** — that's fine.
+
+Hmm, but wait: what if `exists` was true (file exists from a prior partial run?) and `seek_end()` then... no.
+
+Enough. Time to reproduce. Let me read the runner.
+dsh: reasoning:
+Now, I need to reproduce the L1 failure. Best approach: run a minimal Godot invocation in an isolated temp copy — but the sandbox might not allow writing to /var/folders. Let me test.
+
+Actually, better: to reproduce L1, I can create a debug script inside the temp copy of the project. The runner makes a copy in tempdir. I could do the same thing by hand for debugging. But I must avoid running Godot in the real project path (the plan says not to — the user's editor would rebuild the sidecar for imports; also, running headless Godot at the real path creates the .godot directory — which probably already exists).
+
+Let me set up a temp copy myself:
+- copy the project excluding .git/.godot/tasks/evidence/__pycache__ to a temp dir
+- run godot --headless --editor --quit (import)
+- run the L1 debug script
+
+But first: is /tmp writable under the sandbox? The policy is workspace-write, "some platforms may also be able to write to the temp area". The runner attempt #1 apparently succeeded at copying to /var/folders (per test-1.log). So the sandbox probably allows it.
+
+Wait, actually — maybe the bug is obvious. Let me think about L1 once more.
+
+L1 in the test:
+```
+var files := _log_files(dir)
+if not _check(files.size() == 1, "L1 exactly one log file"):
+```
+That passed (since the failure message is the next check, "L1 exactly one JSONL row").
+
+`_read_text(dir + files[0])` — dir ends with "/", files[0] = "event_log-YYYYMMDD-000000.jsonl".
+
+`_split_lines` → `text.split("\n", true)`.
+
+Hmm, in Godot 4, `String.split(delimiter: String, allow_empty := true, case_sensitive := true) -> PackedStringArray`. With allow_empty=false. If text = `{"a":1}\n`, then → ["{\"a\":1}"] → size 1.
+
+So a failure means raw was "" (empty) or had multiple lines.
+
+When could `_read_text` return ""? When FileAccess.open returns null (file doesn't exist). But `_log_files` listed it...
+
+Ah, wait. I've got it. In `_log_files(dir)`, dir ends with "/" → `DirAccess.open(dir)` is fine. And `_read_text(dir + files[0])` is fine too.
+
+Hmm, another idea: maybe the file has more than one line because the `record()` call wrote the line to the file... hmm.
+
+Let me think about `JSON.stringify(line)`. `line` is a Dictionary literal built from LINE_KEYS[0..7]. In Godot 4, `JSON.stringify` for a Dictionary with null values → outputs as `null`. Output has no newlines. So one line.
+
+OK, another possibility: `_advance_file` returned a path where `_cur_seq` differs from what was appended, creating TWO files? No, the file count was 1.
+
+Hmm — unless `_log_files` found exactly 1 file but there were two files, one of which... no, the pattern is strict.
+
+Honestly, the fastest way is to run it. Let me reproduce with a debug harness. Plan:
+
+1. Create temp copy: `rsync -a --exclude .git --exclude .godot --exclude tasks/evidence --exclude __pycache__ ./ $TMP/project/`
+   Actually the runner uses shutil.copytree with ignore. I'll use rsync or cp.
+2. Run import step.
+3. Run the test script with additional debug? I don't want to modify the actual test file for debug (I could, since tests/** is allowed, but I want to keep it clean). Instead, write a separate debug script into the temp copy (not into the repo) — writing into the temp copy isn't a project file, so that's fine.
+
+Let me check if Godot exists at that path, then run.
+
+Actually, wait — before burning ~1 minute on Godot import, let me re-scan event_log.gd for GDScript traps that would cause empty file or extra lines...
+
+`_append_line`:
+```
+var exists := FileAccess.file_exists(path)
+var file := FileAccess.open(path, FileAccess.READ_WRITE if exists else FileAccess.WRITE)
+```
+GDScript ternary: `x if cond else y`. `FileAccess.open(path, FileAccess.READ_WRITE if exists else FileAccess.WRITE)` — parses as `FileAccess.open(path, (FileAccess.READ_WRITE if exists else FileAccess.WRITE))`. Fine.
+
+Hmm, what if record() succeeded but... the line check runs after `files := _log_files(dir)` — which lists the dir.
+
+Hmm wait, actually! What about `_prune()` being called with `_max_files` default 5 in L1? No pruning.
+
+Wait, what if record() wrote to a different file than the one in `files[0]`? Both same path construction.
+
+OK, another idea: `text.split("\n", true)` — hmm, in Godot 4.x, if text is empty, `"".split("\n", true)` returns `[]`. If text = "\n\n", `[]`.
+
+Could the file contain only a newline? If `JSON.stringify(line)` returned ""? Only if line were... no, stringify on a dict returns "{...}".
+
+Hmm, `line` dict keys are... LINE_KEYS[3] = "event_id" with value `event_id` variant = null. That's fine.
+
+Wait actually, what about the L1 check `res.get("ok") == true and String(res.get("code","")) == ""`. record returns `{"ok": true, "code": ""}`. Pass.
+
+So the file must have >1 lines. How?!
+
+Oh!!! I think I see it. `DirAccess.open(dir)` in `_log_files` — the `dir` used in L1 is `dir + files[0]`, and files was obtained before... no.
+
+Hmm, hold on. `_fresh_dir` returns `path + "/"`. And in L1, `dir` = e.g. "/tmp/log001_shape_123456_0/". `configure_dir(dir, {})` → not a user:// so `normalized` = dir (already ends with "/") → make_dir_recursive_absolute → OK. `_dir` = same.
+
+`record` writes to `_dir + FILE_PREFIX + ...` = "/tmp/log001_shape_.../event_log-...jsonl". Fine.
+
+Test reads `dir + String(files[0])` = same. Fine.
+
+Hmm, what if the `Time.get_datetime_string_from_system(true)` in the runner env returned something weird like "2026-11-12T03:28:00" (19 chars) → +Z = 20 chars. timestamp_valid(text+"Z") — FishScript.timestamp_valid expects 20 chars with Z. That's fine.
+
+`_date_key(timestamp)`: substr(0,4)="2026", substr(5,2)="11", substr(8,2)="12" → "20261112". Fine.
+
+OK, I really cannot figure it out by pure reasoning. Actually — wait. One more thing: could `_advance_file`'s while loop have switched to seq 1 because `_size_of` on a non-existent file returned >= 0? `_size_of` returns -1 if not exists → loop doesn't execute. But if the file exists (created by an earlier WRITE open+close in the same session? no)...
+
+Hmm, what if `FileAccess.file_exists(path)` and `FileAccess.open(path, WRITE)` created the file, and then `store_string` + `flush` + `close` wrote data. Then `_prune()` — opens DirAccess — fine.
+
+OK, one more thought: does Godot's `FileAccess.open(path, FileAccess.WRITE)` emit an error and return null when...? No, ok was true.
+
+Actually wait, maybe the failure isn't that there were 0 or 2 lines in the file, but rather that `_read_text` returned "" because `FileAccess.open` failed to read a file that had just been opened with WRITE... no, it's closed.
+
+Let me try yet another angle: check whether the test file in the repo at the time of attempt 1 == the current file. Yes, presumably nothing has changed since (timestamps: test-1.log at 03:28, event_log.gd is what?). Let me check mtimes.
+
+Actually, the most productive thing: run the repro now. Let me do that.
+
+Plan:
+1. `mktemp -d`, copy the project (excluding .git/.godot/tasks/evidence/__pycache__), run import, and then write a small debug script `/tmp/dbg/debug_log001.gd` in the copy at tests/unit/dbg_log001.gd, that reproduces L1 with prints.
+
+Note: the copy needs .gd.uid files? They already exist. The debug script inside the copy is fine (copy is temp).
+
+Let me do that.
+dsh: reasoning:
+Hmm, wait a sec — the test file is 26004 bytes, but what the read tool displayed was about 574 lines (roughly 20KB?). Well, whatever, that's fine.
+
+Wait, event_log.gd is 13861 bytes, and the read displayed 337 lines. OK.
+
+Let me create an isolated copy and try reproducing step2 with debug output.
+dsh: reasoning:
+Now let me write the L1 debug script inside the copy and run the import + a focused debug script.
+dsh: reasoning:
+Note: I passed `text.split("\n", true, true)` — the third argument is case_sensitive. This is wrong, the 2nd argument is allow_empty. Let's fix it: `text.split("\n", false)` shows the behavior of allow_empty=true. In reality, the default for allow_empty is true. So I'll output `text.split("\n")` (with default allow_empty=true) and `text.split("\n", false)`. Let's fix the debug script.
+dsh: reasoning:
+Wait — `String.split(delimiter, allow_empty=true)` in Godot 4: the default for allow_empty is TRUE. The test is passing `true`... no wait, the test has `text.split("\n", true)` — the second argument is allow_empty=true! So empty strings ARE allowed → the trailing newline produces an empty final element → size becomes 2!
+
+That's it! In Godot 4, the signature of `String.split` is `split(in_divider: String, allow_empty: bool = true, case_sensitive: bool = true) -> PackedStringArray`. The test author intended "allow_empty=false" but passed `true` which is the default for allow_empty=true. So `"line\n".split("\n", true)` → ["line", ""] → size 2 ≠ 1 → "L1 exactly one JSONL row" fails!
+
+To get a result without empties you need `split("\n", false)`. Yes, in Godot 4.x: `"a\n".split("\n", false)` → ["a"], `"a\n".split("\n", true)` → ["a", ""].
+
+This perfectly explains the L1 failure: after 1 record, lines.size() == 2.
+
+And in L3, "L3 one row per day" would similarly fail (day_a.size()==2). L4's `_read_lines` would include an empty trailing row per file; `_read_lines(...).size() < written` might still pass... `_find_rows` would parse "" and → JSON.parse_string("") returns null? parse_string("") probably returns null (parse error) → not a Dictionary → gets skipped. So L4/L6/L7's `_find_rows` is unaffected by the empty trailing row. But L1's explicit `lines.size()==1` and L3's `day_a.size()==1` do fail.
+
+Also L1's "L1 refusals wrote zero rows" checks size()==1 → this also fails.
+
+Fix: change `_split_lines` in the test to `text.split("\n", false)` — i.e., allow_empty=false. This is a genuine test bug (a mistake in the API semantics), not a source bug.
+
+But wait — should the source's trailing newline be preserved? Yes: JSONL rows end with "\n". Using split with allow_empty=false is the correct fix.
+
+Let's verify with a debug run. Also check other potential problems in the test that would fail on later steps (L-6's `elapsed_ms is float` — JSON parse turns numbers into float, so `rows[0]["elapsed_ms"] is float` — in Godot 4, JSON parses integers as float. `int(rows[0]["elapsed_ms"]) >= 0` is fine. But `elapsed_ms` being null → `is float` is false... In the catch_committed row elapsed_ms is set (int), so parsed as float → passes.
+
+L-7's whitespace check: `text.contains(" ")` — JSON.stringify with default no indent → no whitespace. Good. Also `\` backslash — doesn't exist. `~` — doesn't exist. `/` — none. Values like "2026-11-12T05:00:00Z" have no whitespace. Good.
+
+L-4: `written == 30` — with max_bytes=512, all rows are about 130 bytes → each file holds about 3 rows → rotation. 30 writes → 3 files retained? Prune keeps latest 3. files.size() ≤ 3 OK. But wait: `_advance_file` — when the current file is full, switch to next unused seq. But after prune removes the oldest file (say 000000), `_max_existing_seq` isn't re-run within the same instance (only on date change). Within an instance, `_cur_seq` monotonically increases. OK.
+
+But subtle issue in L4's "restart resume": a new `resumed` instance is configured on the same dir; `_advance_file` runs `_max_existing_seq` → gets the max seq of retained files (say seq=2 if 000000 was pruned... wait, files 000000..00000N exist with pruning; the max seq = the latest one). Append to the latest file if there's space, else next seq. Then check `newest_now == newest_before or newest_now.begins_with(newest_before)` — appending to the same latest file → newest_now is newest_before + new line → starts with newest_before. Good. But wait — if the latest file is exactly full (>512) then → new seq → new file has 1 line; then newest_now = only new file's content → doesn't start with newest_before → fail. Hmm, but then the appended line is in the newest file; the check expects append to happen to the previous latest file... Actually if it rolled to a new file, the newest file's content is just the new line, and "begins_with(newest_before)" is false → fail. Hmm, is that a realistic risk? The latest file's size is < 512, but might not have room for the new line (about 130 bytes). Rotation happens when size + line > 512. If at the moment of resume, the latest file has ≥ 382 bytes, resume rotates to a new file → L4's check fails.
+
+Let me compute line size: line = {"timestamp_utc":"2026-11-13T05:00:00Z","severity":"info","event":"catch_committed","event_id":"catch-0-40","save_version":null,"result":"ok","error_code":null,"elapsed_ms":0}
+
+Let me count: JSON.stringify produces no whitespace. Keys: "timestamp_utc":20 chars value → `"timestamp_utc":"2026-11-13T05:00:00Z",` = 17+2 (quotes+colon)... let me just count roughly:
+- `"timestamp_utc":"2026-11-13T05:00:00Z"` → key `"timestamp_utc"` =15, colon=1, value=22 → 38
+- `"severity":"info"` → 12+1... `"severity"`=10, :1, `"info"`=6 → 17
+- `"event":"catch_committed"` → 7+1+17=25
+- `"event_id":"catch-0-40"` → 10+1+12=23
+- `"save_version":null` → 14+1+4=19
+- `"result":"ok"` → 8+1+4=13
+- `"error_code":null` → 12+1+4=17
+- `"elapsed_ms":0` → 12+1+1=14
+7 commas + braces 2 → 9
+Total ≈ 38+17+25+23+19+13+17+14+9 = 175 + 1 newline = 176 bytes per line.
+512/176 → 2 lines per file (2*176=352, 3*176=528>512). So 2 lines per file. 30 writes → 15 files created, prune keeps 3. When resume, latest file: 30 writes = 15 files, each exactly 2 lines? 30 is even → latest file exactly full (352 bytes, room for 176 more? 352+176=528 > 512 → rotate to a new file!).
+
+Oh no! So at resume, latest file is 352 bytes and new line is ~172 bytes → 352+172=524 > 512 → rotate → new file with only that line → then `newest_now` = new file = just the appended line, which doesn't begin with `newest_before` → **L4 check fails**.
+
+Hmm wait, but the resume line's `elapsed_ms` is null and event_id is null → shorter line ~160 bytes. 352+~160 = 512+? Let me compute the resume line precisely:
+`{"timestamp_utc":"2026-11-13T05:00:05Z","severity":"warn","event":"sale_committed","event_id":null,"save_version":null,"result":"ok","error_code":null,"elapsed_ms":null}`
+- timestamp 38 (same)
+- `"severity":"warn"` = 10+1+6=17
+- `"event":"sale_committed"` = 7+1+16=24
+- `"event_id":null` = 10+1+4=15
+- save_version 19, result 13, error_code 17, elapsed 15 (`"elapsed_ms":null`=12+1+4=17? wait `"elapsed_ms"`=12, :1, null=4 → 17)
+Let me recount `"elapsed_ms"`: chars e-l-a-p-s-e-d-_-m-s = 10 + 2 quotes = 12. So elapsed = 12+1+4=17.
+- commas 7 + braces 2 = 9
+Total = 38+17+24+15+19+13+17+17+9 = 169 + 1 = 170.
+352+170 = 522 > 512 → rotate. So the L4 check "restart append never overwrites existing bytes" fails.
+
+Hmm! Unless... `newest_now == newest_before` is false, and `newest_now.begins_with(newest_before)` is also false. Yes, would fail.
+
+But wait — this is a test design issue: the plan says "重建 EventLog 后追加不得覆盖旧行" (after rebuilding EventLog, appending must not overwrite old lines). The correct assertion is: the appended line is appended to the latest file, or a new file is created — either way old lines must be preserved. The current assertion is too strong/wrong.
+
+Hmm, but wait: maybe the intent is that after prune, files are e.g. seq 12,13,14 and latest 14 is full? Let me recompute whether rotation to new file happens.
+
+Actually wait: `_advance_file` logic — after prune removes oldest, within the same instance `_cur_seq` continues to grow. After 30 writes: files 000000..000014 created (15 files × 2 lines). Retention keeps 000012,13,14. Latest 000014 = 2 lines = ~352 bytes (varies by index digits).
+
+Actually lines vary in size: index 0..29 → event_id "catch-0-40".."catch-29-69" (index 2 digits for 10-29 → 2 bytes more), elapsed_ms 0..29 (1-2 digits). So lines are ~174-178 bytes. Two lines ~350. Not full at exactly 512; 3 lines ~527 > 512 → always 2 lines per file.
+
+When 14th file has 2 lines (~350 bytes) at resume, new line 170 → rotate to 000015 → new file has 1 line.
+
+So the L4 "begins_with" check fails. However... hmm, `newest_now` is read from `after_files` = after the resume line, files = 13,14,15 (000012 pruned). newest = 000015 = 1 line. `newest_now.begins_with(newest_before)` → false. `newest_now == newest_before` → false. → Fail.
+
+So the L4 test as written is fragile against exact byte arithmetic. The previous run failed at L1 and never got to L4. To be safe, I should also fix the L4 assertion to properly test "append does not overwrite": e.g., verify the previous lines of the file that previously contained the newest file still exist (i.e., all lines that were in `newest_before` still exist in the union of retained lines, and the appended line is last in the new `after_files`), and that the appended line doesn't overwrite bytes (either appended to same file as continuation, or in a fresh file whose contents equal just the new line).
+
+Simplest robust fix:
+```
+var kept_after := _read_lines(dir)  # all rows after resume append
+for row_text in _split_lines(newest_before):
+    if not kept_after.has(row_text): fail "old rows preserved"
+var tail_rows := _split_lines(newest_now)
+tail = last row of newest_now → event == sale_committed
+```
+Also verify `kept_after.size() == kept_before_size + 1`? kept_after could have been pruned... after the resume append, prune keeps latest 3 — same 3 files (if rotated, one more file → prune drops one more → total lines may not increase). Hmm: before: 3 files × 2 lines = 6 lines. After rotate+append: files 13,14,15; prune keeps 15,14,13 → still 3 files, lines = 2+2+1 = 5 lines. So one old line is lost (prune) — that's fine, retention is bounded. The assertion "append never overwrites existing bytes" should be: the appended line didn't corrupt/overwrite an existing file. Verify: for each retained file, the previous contents are still a prefix of the current contents (if the file still exists), and no file exceeds max_bytes.
+
+Let me restructure L4's post-resume check:
+1. Snapshot the map filename→content before resume (the retained files).
+2. After resume append: for each previously retained file that still exists, its content must be a prefix of (or equal to) the new content (never overwrite/truncate).
+3. The appended line must be parseable as JSON with event=="sale_committed" — find the file that contains it as the final line.
+
+That's robust and matches the plan's intent.
+
+OK, since the previous run only failed on L1, I don't know whether L4 would have failed. My analysis says it would. Rather than guess, let's run the debug and then run the full test and iteratively fix each failure. But each Godot run is ~seconds; that's fine.
+
+Actually, a better approach: first run the real test in my debug copy (with the current test file) to see the actual failure sequence, then apply fixes.
+
+But wait, I should also review L5's `save_fault("rename", true)` — the test calls `session.save_fault(...)`, `session.log_health()`, `session.fsm()`, `session.state()`. Let me check fishing_session.gd to confirm these exist (from SAVE-001/UI-001). Let me look at the fishing_session.gd diff.
+
+Let me first run the import + test in the debug copy to see the actual behavior.
+dsh: reasoning:
+Confirmed two things:
+
+1. `text.split("\n", true)` → 2 elements (trailing empty element included). The test's `_split_lines` is passing `true`, which in Godot 4 means **allow_empty=true** — the exact opposite of the intent. Fix: `text.split("\n", false)`.
+
+2. **Bigger discovery**: `JSON.stringify` sorts Dictionary keys alphabetically! Look at the raw output: `{"elapsed_ms":12,"error_code":null,"event":...,"timestamp_utc":...}` — the keys are in alphabetical order (elapsed_ms, error_code, event, event_id, result, save_version, severity, timestamp_utc), not insertion order!
+
+Godot 4's `JSON.stringify` has `sort_keys: bool = true` by default! Which means the "L1 fixed key order" check (the one that expects the LINE_KEYS order timestamp_utc, severity, event, ...) will fail, and the plan says "output line fixed to contain 8 whitelisted keys, key order fixed, machine-parsable" (key order fixed).
+
+So `JSON.stringify(line)` needs to be `JSON.stringify(line, "  ", false)` — with sort_keys=false, insertion order is preserved.
+
+Wait — does JSON.stringify without indent sort keys? Signature: `JSON.stringify(value, indent := "", sort_keys := false)`. Hmm, default sort_keys is false. But the output is alphabetically sorted! So does that mean Godot 4.x Dictionary iteration is… no, Dictionary preserves insertion order. But the output is alphabetical: elapsed_ms, error_code, event, event_id, result, save_version, severity, timestamp_utc. My insertion order was timestamp_utc, severity, event, event_id, save_version, result, error_code, elapsed_ms. The output is definitely sorted.
+
+Ah, wait — Dictionary iteration order in Godot 4: Dictionary is a hash map, and insertion order is preserved only if not resized… no, Godot's Dictionary uses a packed array that preserves insertion order. Hmm, but the observed output is sorted, so either stringify sorted it, or… let me check: Godot 4.x `JSON.stringify` default: `String stringify(const Variant &p_value, const String &p_indent = "", bool p_sort = true)`. I believe the default for p_sort is true in the GDScript binding docs: "Stringify takes a variant and returns it as a JSON string. Optionally, you can specify an indent to make it more human-readable. If sort_keys is true (by default), the output JSON will be sorted by string keys. By default, indent is an empty string." Yes — Godot's docs say sort_keys is true by default.
+
+So to get fixed insertion order, pass `JSON.stringify(line, "", false)`.
+
+Both fixes:
+- `event_log.gd`: `JSON.stringify(line, "", false)` (this makes the "key order fixed" contract hold. The current output order is also deterministic (alphabetical), but the plan + test require the LINE_KEYS order. The test's key-order check compares against raw.find positions in LINE_KEYS order.)
+- `test_log001_log.gd`: `_split_lines` → `text.split("\n", false)`.
+
+Which side should be changed? The plan says "output line fixed to contain 8 whitelisted keys, key order fixed" and the test asserts a specific LINE_KEYS order (timestamp first). The plan's §3.1 says "output line fixed to contain 8 whitelisted keys" and L-1 says "key order fixed". Which order? The test uses the LINE_KEYS order with timestamp_utc first. It's reasonable for the logger to put timestamp first. Change the source to `JSON.stringify(line, "", false)` to preserve insertion order = LINE_KEYS order.
+
+Both files are within the allowed scope.
+
+Now, will other checks fail? Let me apply these two fixes and run the full test suite in the debug copy to see.
+
+Also consider L-1: after the fix, `raw.find("\"" + key + "\"")` for key order — insertion order preserved → positions in LINE_KEYS order increase → passes.
+
+Also L-7 checks `text.contains(" ")` — JSON.stringify(line, "", false) with empty indent → no spaces. Good.
+
+L-6: `rows[0]["elapsed_ms"] is float` — JSON parse: integer numbers become float in Godot 4 (JSON always parses as double). So `is float` is true. OK.
+
+L-4's resume concern (my analysis of the begins_with check). Let me compute the actual numbers after the split fix and confirm. Better: after fixing, run the whole test and observe.
+
+Also L-2: `strict.configure_dir(_fresh_dir("opts1"), {"max_bytes": 100})` → code BAD_OPTIONS. Note that after configure_dir fails, `_configured` remains false, so subsequent configure_dir calls still work. Good. Also `log.configure_dir(_fresh_dir("again"), {})` → ALREADY_CONFIGURED (already configured, and the dir arg is ignored). Good — my configure_dir checks `_configured` first. Good.
+
+L-2's final check: `_log_files(dir).is_empty()` — all rejected → zero files. In `record`, validation happens before any file ops, so nothing gets created. But `_advance_file`… not reached. Good.
+
+L-5: needs fishing_session's `session.log_health()`, `save_fault`, `request_cast` returning checkpoint_committed, etc. Let me read the fishing_session.gd diff to confirm those exist.
+
+Also L-5's boot: `session.start({"save_dir":..., "log_dir":..., "rng_seed": 9401})` — fishing_session must accept log_dir. Let me read the diff.
+
+L-8's boot expects `boot.get("fresh") == true`. And `session.log_health()` → BAD_DIR when log dir is a regular file. In my configure_dir: `DirAccess.make_dir_recursive_absolute(normalized)` when `normalized` = "/tmp/xxx/blocked_log/" (a path whose final component is a file, with "/" appended). Does make_dir_recursive_absolute fail → return FAILED? Godot's DirAccess.make_dir_recursive_absolute calls `dir_exists(p_path) ? OK : mkdir_recursive(p_path)`. mkdir on an existing file path fails → returns CANT_OPEN… probably returns ERR_CANT_OPEN/ERR_CANT_CREATE. Then it's BAD_DIR. Good.
+
+But also `record()` when not configured → NOT_CONFIGURED code. FishingSession's log_health must report BAD_DIR (the saved configure code), not NOT_CONFIGURED. Need to check the wiring in fishing_session.
+
+Let me read the fishing_session.gd diff.
+
+根本原因已确认。根据调试输出，存在两个问题：
+
+1. `_split_lines` 将 `true` 作为 `allow_empty` 传递（Godot 4 的默认值为 true）。因此末尾的 `"\n"` 会生成第二个空元素 → `"L1 exactly one JSONL row"` 返回 2 个元素。**测试端的 bug。**
+2. `JSON.stringify(line)` 默认会对字典键**按字母顺序排序**（输出顺序为 `elapsed_ms, error_code, ...`）。因此固定键序（`timestamp_utc` 在前）的契约被破坏了，并且键序检查也会失败。**源码端的 bug** —— 需要传入 `sort_keys = false`。
+
+在修改 fishing_session 的接线之前，让我先检查一下 UI 侧的 diff，以确认其他问题。
+dsh: reasoning:
+The session wiring looks reasonable. Now let me apply two fixes:
+
+1. `event_log.gd`: `JSON.stringify(line)` → `JSON.stringify(line, "", false)` (preserve the LINE_KEYS insertion order).
+
+2. `test_log001_log.gd` `_split_lines`: `text.split("\n", true)` → `text.split("\n", false)` (allow_empty=false → no trailing empty string).
+
+Next, thinking about the L-4 resume issue (the begins_with check) — my byte-count analysis suggests a rotation might happen on resume. After the fix, let me actually run the full test to confirm. I'll run the test in a debug copy (with the fixed files copied in) and iterate.
+
+Additional check — L-4: `written == 30`. All 30 records are ok. With my rotation logic, all writes succeed (rotation to new seq; prune deletes oldest). Right.
+
+L-4: `files.size() <= 3` and `not files.is_empty()`. OK.
+
+L-4 `kept.size() < written` → 6 < 30. OK.
+
+L-4 resume: possible issue as analyzed. Let me run and see.
+
+L-6: uses `session.sell_all()` — presumably exists. And `session.fsm()`, `session.state()`.
+
+L-6 check `rows[0]["elapsed_ms"] is float`: from `_finish_settlement` the catch_committed row, elapsed = `Time.get_ticks_msec() - _settlement_start_ms` → int (e.g., 0) → JSON → float 0.0 → `is float` is true. OK. But note: the dict passed may contain "elapsed_ms": null → JSON null → parsed as null → `is float` is false. For catch via tick_to_settlement, elapsed is an int. OK.
+
+L-6: exactly one sale_committed row after retry_persist: sell_all failed with PERSIST_FAILED (sale_failed row 1), then retry succeeds → sale_committed row 1. But wait — does retry_persist also do a checkpoint persist that logs a save_checkpoint_failed row? Doesn't matter, sale_failed count is checked separately.
+
+But watch out for L-6's `failure_rows.size() == 1`: sell_all with a rename fault → the economy's sell_fish fails with PERSIST_FAILED → sale_failed row 1. But does sell_all internally retry persist? Probably one call → one row. OK.
+
+L-6's second part: with fault armed, `request_cast` → checkpoint fails → save_error → then tick to SETTLEMENT → settlement commit → persist fails → catch_failed row. Then disarm, retry_persist → commit succeeds → catch_committed row 1. But wait: does `retry_persist` replay the pending catch → `_log_commit_result(commit, ..., null)` → elapsed is null. That's fine.
+
+But note: `retried.size() == 1` — during the faulted settlement, the commit might have been attempted multiple times (once at settlement, then again via retry path on each subsequent tick?). `_tick_to_settlement` stops the moment state==SETTLEMENT. The commit happens once in `_finish_settlement`. Then retry_persist replays the pending candidate → catch_committed. But `_replay_pending_candidate` logs with elapsed null. The row event catch_committed has result... commit ok, code "" → info/ok. OK, count 1.
+
+Hmm wait, but during `_tick_to_settlement` in the faulted session: the tick after SETTLEMENT is reached stops the loop (returns true when state==SETTLEMENT). The first tick that reaches SETTLEMENT triggers `_begin_settlement` → commit fails → catch_failed. Good.
+
+But actually, does `_tick_to_settlement` check the snapshot before ticking? Yes, first iteration: check state → not SETTLEMENT → tick(120.0). 8 iterations, each tick 120ms… wait, tick(120.0) is 120 ms? The FSM uses an independent logic clock, and the wait is 20-60s. With tick(120.0) at 120ms, the total 8*120=960ms won't reach 20-60 seconds… unless tick(delta_ms) treats the argument as ms, but the FSM's test seam uses "manual_settlement" or virtual clock… existing tests (UI/SAVE) use `_tick_to_settlement` similarly, so presumably the FSM has a test seam where the clock advances. In UI-001/SAVE-001, the tick loop probably uses the same helper with tick(120.0) with manual_settlement… hmm, `tick(120.0)` — 120.0 what? If ms, 8 ticks = 960ms < 20s. But the existing SAVE-001 test passes with the same pattern, so whatever — maybe tick(120.0) means seconds (delta in seconds?). 8*120s = 960s > 60s. That would make sense: tick(delta_sec) with max wait 60s → 1 tick of 120s reaches SETTLEMENT. OK, probably tick takes seconds. Good — existing tests pass so this helper's semantics is correct.
+
+L-8: `session.start({"save_dir": blocked_save, "log_dir": blocker, ...})` where blocker is a plain file path. `configure_dir(blocker)`: `DirAccess.make_dir_recursive_absolute(normalized)` with normalized = blocker + "/" → hmm, does make_dir_recursive_absolute("/tmp/x/blocked_log/") succeed when blocked_log is a file? Godot's `DirAccess::make_dir_recursive_absolute` → `DirAccess::dir_exists_absolute(p_path)` returns true if it exists as a dir… then `dir_make(p_path)`. For "file/", dir_exists_absolute might… normalize the path stripping trailing slash, and return true since path exists (as file), then dir_make fails with CANT_OPEN/ALREADY_IN_USE? Actually `dir_make` on existing file returns ERR_CANT_CREATE? Then != OK → BAD_DIR. Good.
+
+My debug run could verify that L-8's log_health is BAD_DIR — but the session test covers this.
+
+L-8 `boot.get("fresh") == true` — the boot result from `_boot_fresh` presumably includes "fresh": true. Existing code; OK.
+
+L-8 HUD test: `HudScript.new()`, `root.add_child(hud)` — in SceneTree script, `root` is a Window; add_child in `_initialize` — fine since we're in the main loop's first iteration? Should be fine.
+
+Now, another possible issue in L-1: the "L1 fixed key order" check uses raw.find against `"timestamp_utc"` first — with sort_keys=false, raw = `{"timestamp_utc":...,"severity":...,...}`. cursor=-1; at = find(`"timestamp_utc"`) = 1 → cursor=1; severity at ~28 > 1 … all ascending → passes.
+
+Also, L-1: `parsed is Dictionary and (parsed as Dictionary).size() == 8` — 8 keys including nulls → JSON.parse_string preserves null keys → size 8. Good.
+
+Also `row["error_code"] == null` — JSON null parses to null. Good.
+
+One more: L-2's `strict.configure_dir(_fresh_dir("opts1"), {"max_bytes": 100})` — the `for key in options` loop: `_option_keys_valid("max_bytes", 100)` → key is String, value is int → true → passes the loop; then max_bytes=100 < 512 → BAD_OPTIONS. Good.
+
+`{"upload": 1}` → `_option_keys_valid("upload", 1)` → false → BAD_OPTIONS. Good.
+
+L-2: `missing` = {"event": "sale_failed"} → severity missing → `severity` = null → not a String → BAD_SEVERITY → rejected. Good.
+
+`negative["elapsed_ms"] = -5` → BAD_ELAPSED. Good.
+
+Now, `_check` returns false when `_fail` fails — fine.
+
+Now, let me apply the two edits and rerun the full test in the debug copy.
+
+Also — the plan's L-4 wording: "rebuild EventLog then append must not overwrite old rows; if the file with the max sequence is not yet full, continue appending, otherwise use the next unused sequence; if the max sequence is full then fail-closed"?? Wait, plan line 53: "if the max sequence is full then fail-closed" — hmm, if the max-seq file is full → "fail-closed"? Re-reading: "on each startup, restore the max sequence from strictly-matching same-day files, avoiding overwriting old logs; if the file with the max sequence is not yet full, continue appending, otherwise use the next unused sequence; if the max sequence is full then fail-closed."
+
+Hmm, that last clause "if the max sequence is full then fail-closed" is odd — I think it means: if the max-seq file is full → use the next unused seq (not append to the full one). Actually "use the next unused sequence" already covers that. Maybe "if the max sequence is full then fail-closed" is a leftover/contradictory clause. My implementation rotates to the next unused seq — consistent with "otherwise use the next unused sequence" and "any file ≤ max_bytes". The L-4 assertion "restart append never overwrites existing bytes" — if a new file is created, no overwrite of existing bytes happens; the assertion just needs to correctly verify that.
+
+Given the ambiguity, I'll adjust the L-4 check to robustly verify the intended contract (no overwrite of existing bytes; appended row is last), without weakening it. That's within scope of the tests.
+
+Now, let me edit the two files.
+
+会话的接线与计划一致。实际存在 2 个 bug：
+
+1. `event_log.gd` 中的 `JSON.stringify(line)` —— 由于 Godot 中 `sort_keys` 默认被启用，固定的 8 键顺序（`timestamp_utc` 最先）会被按字母顺序重新排列，从而破坏 L-1/L-7 的键顺序契约。
+2. `_split_lines` 在 `test_log001_log.gd` 中 —— 第二个参数是 `allow_empty`，而 `true` 表示*保留*空字段，因此每行内容的末尾都会多出一个 `""` 元素，导致 L-1 的行数断言被破坏。
+
+现在应用两处修复：
+dsh: reasoning:
+Also, I need to update the comment in event_log.gd. It says "JSONL append-write" — no problem, no changes needed.
+
+Next, sync the two modified files to the debug copy and run the full test there.
+dsh: reasoning:
+As predicted: L-1/L-2/L-3 are now passing. L-4's resume check is failing. This is because the latest retained file becomes full (with 2 rows about 350B + resume row about 170B > 512), so the logger legitimately rotates to a new unused seq — the assertion `newest_now == newest_before or newest_now.begins_with(newest_before)` is too strict: if rotation happens, the new latest file contains only the appended row (this is not an overwrite. The previous latest file has become the second-newest and remains unchanged).
+
+Let me verify the actual behavior with debug to confirm that the appended row goes into a new file and that old bytes are preserved. Then fix the L-4 assertion to verify the actual contract:
+1. For each file that existed before the resume, if it still exists afterwards, its old content must be a prefix of its current content (append-only, never overwrite/truncate).
+2. The appended row (event=sale_committed, timestamp 05:00:05) must exist as the last row of the newest file after the resume.
+3. All files must still be ≤ max_bytes. (Already checked for `files`, but also check after_files.)
+
+Let me write a simple debug to check what's happening at resume time: capture the before files map, then capture after.
+
+Actually, I'm fairly confident. But in order to write the correct assertion, let me check the state at the time of the L4 failure. Extend the debug script to simulate L-4: 30 records with max_bytes=512, max_files=3, then resume.
+
+L-1 至 L-3 已通过。目前，L-4 恢复检查正如我的字节计数所预测的那样失败：保留的最新文件包含 2 行（大约 350 字节），因此恢复追加合法地轮转到一个未使用的下一个序号（350 + ~170 > 512），此时最新文件仅包含新行——但 `begins_with(newest_before)` 却错误地要求原地追加。让我们通过调试来验证实际行为，并确认旧的字节确实被完整保留：
+dsh: reasoning:
+The file policy is workspace-write, and /tmp may be restricted. Let me try running the debug script from the project root. The script path needs to be a res:// path. Let me run it from the project root with a path inside the project. Actually, my debug file is at /tmp/log001_dbg_flF4/project — that's an isolated copy. The sandbox might block access to /tmp. Let me test it.
+dsh: reasoning:
+Confirmed: resume behavior is correct per the plan — the logger resumes at the max existing seq (000014), determines it's full (356+170=526>512), rotates to the next unused seq (000015), appends, and prune deletes the oldest (000012). No existing bytes are ever overwritten.
+
+The test assertion is wrong: it was demanding that the latest file after resume begin with the previous latest file's contents, which would only hold if the append were made in-place. The correct contract per plan §3.1 is:
+- On resume, do not overwrite or truncate existing files (append-only: for files present both before and after, old contents must be a prefix of current contents).
+- The appended line must be the final line of the newest file.
+
+Rewrite the L-4 resume check:
+
+```gdscript
+var before_files := _log_files(dir)
+var before_newest := dir + String(before_files[before_files.size() - 1])
+var newest_before := _read_text(before_newest)
+var resumed := LogScript.new()
+... configure, set_utc_override, record ...
+var after_files := _log_files(dir)
+# (a) every file retained from before the resume keeps its old bytes as a prefix (append-only, never overwrite)
+var newest_now := _read_text(dir + String(after_files[after_files.size() - 1]))
+```
+
+However, the retained files after prune may not include the previous latest file. So a generic check: for each file in before_files that still exists in after_files, its current content must begin_with the content read before resume. Need a snapshot map of name→text from before resume.
+
+Implementation in test style:
+
+```gdscript
+var before := _snapshot_lines(dir)  # Dictionary name -> text
+...
+var after := _snapshot_lines(dir)
+for name in before:
+    if after.has(name) and not String(after[name]).begins_with(String(before[name])):
+        return _fail("L4 restart never overwrites existing bytes: " + name)
+var newest_now := _read_text(dir + String(after_files[after_files.size() - 1]))
+var tail_rows := _split_lines(newest_now)
+var tail: Dictionary = JSON.parse_string(tail_rows[tail_rows.size() - 1])
+if not _check(String(tail["event"]) == "sale_committed", "L4 appended row is last in newest file")
+```
+
+Also add a check that after resume, all files are ≤ 512 (the rotation invariant continues to hold).
+
+Need a helper `_snapshot_texts(dir) -> Dictionary`. Also `before.size() > 0`.
+
+Wait — also, the appended line must be found somewhere: the final line of the newest file is the appended sale_committed line. If it rotated to a new file, the newest file's only line is the appended line → the final line is the appended line. If appended in place, the final line is also the appended line. Either way, check (b) holds.
+
+Another detail: `newest_now.begins_with(newest_before)` is no longer used; keep the "L4 appended row is last" check.
+
+Now, also check L-4's health check at the end: `log.health()` — `lines_written == 30` (the original `log` instance, not resumed), `files_pruned >= 1` (original pruned 30/2=15 files → 12 prunes), max_bytes==512, max_files==3. Fine.
+
+Next in test order: L-5, L-6, L-7, L-8 — session-based. These require FishingSession wiring; let me rewrite L-4 and then run the full test to see the next failures.
+
+OK, let me rewrite the L-4 section. Currently, lines 187–204:
+
+```gdscript
+	var newest_before := _read_text(dir + String(files[files.size() - 1]))
+	var resumed := LogScript.new()
+	if not _check(resumed.configure_dir(dir, {"max_bytes": 512, "max_files": 3}).get("ok") == true,
+			"L4 reconfigure in fresh instance"):
+		return false
+	resumed.set_utc_override("2026-11-13T05:00:05Z")
+	if not _check(resumed.record({"severity": "warn", "event": "sale_committed", "result": "ok"}).get("ok") == true,
+			"L4 append after restart"):
+		return false
+	var after_files := _log_files(dir)
+	var newest_now := _read_text(dir + String(after_files[after_files.size() - 1]))
+	if not _check(newest_now == newest_before or newest_now.begins_with(newest_before),
+			"L4 restart append never overwrites existing bytes"):
+		return false
+	var tail_rows := _split_lines(newest_now)
+	var tail: Dictionary = JSON.parse_string(tail_rows[tail_rows.size() - 1])
+	if not _check(String(tail["event"]) == "sale_committed", "L4 appended row is last"):
+		return false
+```
+
+Replace with the snapshot-based check. Add a `_snapshot_texts` helper.
+
+Also the L-7 "lines(split...)" debug — irrelevant to the repo's test.
+
+OK, editing.
+
+已确认——恢复行为符合方案：logger 从最大 seq 恢复，检测到 000014 已满（356+170>512），轮转到下一个未使用的 seq，并且 prune 删除了最旧的条目，同时**没有覆盖任何现有字节**。失败的是测试断言本身：它要求原地追加（`newest_now.begins_with(newest_before)`），但按规则轮转到下一个未使用的 seq 同样是一种可接受的追加方式。将断言修正为方案中实际的契约（针对保留的文件使用前缀保留）：
+dsh: reasoning:
+Next, add the `_snapshot_texts` helper to the shared helpers section, near `_read_lines` / `_log_files`. Also, the variable `files` is still being used in the earlier part (the `for name in files:` loop for ≤512 bytes) — that's still fine. Also, was `newest_before` used elsewhere? I deleted it. `files` is still referenced at lines 178–186 (`_log_files(dir)` → files, check for size ≤3, byte-size loop, `kept := _read_lines(dir)`). OK.
+
+Add the helper:
+dsh: reasoning:
+Wait — inside the L-4 loop `for name in files:`, there's `if _file_bytes(dir + String(name)) > 512`, and `name` is a Variant. In my new loop as well, I'm using `name` again inside the same function — shadowing in GDScript for-loops is fine (different loops). But inside `for name in before_texts:`, I'm doing `String(before_texts[name])` — in GDScript, iterating over a Dictionary yields its keys. OK.
+
+Alright, let me re-run the entire test suite with the debug copy.
+dsh: reasoning:
+L-1 through L-5 are currently passing. L-6's `_tick_to_settlement` is failing — the tick loop isn't reaching SETTLEMENT. Let's check how existing tests (SAVE-001 or UI-001) drive sessions into SETTLEMENT, and reuse their exact approach (the tick units may differ, or manual_settlement may be needed, or the FSM wait time might be 20–60 seconds and tick(120.0) might be 120 ms).
+
+Let's check `_tick_to_settlement` in test_save001_save.gd or the FSM test, and the signature of FishingSession.tick.
+dsh: reasoning:
+`FishingSession.tick(seconds: float) -> Array`. The FSM transitions one step per tick_effective call: IDLE → (cast) CASTING → 1 sec → WAITING → 200 sec → SETTLEMENT? Let me check the FSM. Looking at FSM's `tick` and how a cast reaches SETTLEMENT:
+
+From line 702 of the SAVE test: `fsm.tick_effective(5.0); fsm.tick_effective(200.0); fsm.tick_effective(1.0); fsm.tick_effective(1.0)` → after cast: tick(5.0) → CASTING→WAITING? Actually the comment on line 468 says: tick_effective(2.0) → CASTING(1 sec)→WAITING, carrying over 1.0 valid seconds. So CASTING takes 1 second, then WAITING for a 20–60 sec random wait, then SETTLEMENT. FSM's tick_effective probably advances at most one transition per call.
+
+So to reach SETTLEMENT from the session: cast → tick(>=1) (CASTING→WAITING) → tick(>=60) (WAITING→? maybe BITING?) → …? Let me look at the FSM state machine to know the number of steps: the states might be IDLE, CASTING, WAITING, BITING?, SETTLEMENT…
+
+Session.tick(seconds) is probably calling fsm.tick_effective(seconds) and handling events. My L-6 helper: 8 iterations of `session.tick(120.0)` → 800+ total seconds, but if each tick advances at most one step, cast→(CASTING→WAITING)→(WAITING→?)→… let me look at FishingStateMachine.
+dsh: reasoning:
+The FSM's `tick_effective` advances at most one state transition per call (as the SAVE-001 comment states: "每次调用至多推进一步 (advances at most one step per call)"). The FSM file is somewhere else, so let's look for it. Then verify the state flow: CASTING (1s) → WAITING (20~60s) → SETTLEMENT? And does `_tick_to_settlement` use `session.tick(120.0)` ×8? Let's check how UI-001's test drives SETTLEMENT through the session.
+dsh: reasoning:
+UI-001 has the exact same `_tick_to_settlement` using `tick(120.0)` and 8 steps, and the UI-001 tests are passing. So why is L-6 failing here?
+
+Wait a minute — the FSM advances at most one step per tick_effective call. The states: IDLE → CASTING → WAITING → BITTEN?/HOOKED? → SETTLEMENT. In the UI-001 tests, `_tick_to_settlement` does up to 8 iterations of `tick(120.0)` each, and it passes in the UI-001 runner. Hmm.
+
+But in L-6, the session was started with `rng_seed: 6301`, and `request_cast()` is called only once. The UI test also does `request_cast` and then ticks. So why is it failing here?
+
+Wait — maybe it's the state after cast: `tick(120.0)` → CASTING→WAITING (1 step); `tick(120.0)` → WAITING→? if the wait time is 20–60 seconds, then 120 seconds > 60 seconds → WAITING→HOOKED/SETTLEMENT (1 step per call, so 2–3 calls). The UI test passes 8 times. So why does it fail here?
+
+Let me look at the L-6 sequence:
+
+```
+session.start({...}) 
+var cast: Dictionary = session.request_cast()
+_check(cast.get("ok") == true, "L6 cast")
+var catch_id := ...
+if not _check(_tick_to_settlement(session), "L6 deterministic cycle reaches SETTLEMENT"):
+```
+
+Hmm — `_tick_to_settlement` checks `session.fsm().snapshot_checkpoint()`. It should work the same way as in UI-001.
+
+However... `_save_error`! In L-6, nothing faults the save beforehand. But the boot does... wait — in `_begin_settlement`, when a candidate is produced → checkpoint via `_persist_checked`; if that fails, `_save_error=true`, and `tick()` returns [] (no progression). But there's no fault here.
+
+Hmm, wait, the L-6 failure is "L6 deterministic cycle reaches SETTLEMENT" — the loop ran 8 times without reaching SETTLEMENT. Or it returned false after the loop. If each tick advances at most one step: cast (IDLE→CASTING transition happens at cast time? or on the next tick?). Sequence: request_cast → state CASTING + checkpoint. tick1: CASTING→WAITING. tick2: WAITING→(wait 20–60 < 120)→SETTLEMENT? If that's the case it should be reached on tick 2.
+
+Why isn't it reaching? Could it be that `tick()` is returning [] because of `_save_error` — did the boot checkpoint fail? `start()` with a new save_dir → `_boot_fresh` → initial checkpoint → ok.
+
+Hmm, wait — L-5 ran before L-6, and L-5 passed. In L-5, `session.save_fault("rename", true)` was armed on `session.save_service()`. Is the save fault service per-session (a new AtomicSaveService per FishingSession)? L-6 creates a new session, so faults shouldn't carry over... unless SaveFaults is global/static. Hmm.
+
+Actually, wait — L-5 ended with `retry_persist` and ok after the fault was released. New session in L-6: new `_save = AtomicSaveService.new()`. Faults are armed on the old one. OK.
+
+Let me check the UI-001 helper — identical. The difference is: L-6 uses `session.start({"save_dir": dir, "log_dir": log_dir, "rng_seed": 6301})`. UI-001 probably starts without `rng_seed` (or with it) — the wait time from the seed is 20–60 seconds. tick(120) covers that.
+
+Hmm, let me look more carefully at the FSM's tick_effective — maybe a single tick_effective advances multiple steps (consuming all the seconds), and the states are IDLE→CASTING(1s)→WAITING(20–60s)→REELING?→SETTLEMENT. If it's one step per call: cast → CASTING. tick(120): CASTING→WAITING (1 step). tick(120): WAITING→REELING? tick(120): →SETTLEMENT. 3 ticks ≤ 8. It should still reach.
+
+So the failure means it never reached within 8 ticks. Something else is blocking progression: `tick()` early-returns `[]` if `_save_error` or `not _input_open` or `_hidden`. Did `_save_error` become true? During `tick`, after each FSM transition → `_persist_checked()` — normal persist in temp dir → ok.
+
+Ah, wait. I think it's because of WAITING's periodic checkpoint: `_clock.now() - _last_wait_checkpoint_clock >= WAITING_CHECKPOINT_INTERVAL_SEC` → persist — no problem.
+
+Hmm, but what about `_begin_settlement` when a fault isn't armed → no problem.
+
+Let me debug directly: print the FSM's state transitions in the L-6 flow. A quick debug script.
+dsh: reasoning:
+The L-6 helper uses the same `_tick_to_settlement` as UI-001. Wait — L-6's `_tick_to_settlement` checks `session.fsm().snapshot_checkpoint().get("state") == "SETTLEMENT"` before ticking. That's the same as UI-001. So why does it fail? The difference is that L-6's session boots with an rng_seed of 6301, and the FSM is... let me actually run the debug.
+
+Note: the debug script is in the isolated copy at /tmp — the file sandbox is workspace-write mode, but /tmp apparently is allowed (writes succeeded). Let's run it.
+dsh: reasoning:
+Found it. The FSM transitions from CASTING→WAITING→HOOKED→REELING→SETTLEMENT, one step per `tick_effective` call, but each tick only consumes 1 effective second per call (at_clock 1.0, 24.0, 25.0, 26.0). By step 3, a REELING→SETTLEMENT transition occurs, and the state becomes SETTLEMENT. However, `_tick_to_settlement` checks the state **before** the tick. After step 3's tick, the state is SETTLEMENT, and `_begin_settlement()` runs during step 3's tick, and after the settlement is confirmed the FSM returns to IDLE (auto-confirmation). Therefore, at the time of step 4's check, the state is already IDLE → the loop continues → the final check after the loop is IDLE → returns false.
+
+The reason the UI-001 helper works is... let's take a look at UI-001's `_tick_to_settlement`:
+
+```
+476: func _tick_to_settlement(session) -> bool:
+477-479: ... (lines 477-479 needed)
+480:		if session.fsm().snapshot_checkpoint().get("state") == "SETTLEMENT":
+482:		session.tick(120.0)
+483:	return session.fsm().snapshot_checkpoint().get("state") == "SETTLEMENT"
+```
+
+Wait, the same pattern is returning true in UI-001?? Let me read lines 470-484 of test_ui001_ui.gd completely. Maybe it's checking a "SETTLEMENT" event within the event array, or checking the basket. Let me read it.
+
+Actually, looking at my LOG test:
+```
+func _tick_to_settlement(session) -> bool:
+	for _step in 8:
+		if session.fsm().snapshot_checkpoint().get("state") == "SETTLEMENT":
+			return true
+		session.tick(120.0)
+	return session.fsm().snapshot_checkpoint().get("state") == "SETTLEMENT"
+```
+
+Sequence: step0 pre=CASTING → tick → WAITING; step1 pre=WAITING → tick → HOOKED; step2 pre=HOOKED → tick → REELING; step3 pre=REELING → tick → SETTLEMENT + auto-confirm → returns to IDLE after settlement completes (catch is confirmed and the state returns to IDLE); step4 pre=IDLE → tick → nothing... loop ends; final check is IDLE → false.
+
+In other words, the FSM leaves SETTLEMENT within the same tick and returns (auto-confirmation of SETTLEMENT → IDLE). The UI-001 version must be detecting the settlement differently — probably by checking the returned `events` array for a SETTLEMENT transition, or checking the basket after the tick. Let me read lines 470-484 of the UI-001 test.
+dsh: reasoning:
+Hmm, UI-001's helper has a `request_cast()` inside, but the check logic is the same. But in UI-001, is the UI-001 test calling `_tick_to_settlement` after already having requested a cast? Line 322 uses it. And it passes there — why does it pass in UI-001 but not in L-6?
+
+Wait — looking at the debug output: after step 3's tick, state = SETTLEMENT... then the loop checks pre_state at step 4, but it's IDLE. So the helper should detect SETTLEMENT at the top of step 4 — unless settlement auto-completes within the same `tick()` call. That's exactly what's happening: `tick()` calls `_begin_settlement()` → `_finish_settlement()` → commits the catch → the FSM acks SETTLEMENT→IDLE (probably via a separate `ack`). Wait, the step 4 events were empty — meaning the settlement was fully processed in step 3's tick (catch committed to the basket), and the FSM returned to IDLE.
+
+Hmm, but then why does UI-001's identical helper pass? Looking at UI-001: `session.tick(30.0)`... maybe with their rng_seed, settlement uses manual_settlement? Line 322: `if not _check(_tick_to_settlement(session), "U1R deterministic cycle reaches SETTLEMENT")`. If the FSM passes through SETTLEMENT and returns to IDLE within the same tick, UI-001's helper would fail too... unless UI-001's session starts with the `manual_settlement: true` option! Let me check around line 322 of the UI test.
+
+Actually, looking at FishingSession: `_finish_settlement(keep_pending := false)` — and `start(options)` has the option "manual_settlement". In non-manual mode, `_begin_settlement` immediately commits and acks. With manual_settlement, settlement stays pending → the state should stay at SETTLEMENT.
+
+Let me read lines 310–330 of the UI-001 test.
+dsh: reasoning:
+Found the root cause of L-6: UI-001's `_tick_to_settlement` works because the session there is booted with `manual_settlement: true`, and the session remains in SETTLEMENT. In my L-6 (and L-5/L-7/L-8 helpers), I'm using automatic settlement — in the normal `tick(120.0)` flow: CASTING→WAITING→HOOKED→REELING→SETTLEMENT, and when reaching SETTLEMENT, `_begin_settlement()` is called synchronously, immediately followed by `_finish_settlement()` (automatic). After commit, does the FSM return to IDLE? Looking at the debug: on step=3, events show REELING→SETTLEMENT, then step=4 shows IDLE. So the FSM auto-acknowledges SETTLEMENT→IDLE after settlement is reached within the same tick. Therefore, `snapshot_checkpoint().state == "SETTLEMENT"` can never be observed after the tick — the check in `_tick_to_settlement` never becomes true, and after the loop it's IDLE, so it returns false.
+
+Wait, but L-5 doesn't use `_tick_to_settlement` — it passed. L-6/L-7/L-8 use it.
+
+How does the FSM leave SETTLEMENT? Let me check FishingStateMachine's tick_effective: within a single tick, WAITING→HOOKED (1 event per call, at most 1 transition per call). So step 3: REELING→SETTLEMENT. Then step 4's pre_state=IDLE: meaning within step 3's tick call, after `_begin_settlement` → `_finish_settlement` (automatic), `_finish_settlement` probably calls `_fsm.acknowledge_settlement()` → SETTLEMENT→IDLE, and then a checkpoint is persisted. So the SETTLEMENT state is transient within the tick — correct behavior.
+
+Therefore, the LOG-001 test helper is wrong: it must detect settlement completion a different way. The correct approach for auto-settlement sessions: tick until the FSM returns to IDLE AND the basket grows / catch_committed exists, or track events: return true if the events contain a transition to SETTLEMENT.
+
+Better helper:
+```
+func _tick_to_settlement(session) -> bool:
+	for _step in 8:
+		var events: Array = session.tick(120.0)
+		for event in events:
+			if String((event as Dictionary).get("to_state", "")) == "SETTLEMENT":
+				return true
+	return false
+```
+This detects that SETTLEMENT was reached (and automatically settled).
+
+But wait — L-6's `faulted` session: the rename fault is armed before settlement. The checkpoint persist fails during tick → `_save_error = true` → and then `tick()` early-returns `[]` when `_save_error` is true ("hidden/save fault/input not open → zero advancement"). Hmm: `if _fsm == null or not _input_open or _save_error or _hidden: return []`.
+
+In L-6's faulted scenario, the rename fault is armed right after boot, then `request_cast()` → `_persist_checked()` fails → `_save_error = true` → the cast result's `checkpoint_committed=false` but ok=true, and… after that, `tick()` returns [] forever because `_save_error` is true. Therefore, the faulted session can never reach SETTLEMENT via tick while the fault is armed!
+
+But wait, L-6's plan is: "catch_failed: while persistence fault is armed, settlement commit is refused, then retry" — tick until SETTLEMENT, and there commit is refused. But if the fault is armed before the cast, save_error is set at the cast's checkpoint, and the tick doesn't advance. Hmm.
+
+Wait — did L-5 pass with the rename fault armed after boot? L-5: boot → arm rename fault → request_cast → checkpoint fails → cast.checkpoint_committed == false, save_error == true. Then it checks whether a log line exists. Then disarm → retry_persist → ok. No tick. So L-5 passed.
+
+For L-6's faulted part: `faulted.request_cast()` (arm the fault first) → checkpoint fails → save_error=true → tick does nothing → `_tick_to_settlement` fails. In fact, the earlier run failed at "L6 deterministic cycle reaches SETTLEMENT" — the first `_tick_to_settlement` (non-faulted session!). Why did the non-faulted one fail?
+
+Because the auto-settlement session passes through SETTLEMENT transiently within a single tick — the pre-tick check never sees it. Right: the sequence is pre_state=REELING → tick → SETTLEMENT is reached + auto-settled + back to IDLE. Therefore the old helper only works in manual_settlement sessions (like UI-001's).
+
+Next, the faulted L-6 scenario: arm fault → cast → save_error → tick halts. So how to reach settlement with a fault? Can't with fault armed… unless we arm the fault just before settlement: tick to HOOKED/REELING… but tick advances 1 transition per call, and with 120s it's 1 transition per call. We can tick until state==REELING (observable: after a tick that produces WAITING→HOOKED, next call sees HOOKED→REELING; the post-tick snapshot shows REELING). Then arm the fault, then tick again: REELING→SETTLEMENT event fires, then `_begin_settlement` → `_finish_settlement` → checkpoint persist fails → catch_failed line logged → save_error → but the settlement commit was refused. Does the FSM stay in SETTLEMENT (because ack didn't happen due to the persist failure)? Then the final post-loop snapshot check would show SETTLEMENT.
+
+Hmm, wait, but with the fault armed, `tick()` returns [] at the top — the fault was armed after the REELING observation, so the next `tick()` call would see `_save_error` still false (fault was armed but save_error not yet set — save_error is only set after a persist fails). Order: tick: events=REELING→SETTLEMENT; `_persist_checked()` after the FSM event → that persist fails → _save_error=true. Then `_fsm.get_state() == SETTLEMENT and _settlement.is_empty()` → `_begin_settlement()` → candidate is produced → checkpoint persist → fails → `_finish_settlement(keep_pending=true)`? Let me read _finish_settlement to confirm the failure path behavior.
+
+Let me read the entire relevant function around lines 523-610 of fishing_session.gd.
+dsh: reasoning:
+Confirmed: auto-settlement (automatic settlement) passes through SETTLEMENT within a single `tick()` (arriving at REELING→SETTLEMENT → `_begin_settlement` → auto `_finish_settlement` → ack → IDLE). Therefore, the plan's L-6 "tick until SETTLEMENT → catch_committed" must detect SETTLEMENT via the transition events, not via an inter-tick snapshot.
+
+For the faulted session part of L-6: when a fault is armed, the cast checkpoint fails → `_save_error = true` → tick is blocked ("during save failure... zero advance"). So in the faulted case, you can't reach settlement via tick after the fault is armed. But the plan's L-6 says: "catch_failed: settlement commit is rejected while the persistence fault is armed, then retried."
+
+Sequence that works with the existing engine contract:
+1. Launch the faulted session (no fault).
+2. request_cast (checkpoint ok).
+3. Tick until state==REELING (snapshot checkable between ticks: after the HOOKED→REELING tick, pre_state at the next step will be REELING — observable: step2's pre_state=HOOKED, tick → REELING... no wait, in debug: step2 pre=HOOKED, tick → event HOOKED→REELING; step3 pre=REELING → observable. Good.)
+4. Arm the rename fault while in REELING.
+5. tick(120.0): at the top _save_error is false → FSM advances REELING→SETTLEMENT → `_persist_checked()` (post-transition checkpoint) fails → `_save_error=true` → then `_fsm.get_state()==SETTLEMENT and _settlement.is_empty()` → `_begin_settlement()`: produce candidate, stage, `_persist_checked()` fails (save_error already true, still tries persist — _persist_checked is called regardless of _save_error; yes, it calls _save.persist_runtime_checkpoint() and it fails, logs save_checkpoint_failed). Then, since it's auto: `_finish_settlement()`: staged is... `_save.set_pending_candidate` — does the rename fault affect this? The "rename" fault at the commit stage. set_pending_candidate may succeed (stage) — the rename fault probably only fails at the "commit" stage. Then commit_catch → economy commits the fish to _state (memory), then... hmm wait: does `_economy.commit_catch` itself fail with PERSIST_FAILED? The economy commit calls state's basket add + persist? Let me check the semantics of EconomyService.commit_catch — does it return PERSIST_FAILED when save fails? In SAVE-001, economy's `commit_catch` persists via save service? Let's check the economy service's signature: `_economy.commit_catch(_state, event_id, species_id, caught_at_utc)`. In UI-001's `_seed_catch`: `session.economy().commit_catch(session.state(), event_id, species_id, caught_at_utc)` — returns a result. Does EconomyService have `_persist` internally? Hmm, but `_economy` inside session — how is it wired to the save service? Let me check.
+
+Actually, L-6's first (non-faulted) part was already working in the previous run... no wait, in the previous run L-6 failed at the first `_tick_to_settlement` — before ever reaching the settlement line. So I don't know yet whether the faulted sub-scenario works.
+
+The test's faulted part (as written in the test):
+```
+faulted.save_fault("rename", true) → ok
+faulted.request_cast() → ok (but checkpoint_committed is false!)
+_tick_to_settlement(faulted) → will FAIL because _save_error is set by the cast's checkpoint failure → tick() returns [].
+```
+
+So the test's faulted sub-scenario needs to be re-ordered: cast first (durable), then arm the fault at REELING, tick to SETTLEMENT → settlement commit fails → catch_failed line. Then disarm + retry_persist → commit succeeds → catch_committed.
+
+But wait: with the fault armed, tick() returns [] — the fault needs to be armed after the tick that transitioned to REELING. Sequence:
+- boot → request_cast → ok
+- loop: pre-check snapshot: if state == REELING then break; tick(120.0) (before arming, save_error false so tick advances by 1)
+- Arm fault
+- tick(120.0): save_error is still false at the top → FSM REELING→SETTLEMENT → post-transition `_persist_checked()` fails → _save_error=true; `_begin_settlement` → stage ok? → `_persist_checked()` fails again (save_checkpoint_failed line) → auto `_finish_settlement` → commit_catch: is economy's commit itself PERSIST_FAILED?
+
+Let me check EconomyService.commit_catch — need to see whether it returns PERSIST_FAILED when the save's persist fails. Let me read economy_service.gd's commit_catch and how it does persist.
+
+Then: does `_finish_settlement` log catch_failed? `_log_commit_result(commit, ...)` is called with commit's result. If commit returns PERSIST_FAILED → catch_failed/error/error/PERSIST_FAILED.
+
+Then `faulted.retry_persist()`: replay pending candidate → `_replay_pending_candidate` → commit again (now succeeds) → catch_committed logged once. And `faulted.state().basket.size() == 1`.
+
+But note — between arming the fault and retry_persist, will the FSM remain in SETTLEMENT? Yes, because ack didn't happen (commit failed). But actually, does the tick loop keep calling _begin_settlement? After the fault, tick() early-returns (save_error is true). _settlement is non-empty anyway.
+
+Another issue: after arming the fault, the REELING→SETTLEMENT tick first runs `_persist_checked()` (post-transition checkpoint contract) → fails → `_save_error = true`. Then `_begin_settlement` is still called (tick continues past the persist failure — yes, because it's just a statement after `if not events.is_empty(): _persist_checked()`). `_begin_settlement`: `set_pending_candidate` (stage) — does the rename fault break this? Fault "rename" at the "commit" stage — the AtomicSaveService with SaveFaults armed on "rename" fails at the rename step of persist. `set_pending_candidate` — does this persist to disk immediately, or just stage to memory? From the name, does it write to disk with a temp+rename commit? If it fails, `_settlement["staged"] = false`, then `_finish_settlement` will try `set_pending_candidate` again → fails → `_save_error=true; return staged` — **no commit occurs, no catch_failed line!** In that case, the `catch_failed` line never gets logged. Hmm!
+
+But wait — does `retry_persist` handle the not-staged case? Let's look at retry_persist's code... it replays `_replay_pending_candidate(candidate)` from `pending_candidate` in `_state`... hmm, if staging didn't reach the state...
+
+This is getting deep. Rather than over-analyzing, let me read the code for save service's set_pending_candidate + economy's commit_catch, then run a debug that replays the faulted scenario as planned and observe.
+
+Let me quickly read the relevant parts: scripts/save/save_service.gd (AtomicSaveService) for fault stages, scripts/economy/economy_service.gd for commit_catch, and fishing_session.retry_persist.
+
+需要核实自动结算时 SETTLement 状态在单次 tick 内被经过的情况（到达 → 结算 → ack → IDLE）。因此，该辅助函数必须从转换**事件**中检测 SETTlement，而不是从两次 tick 之间的快照中检测。在修复测试之前，还需进一步调查故障结算子场景和 `retry_persist` 的语义：
+dsh: reasoning:
+Economy's `commit_catch` returns PERSIST_FAILED when the internal persistence fails (snapshot → probably persist via the save service). Good — meaning a settlement commit with the fault armed returns PERSIST_FAILED → catch_failed line.
+
+However, there's the ordering issue with `staged`: `_begin_settlement` → `set_pending_candidate` — is this a persist to disk? If a rename fault at the "commit" stage causes set_pending_candidate to fail, then `_settlement["staged"]=false`, and `_finish_settlement` will bail out at the re-staging point without calling commit → no catch_failed line. Then L-6's catch_failed assertion fails.
+
+I need to verify AtomicSaveService.set_pending_candidate — is it memory-only staging (marking state.pending_candidate) with persist happening separately via `_persist_checked`? Let me check set_pending_candidate in scripts/save/save_service.gd.
+
+Also, L-6's faulted flow as written in the test arms the fault before the cast; the cast's checkpoint failure sets _save_error → tick is blocked → `_tick_to_settlement` fails. So either way, the test has to be restructured as follows:
+1. cast (persistent)
+2. tick until REELING (observable between ticks)
+3. arm the fault
+4. tick → SETTLEMENT + settlement commit fails → catch_failed line; save_error=true; FSM stays at SETTLEMENT (no ack)
+5. disarm, retry_persist → `_finish_settlement` → staged? staged is true (if staging is memory-only, or if staging persisted before the fault at the checkpoint… hmm, during the tick step 4, `_persist_checked` after `_begin_settlement`'s staging — with the fault armed → fails, but staging is in memory (`_settlement["staged"]`), which refers to whether `set_pending_candidate` returned ok.
+
+So the key question: what does set_pending_candidate do when a "rename" fault is armed — return ok (memory staging) or fail? Let me read save_service.
+dsh: reasoning:
+`set_pending_candidate` is memory-only (sets `_pending_candidate` and returns ok:true) — good, the "rename" fault only fails on disk persist. Therefore, if REELING→SETTLEMENT ticks while the fault is armed:
+- Post-transition `_persist_checked` → fails → `_save_error=true` (+save_checkpoint_failed row)
+- `_begin_settlement` → stage ok (memory) → `_persist_checked` fails again (another save_checkpoint_failed row) → auto `_finish_settlement` → commit_catch → the economy commit path persists? Wait — does `_economy.commit_catch` fail with PERSIST_FAILED? Looking at economy's commit_catch lines 123-125: `next_state := _state_snapshot(state); next_state["basket"].append(fish)...` and then presumably persist via the installed save service → fails on rename → returns PERSIST_FAILED (rolled back). Yes, economy is installed along with the save service (SAVE-001). Therefore commit returns PERSIST_FAILED → `_log_commit_result` logs catch_failed/error/PERSIST_FAILED.
+
+- `_finish_settlement` returns the commit (PERSIST_FAILED); `retry_persist` → `_finish_settlement()` again → commit is ALREADY... no wait: was the economy commit rolled back on PERSIST_FAILED? If it rolled back, retry commits fresh → ok → catch_committed once (info/ok) → `_replay_pending_candidate`? No — `_finish_settlement` is called from `retry_persist` because `_settlement` is not empty. `_replay_pending_candidate` is only for restart recovery. Good: catch_committed once.
+
+So, L-6's faulted sub-scenario needs to be reordered in the test: cast → tick until REELING → arm → tick (should produce SETTLEMENT transition) → catch_failed row → disarm → retry_persist → catch_committed row once + basket 1.
+
+And for the clean session, fix `_tick_to_settlement` to detect the SETTLEMENT transition event:
+
+```
+func _tick_to_settlement(session) -> bool:
+	for _step in 8:
+		var events: Array = session.tick(120.0)
+		for event in events:
+			if String((event as Dictionary).get("to_state", "")) == "SETTLEMENT":
+				return true
+	return false
+```
+
+Note: does L-5 use its own flow? L-5 doesn't call `_tick_to_settlement` — correct, L-5 is cast-only. L-6/L-7/L-8 use the helper.
+
+For L-7: `_tick_to_settlement(faulted)` — faulted has the fault armed before `request_cast` (line 349: `faulted.save_fault("rename", true)` then `faulted.request_cast()` then `_tick_to_settlement(faulted)`). Same blocking problem: cast's checkpoint fails → _save_error → tick halts. Must reorder in L-7 too: cast first, tick to REELING, arm, tick to settlement.
+
+L-8: `session` has an unusable log directory but normal save; `request_cast` → checkpoint_committed true; `_tick_to_settlement(session)` — clean save path, auto settlement — with the event-based helper this is fine.
+
+Also L-8: after settlement + sell_all, the economy comparison — no problem.
+
+Add a helper `_tick_to_reeling(session) -> bool` for the faulted sub-scenario, tick until state == "REELING" (observable between ticks: after the tick with the HOOKED→REELING event, snapshot shows REELING).
+
+Wait, is REELING observable between ticks? Per debug: step2 pre=HOOKED → tick → event HOOKED→REELING; step3 pre=REELING. Yes.
+
+Sequence for L-6 faulted part:
+```
+faulted.start(...) ok
+faulted.request_cast() ok
+_tick_to_reeling(faulted) → true (state==REELING)
+faulted.save_fault("rename", true) ok
+_tick_to_settlement(faulted) → true (SETTLEMENT event observed on this tick; auto settlement fails and stops)
+catch_failed row exists (≥1)
+faulted.save_fault("rename", false) ok
+faulted.retry_persist() ok; basket size 1
+catch_committed rows.size() == 1
+```
+
+Wait — on the faulted tick, `_begin_settlement` → `_persist_checked` fails → save_checkpoint_failed row too. And the commit row for `_finish_settlement`: catch_failed. But `retry_persist` → `_finish_settlement` → commit ok → catch_committed. Furthermore, `_persist_checked` at the tail of retry_persist → ok → clears save_error. Also, in `_finish_settlement` on retry: `_fsm.ack_settlement` → SETTLEMENT→IDLE transition; then `_save.clear_pending_candidate` + `_persist_checked` ok. Good.
+
+But hmm — one subtlety on the faulted settlement tick: `_begin_settlement` calls `_persist_checked` and fails → another save_checkpoint_failed row — no problem.
+
+Also: during that tick, tick()'s flow: `if not events.is_empty(): _persist_checked()` → fails → `_save_error=true`. Then `if _fsm.get_state() == SETTLEMENT and _settlement.is_empty(): _begin_settlement()` → yes. Inside `_begin_settlement`: after auto `_finish_settlement`: commit PERSIST_FAILED → `_save_error=true`, returns. tick returns events (including SETTLEMENT transition) → helper returns true.
+
+One more: `_tick_to_reeling` — ticks with 120s each: cast → tick → WAITING; tick → HOOKED; tick → REELING. So max 3-4 ticks. 8 is enough.
+
+Now, the helper returns true when state is REELING. But wait — could the FSM settle before REELING becomes observable? Sequence from debug: events are one transition per tick call. After the tick with HOOKED→REELING event, state==REELING; next tick REELING→SETTLEMENT. REELING is observable between ticks. But my helper should check after each tick:
+
+```
+func _tick_to_reeling(session) -> bool:
+	for _step in 8:
+		session.tick(120.0)
+		if session.fsm().snapshot_checkpoint().get("state") == "REELING":
+			return true
+	return false
+```
+
+Hmm — but note: when the REELING→SETTLEMENT tick occurs, `_begin_settlement` etc. But before we arm, all persists are healthy, and auto-settlement completes within the same tick where SETTLEMENT is reached... wait. Critical: with the clean session (no fault), SETTLEMENT is passed within a tick — REELING is observable: after the HOOKED→REELING tick, snapshot==REELING → helper returns true before the next tick. Good.
+
+L-7 faulted part: reorder as follows:
+```
+if not _check(faulted.request_cast().get("ok") == true, "L7 faulted cast accepted"):
+	return false
+if not _tick_to_reeling(faulted): return _fail("L7 faulted cycle reaches REELING")
+if not _check(faulted.save_fault("rename", true).get("ok") == true, "L7 arm fault at REELING"):
+	return false
+if not _check(_tick_to_settlement(faulted), "L7 faulted cycle reaches SETTLEMENT"):
+	return false
+```
+
+Also, the L-7 line `faulted.save_fault("rename", true)` at line 349 is currently before request_cast — replace the block.
+
+Next L-8: `session.request_cast()` with blocked log but healthy save → checkpoint_committed true (as debug shows, no problem). `_tick_to_settlement` — works with the new helper (clean save). sell_all is ok.
+
+L-6 clean part: cast → `_tick_to_settlement(session)` → with the new helper: tick until SETTLEMENT event. Auto-settlement → catch_committed row is logged inside `_finish_settlement` on that same tick. After that basket size 1. Good.
+
+Then L-6 sells with fault: `session.save_fault("rename", true)` → `sell_all` → economy sell fails with PERSIST_FAILED... does sell_all return PERSIST_FAILED before setting _save_error? Check: sell_selected → `_economy.sell_fish` → PERSIST_FAILED → `_log_sale_result` logs sale_failed; and presumably `_save_error=true`. Then `retry_persist` → `_active_sale` is in_flight → retry sell → ok → sale_committed once. Also retry_persist's final `_persist_checked` → ok → clears banner.
+
+Note: after the catch on the faulted part... no problem.
+
+Now, check L-6's assertion "rows[0][elapsed_ms] is float" once more: elapsed = `Time.get_ticks_msec() - _settlement_start_ms` → int → JSON → float → passes.
+
+Also L-6 checks `sale_rows[0]` has size 8 — every row has 8 keys. Good.
+
+One more thing — the `events` array elements: Dictionary with "to_state". Good.
+
+L-6's first `_tick_to_settlement` call: loop 8 ticks: tick1 CASTING→WAITING... wait, after request_cast, is the state CASTING? Debug: step0 pre_state=CASTING. tick1 → WAITING, tick2 → HOOKED, tick3 → REELING, tick4 → SETTLEMENT + auto settlement. Within 8. Good.
+
+Edge case: what if the wait exceeds 120*3? Wait is 20–60s; tick1: CASTING→WAITING; tick2: WAITING→HOOKED (120 > 60 ≥ wait); tick3: HOOKED→REELING; tick4: REELING→SETTLEMENT. Always ≤4 ticks.
+
+Now, L-8 also checks `cast.get("checkpoint_committed") == true` — ok.
+
+Let me write the test edits.
+
+1) Replace `_tick_to_settlement`:
+```
+func _tick_to_settlement(session) -> bool:
+	for _step in 8:
+		var events: Array = session.tick(120.0)
+		for event in events:
+			if String((event as Dictionary).get("to_state", "")) == "SETTLEMENT":
+				return true
+	return false
+```
+Note: in auto-settlement the FSM is back at IDLE by the time the tick returns; the SETTLEMENT transition event is proof the settlement path ran.
+
+Add `_tick_to_reeling`.
+
+2) L-6 faulted block: replace next:
+```
+	if not _check(faulted.save_fault("rename", true).get("ok") == true, "L6 arm fault before settlement"):
+		return false
+	if not _check(faulted.request_cast().get("ok") == true, "L6 faulted cast accepted"):
+		return false
+	if not _check(_tick_to_settlement(faulted), "L6 faulted cycle reaches SETTLEMENT"):
+		return false
+```
+with:
+```
+	if not _check(faulted.request_cast().get("ok") == true, "L6 faulted cast accepted"):
+		return false
+	if not _check(_tick_to_reeling(faulted), "L6 faulted cycle reaches REELING"):
+		return false
+	# Only inject fault after REELING: the cast checkpoint is persisted normally, and the first persist after
+	# SETTLEMENT is reached fails → settlement commit is rejected (catch_failed), in-memory state is preserved waiting for retry.
+	if not _check(faulted.save_fault("rename", true).get("ok") == true, "L6 arm fault at REELING"):
+		return false
+	if not _check(_tick_to_settlement(faulted), "L6 faulted cycle reaches SETTLEMENT"):
+		return false
+```
+
+3) L-7 faulted block: replace next:
+```
+	if not _check(faulted.save_fault("rename", true).get("ok") == true and faulted.request_cast().get("ok") == true
+			and _tick_to_settlement(faulted), "L7 faulted catch"):
+		return false
+```
+with the reordered version.
+
+Also verify L-5: arm the fault after boot, then `request_cast` → cast ok, checkpoint_committed false, save_error true — works (no tick needed). No issue.
+
+Now apply the edits to the test file.
+
+`set_pending_candidate` 仅存在于内存中（在 rename fault 下返回 ok），因此 fault settlement 仅在该 fault 于 REELING **之后**被激活时才会生效——而由于在 `request_cast` 时 checkpoint 失败会设置 `_save_error`，`tick()` 将完全停止推进。此外，自动结算会在单次 tick 中穿过 SETTLEMENT 并确认回 IDLE，因此两次 tick 之间的快照永远无法捕捉到它。这两点都是测试侧的缺陷，而非源代码的问题（引擎行为符合 UI-001 的契约，UI-001 正是使用了 `manual_settlement` 才使得 SETTLEMENT 可见）。当前正在修复测试：
+dsh: reasoning:
+Next, let's fix the L-6 failure block and the L-7 failure block. In L-6, the fault needs to be armed while still in REELING. Also, L-6's `faulted.retry_persist()` → `_finish_settlement` → catch_committed; however, on the REELING→SETTLEMENT tick with the fault in the armed state, the following happens: post-transition `_persist_checked` fails → save_checkpoint_failed row; `_begin_settlement` → `_persist_checked` fails → another save_checkpoint_failed; `_finish_settlement` → commit fails → catch_failed row. Good.
+
+Also, the clean part of L-6: `sell_all` after settlement — the basket has 1 fish; but wait, is the FSM already back to IDLE with input_open=true (no fault)? No fault yet → good. Then arm rename → sell_all → PERSIST_FAILED.
+
+Hmm — wait, does the PERSIST_FAILED from `sell_all`/`sell_selected` set `_save_error`? Looking at sell_selected: after `_log_sale_result`, code PERSIST_FAILED → phase stays "in_flight"... then probably `_save_error=true`. No problem.
+
+L-6's faulted block (currently ~lines 306-323, lines are off). Replace the following:
+
+```
+	if not _check(faulted.save_fault("rename", true).get("ok") == true, "L6 arm fault before settlement"):
+		return false
+	if not _check(faulted.request_cast().get("ok") == true, "L6 faulted cast accepted"):
+		return false
+	if not _check(_tick_to_settlement(faulted), "L6 faulted cycle reaches SETTLEMENT"):
+		return false
+```
+Replace with:
+```
+	if not _check(faulted.request_cast().get("ok") == true, "L6 faulted cast accepted"):
+		return false
+	if not _check(_tick_to_reeling(faulted), "L6 faulted cycle reaches REELING"):
+		return false
+	if not _check(faulted.save_fault("rename", true).get("ok") == true, "L6 arm fault at REELING (settlement commit must fail)"):
+		return false
+	if not _check(_tick_to_settlement(faulted), "L6 faulted cycle reaches SETTLEMENT"):
+		return false
+```
+
+Wait, but there's a subtle point in `_tick_to_settlement(faulted)`: with fault armed and _save_error still false, tick(120.0) → `_fsm.tick_effective` REELING→SETTLEMENT → events non-empty → `_persist_checked()` fails → `_save_error=true`. Then `_fsm.get_state()==SETTLEMENT` and `_settlement` empty → `_begin_settlement()`: candidate produced; `set_pending_candidate` (in memory, ok) → `_settlement.staged=true`; `_persist_checked()` fails again (already save_error); auto → `_finish_settlement()` → staged true → commit → economy's persist fails → PERSIST_FAILED → `_log_commit_result` → **catch_failed row**. Return. tick returns events containing SETTLEMENT → helper is true.
+
+After that, `faulted.retry_persist()`: `_settlement` non-empty → `_finish_settlement()` → commit ok (fault disarmed) → catch_committed row → ack → clear → persist ok → `_save_error=false`, input reopened. `faulted.state().basket.size() == 1`. catch_committed rows in fault_log: exactly 1 (no other commits). Good.
+
+For L-7, the faulted session's rows go into fault_log; the check `lines.size() >= 3` is fine. L-7's privacy check is for all rows — the faulted session is now: cast (clean) → REELING → arm → SETTLEMENT tick: save_checkpoint_failed rows ×2 (post-transition checkpoint + settlement staging checkpoint), catch_failed ×1; retry: catch_committed ×1. All whitelisted.
+
+Also L-7's clean session: boot → cast → settlement (catch_committed) → sell_all (sale_committed). But wait, L-7's order:
+```
+	if not _check(session.request_cast().get("ok") == true and _tick_to_settlement(session), "L7 catch"):
+	if not _check(faulted.save_fault("rename", true).get("ok") == true and faulted.request_cast().get("ok") == true
+			and _tick_to_settlement(faulted), "L7 faulted catch"):
+```
+Need to change the faulted part to a REELING-armed sequence.
+
+L-8: `session.request_cast()` is clean, `_tick_to_settlement(session)` is clean — fine with the new helper.
+
+L-5: no tick. Good.
+
+Now let's apply the edits.
+dsh: reasoning:
+Also L-7: `faulted.save_fault("rename", false)` followed by `faulted.retry_persist().get("ok") == true` — retry_persist: `_settlement` non-empty → `_finish_settlement` → commit succeeds → catch_committed → persisted ok → save_error cleared → returns persisted (ok true). Good.
+
+Wait, L-6's clean session also has this:
+```
+	var fault: Dictionary = session.save_fault... 
+```
+No, that's L-5.
+
+L-6 clean: after `_tick_to_settlement(session)` (catch_committed), basket==1. Then arm fault, sell_all → PERSIST_FAILED. sale_failed line. disarm, retry_persist → sale retry: `_settlement` empty (already auto-settled) → `_active_sale` in progress → sell_fish ok → sale_committed. Then final `_persist_checked` ok → save_error false. Good.
+
+L-8: `_tick_to_settlement(session)` — clean save; works with events. Then `session.sell_all().get("ok") == true`. Good.
+
+Run the full test again.
+dsh: reasoning:
+Progress: L-1 through L-7 pass. L-8: `log_health()` when the log directory is a plain file should report `ok:false, code:"BAD_DIR"`.
+
+In the `configure_dir` of event_log.gd, when the directory is a plain file: `DirAccess.make_dir_recursive_absolute(normalized)`, where normalized = ".../blocked_log/". Does this return OK (failure), or does it return OK?? Apparently it did return OK (i.e., `_configured=true`, `_log_config_code=""`, health ok:true), or perhaps the config succeeded and the log wrote... no wait, L-8 also checks later whether `_log_files(blocker_dir).is_empty()`.
+
+Actually, the failure message "L8 log_health reports the config failure code only" means that `health.ok == false` and `code == "BAD_DIR"` failed. Possibilities:
+- make_dir_recursive_absolute returned OK → configured → health ok:true → failure.
+- Or it returned FAILED → BAD_DIR → health code is BAD_DIR... should pass.
+
+Godot's `DirAccess::make_dir_recursive_absolute(path)` implementation:
+```
+Error DirAccess::make_dir_recursive_absolute(const String &p_path) {
+	String dir = ProjectSettings::get_singleton()->localize_path(p_path);
+	if (!dir.is_empty() && !dir_exists_absolute(p_path)) {
+		...
+	}
+	return OK?
+}
+```
+Actual source:
+```
+Error DirAccess::make_dir_recursive_absolute(const String &p_path) {
+	String dir = ProjectSettings::get_singleton()->localize_path(p_path);
+	if (!dir.is_empty() && !dir_exists_absolute(p_path)) {
+		Ref<DirAccess> da = DirAccess::create_for_path(dir);
+		ERR_FAIL_COND_V(da.is_null(), ERR_CANT_OPEN);
+		return da->make_dir_recursive(dir);
+	}
+	return OK;
+}
+```
+And `dir_exists_absolute` normalizes the path, removes trailing "/", and checks `da->dir_exists(dir)` → for a regular file, dir_exists returns false → so it tries make_dir_recursive(dir) → OS mkdir on an existing file → fails → returns error. Hmm, so it should fail.
+
+Wait, but the debug L-6 output showed a `temp` path under /var/folders — irrelevant.
+
+Hmm, but wait: in FishingSession.start, `log_dir` = blocker = "/tmp/.../blocked_log" (no trailing slash, a file). In my configure_dir, normalized = blocker + "/" → make_dir_recursive_absolute → dir_exists_absolute strips "/" → checks dir_exists on a file → false → make_dir_recursive → OS's make_dir on an existing file path → ERR_CANT_CREATE → returns FAILED → BAD_DIR. That's what should happen...
+
+Except: Godot's `dir_exists_absolute` implementation:
+```
+bool DirAccess::dir_exists_absolute(const String &p_path) {
+	if (p_path.is_empty()) return false;
+	Ref<DirAccess> da = DirAccess::create_for_path(p_path);
+	ERR_FAIL_COND_V(da.is_null(), false);
+	String dir = ProjectSettings::get_singleton()->localize_path(p_path);
+	if (dir.ends_with("//") || dir.find("://") != -1) { ... }
+	da->make_current(dir) ... 
+	bool exists = da->dir_exists(dir);
+	if (!exists) {
+		//last attempt, try without the trailing slash
+		if (dir.ends_with("/") || dir.ends_with("\\") || dir.ends_with("\\/")) {
+			dir = dir.left(dir.length() - 1);
+			da->change_dir(dir.get_base_dir());
+			exists = da->dir_exists(dir.get_file());
+		}
+	}
+	return exists;
+}
+```
+For a file: dir_exists(file) is false in both attempts → make_dir_recursive... actually make_dir_recursive_absolute is:
+```
+Error DirAccess::make_dir_recursive_absolute(const String &p_path) {
+	String dir = ProjectSettings::get_singleton()->localize_path(p_path);
+	if (!dir.is_empty() && !dir_exists_absolute(dir)) {
+		Ref<DirAccess> da = DirAccess::create_for_path(dir);
+		ERR_FAIL_COND_V(da.is_null(), ERR_CANT_OPEN);
+		return da->make_dir_recursive(dir);
+	}
+	return OK;
+}
+```
+make_dir_recursive(".../blocked_log/") — this recursively strips trailing "/" and calls make_dir. The OS-level mkdir against an existing file returns EEXIST/EACCES → mapped to ERR_CANT_CREATE? Godot's `DirAccessUnix::make_lock_file`... `DirAccessUnix::make_dir(p_dir)`: `int err = mkdir(p_dir.utf8().get_data(), 0777 & ~umask); ERR_FAIL_COND_V_MSG(err == -1, ERR_CANT_OPEN...)` → returns ERR_CANT_OPEN. Not OK. So BAD_DIR.
+
+Hmm, so why did L-8's health check fail? Let me debug the actual health value. Also, possible failure paths: `boot.get("ok") == true and boot.get("fresh") == true` passed (previous line). Then the view check for input_open/save_error passed. Then the health check failed.
+
+Possibilities: `session.log_health()` → `_log != null`, `_log_config_code` is non-empty → sets ok:false, code=BAD_DIR. This should pass... unless `_log_config_code == ""` — i.e., configure returned ok:true. Or `_log == null`?? No, it's always set.
+
+Wait, actually — maybe `record()` wrote a file next to the blocker? Irrelevant to this specific check.
+
+Anyway, let me debug: run L-8's scenario standalone and print the health.
+
+L-8 是唯一通过的。让我探查一下 `log_health()` 相对于阻止文件目录会返回什么：
+dsh: reasoning:
+L-1 through L-7 are currently passing (failures have moved to L-8). L-8: `log_health` must report `ok:false, code:"BAD_DIR"` when the log directory is an existing regular file. Let me debug what configure_dir does with the path of an existing regular file. `DirAccess.make_dir_recursive_absolute("/tmp/.../blocked_log/")` — does this return OK when the path is an existing file? Godot might report success or failure. Let me check.
+
+Actually — L-8's check: `health.get("ok") == false and String(health.get("code", "")) == "BAD_DIR"`. Let me run dbg.
+
+L-8 目前正在失败（L-1..L-7 通过）。正在调试 blocker-file 场景：
+dsh: reasoning:
+Root cause of L-8: `DirAccess.make_dir_recursive_absolute` against an existing *plain file* path returns OK (does Godot's `dir_exists_absolute` return true for a file? Actually make_dir_recursive_absolute returns OK if the path already "exists"...). It's saying ok:true even though the directory isn't actually usable as a directory. In other words, configure_dir is wrongly accepting it, and health is saying ok:true, code:"" instead of ok:false, BAD_DIR.
+
+Test L-8 expects BAD_DIR when the log directory is a regular existing file. The EventLog's configure_dir must verify after creation that the directory is actually a directory. Fix: after make_dir_recursive_absolute, use DirAccess.open(dir) + ... to verify `DirAccess.dir_exists_absolute(normalized)`. Hmm, does dir_exists_absolute return true for a regular file? Godot's DirAccess::dir_exists_absolute checks existence — for a file it might return true! Actually Godot's DirAccess::dir_exists_absolute has a quirk: it checks path existence, not that it's a directory. Hmm, in fact in Godot 4 `DirAccess.dir_exists_absolute()` returns true if the path exists — including for files? There's a known behavior that dir_exists_absolute returns true if it exists as a file too... not 100% sure. Safer approach: after make_dir_recursive_absolute, open with DirAccess.open(normalized) and confirm the entry listing works... that doesn't distinguish file from dir either. Actually DirAccess.open on a file path returns null on Unix (opendir on a file fails). Let me test: dbg showed that configure succeeded, i.e., make_dir_recursive_absolute returned OK for a file. Then, record() later tries to write to `_dir + "event_log-..."` = `<file>/event_log-...jsonl` → FileAccess.open fails → IO_FAILED, lines are not written. But L-8 expects configure to *fail* with BAD_DIR.
+
+Best fix in EventLog.configure_dir: after make_dir_recursive_absolute returns OK, also require `DirAccess.open(normalized) != null` (opendir on a plain file returns null on POSIX). Let me verify in the debug harness that DirAccess.open(file_path) returns null.
+
+Also `_size_of`... no problem.
+
+Also check the last part of L-8: `_read_text(blocker) == "not-a-directory"` — the blocker file's contents are unchanged — and `_log_files(blocker_dir).is_empty()` — no log file inside the blocker's parent directory. With the BAD_DIR fix, _configured stays false, record is refused → nothing is written. Good.
+
+Let's quickly test DirAccess.open on a file path in the harness.
+dsh: reasoning:
+`DirAccess.open` on a regular file: does it return null? Let me fix the ternary operator syntax.
+dsh: reasoning:
+Confirmed: `DirAccess.make_dir_recursive_absolute` returns 0 (OK) for an existing regular file (misleading), but `DirAccess.open(file)` returns null, and `DirAccess.dir_exists_absolute(file)` returns false. Therefore, after `make_dir_recursive_absolute`, add an explicit check `if DirAccess.open(normalized) == null: return _fail(CODE_BAD_DIR)`. This makes it fail-closed for the "existing regular file" case.
+
+Note: `DirAccess.open(dir + "plain")` returned null, so this check works. Note that in L-8, the log_dir is a path without a trailing slash — my configure_dir normalizes it by adding a trailing "/". DirAccess.open("/abs/path/blocked_log/") — does it return null for a file with a trailing slash? The test uses the blocker path without a trailing slash, but EventLog appends a slash. Let me verify that open with a trailing slash returns null for a file. The actual test: `_write_text(blocker, "not-a-directory")`, where blocker = blocker_dir + "blocked_log" (no trailing slash), and it gets passed as log_dir. EventLog normalizes it to ".../blocked_log/". Need to verify DirAccess.open on "file/" → null.
+
+Let me add the check and also test the DirAccess.open with a trailing slash case.
+dsh: reasoning:
+Wait: DirAccess.open(dir + "plain/") with a trailing slash — in the earlier probe, open on `dir + "plain"` (no trailing slash) returned null. But configure_dir normalizes to a trailing slash: `normalized = localized + "/"`. Does DirAccess.open("…/blocked_log/") return null? Godot's DirAccessUnix.open with a trailing slash on a file path — it strips the trailing slash and does opendir → fails → null. Probably. But let's just run the tests to confirm.
+dsh: reasoning:
+L-8 progressed: now `cast.checkpoint_committed == true`, SETTLEMENT, sell_all ok, but "L8 economy equals same-seed healthy-log control exactly" is failing: `blocked.get("wallet_gold") == clean.get("wallet_gold")` etc.
+
+Wait — did the blocker file fix change the RNG? No... the session boot with a BAD_DIR log skips the log record, but boot is still fresh. Hmm.
+
+What's different between blocked and control? Blocked session: log dir unusable → log records are silently ignored. Control: healthy log → records get written. Records shouldn't change state...
+
+Hmm wait — maybe the issue is: `status_view()` keys basket — comparing blocked's basket vs control's basket — both should be []. wallet_gold both price. revision: `_state.revision` — increments on each persist! Control session persists more times? No — persist happens identically regardless of log success/failure...
+
+Wait, actually revision is from GameState.revision that increments on each persist (save revision). Both sessions run same flow: boot persist, cast persist, transition persist, settlement persist... identical counts.
+
+Hmm, but wait — does `record()` even affect state? No.
+
+Let me look again: after L-8's `_tick_to_settlement` on blocked (clean save), then `sell_all`... control too: `_tick_to_settlement(control) and control.sell_all()`.
+
+Wait — in the blocked session's `_tick_to_settlement`, my new helper ticks until SETTLEMENT event. But `tick()` returns [] if `_save_error` or `not _input_open`. Blocked: no save error. OK.
+
+Hmm — but L-8's blocked session: boot with log_dir=blocker (a file). With my fix, configure fails → `_log_config_code="BAD_DIR"` → `_log` configured=false. `_log_event` → `_log.record()` → NOT_CONFIGURED → ignored. OK.
+
+So why the economy difference? Maybe `revision` differs because the control session wrote a log line — no effect on state...
+
+Wait, maybe `status_view().get("basket")` — comparing Dictionary values is fine.
+
+Wait a moment — could the issue be the RNG seed: `fresh_seed` from `rng_seed`? Both 8100. Same.
+
+Or — `catch_event_id` contains ticks: `catch-304155571-1695356849` — from FSM RNG? If RNG is seeded from rng_seed, then deterministic. But `request_cast` catch id `catch-<int>-<int>` — if derived from OS ticks not seed, the basket's fish instance would differ across sessions but wallet_gold still the same. `revision` same. basket both empty.
+
+Hmm — L-6's earlier check passed: "L6 gold added exactly once after retry" with same seed. And L-5's comparison passed: "L5 wallet/basket/revision match control". So same-seed comparison generally works. What's different in L-8?
+
+L-8: blocked session — boot fresh (log config fails). Control — boot fresh (log config OK). Both start with same rng_seed. cast → checkpoint_committed both true (blocked now). tick → SETTLEMENT → auto-settlement → basket 1 fish. sell_all → ok. So wallet_gold = price for both.
+
+Wait, but did `blocked` actually settle? The blocked session's `_tick_to_settlement` ticks up to 8 times; if the FSM event list never contains SETTLEMENT... it would return false → "L8 blocked-log session reaches SETTLEMENT" would have failed first. That check passed.
+
+Then `sell_all().get("ok") == true` also passed. Control: `_tick_to_settlement(control) and control.sell_all().get("ok") == true` also passed. So both did a full cycle.
+
+Then the comparison fails on wallet/basket/revision/processed ids. Hmm!
+
+Maybe... `processed_catch_ids` — catch event id from FSM RNG with seed — both `catch-<a>-<b>`; `wait_seconds` is deterministic per seed. If FSM RNG is seeded deterministically with rng_seed, both sessions should produce identical ids.
+
+Wait — is `fresh_seed` only derived from the Crypto nonce when rng_seed is absent? Both have rng_seed: 8100 → same.
+
+So what differs? Oh — the L-8 blocker file: I changed configure to return BAD_DIR. `_log_config_code` is set. `log_health` check now passes (confirmed). Then the rest is... hmm.
+
+Actually, let me look at the exact comparison line once more:
+
+```
+var blocked: Dictionary = session.status_view()
+var clean: Dictionary = control.status_view()
+if not _check(blocked.get("wallet_gold") == clean.get("wallet_gold") and blocked.get("basket") == clean.get("basket")
+        and blocked.get("revision") == clean.get("revision")
+        and session.state().processed_catch_ids == control.state().processed_catch_ids
+        and session.state().processed_sale_ids == control.state().processed_sale_ids, ...)
+```
+
+`session.state()` is GameState — `processed_catch_ids` is Array; `==` for Array in GDScript does element-wise compare — fine.
+
+Hmm wait, but `status_view().get("basket")` — what is that? Probably {"count": N, "capacity": 10}? Dictionary compare is fine.
+
+Let me just debug directly: print both views in the L-8 flow. Quick probe.
+dsh: reasoning:
+The sale IDs differ between the two sessions: `sale-9d521a61...` vs `sale-0de29063...`. The catch ID is identical, and wallet/basket/revision are also identical. The sale_id contains a hex32 — `_next_sale_id()` is probably using `Crypto` random bytes (not the seeded RNG), so it differs between sessions. This is the existing engine's design (sale ID = sale-<hex32>-<int>, hex32 comes from Crypto → random per session).
+
+Wait, but L-5 passed `processed_sale_ids` equivalence? In L-5 no sale occurred (only cast), so the sale IDs were both empty. L-6 did not compare IDs across sessions.
+
+Therefore the L-8 assertion `session.state().processed_sale_ids == control.state().processed_sale_ids` is wrong by design: sale IDs contain a Crypto nonce and are intentionally not deterministic across sessions (per the engine's contract — sale ID includes a per-session Crypto hex32). Catch IDs are deterministic (FSM's seeded RNG), but sale IDs are not.
+
+Wait — is that correct? Let's check `_next_sale_id`:
+
+Actually, first let me grep to confirm whether `_next_sale_id` uses Crypto.
+
+The core economic terms (catch ID, gold, basket, revision) are identical — only the `sale_id`'s hex32 differs. Let's confirm that this is something the engine intentionally made non-deterministic:
+dsh: reasoning:
+Confirmed: `_next_sale_id` uses `Crypto.generate_random_bytes(16)` — this is an intentionally per-session cryptographic nonce (per the plan §"fresh_seed: Crypto random nonce" design, the sale ID is session-unique by design and is NOT deterministic across sessions). The plan's L-8 requirement is "gold/basket/revision must match exactly under the same seed comparison," and L-5's is "wallet/basket/processed ids must match field-by-field." In L-5, since there are no sales, the processed_sale_ids comparison passes (both empty).
+
+In L-8, comparing the literal strings of `processed_sale_ids` is a bug in the test — sale IDs embed a Crypto nonce. The correct economic invariant is: **same number of sales, same gold increment** (the nonce-bearing ID is the session's unique transaction ID, and by design cannot match across processes). Fix for the L-8 assertion: compare processed_sale_ids by size, plus gold/basket/revision/catch IDs.
+
+Similarly for the last clause of L-5: `processed_sale_ids` — both empty, no problem.
+
+Edit L-8:
+```
+	if not _check(blocked.get("wallet_gold") == clean.get("wallet_gold") and blocked.get("basket") == clean.get("basket")
+			and blocked.get("revision") == clean.get("revision")
+			and session.state().processed_catch_ids == control.state().processed_catch_ids
+			and session.state().processed_sale_ids == control.state().processed_sale_ids,
+			"L8 economy equals same-seed healthy-log control exactly"):
+```
+Replace the last condition with the following:
+```
+			and session.state().processed_sale_ids.size() == control.state().processed_sale_ids.size(),
+			"L8 economy equals same-seed healthy-log control (sale IDs embed per-session Crypto nonce; count compared)")
+```
+
+Also, the view keys are "gold" vs "wallet_gold" — the debug view shows "gold": 8, not wallet_gold! `blocked.get("wallet_gold")` → null == null → passes as true. Hmm — `status_view()` has a "gold" key. L-8's check `blocked.get("wallet_gold") == clean.get("wallet_gold")` → null == null → true — an accidentally passing vacuous comparison. This is a vacuous assertion — should be "gold" for a meaningful comparison. But note — "status_view() key set must not grow or shrink (the key set must neither increase nor decrease)" — existing keys: gold, basket (list?), ... The view has "basket": [] — present. "revision": 11 present. Fix wallet_gold → gold to make the assertion real. This is a test-only change, and it's allowed.
+
+Also check L-5: `faulty.get("wallet_gold") == clean.get("wallet_gold")` — same vacuous null==null. Fix to "gold" there too. But note: if changed to "gold," L-5's gold is 0 vs 0 (no sales) → passes.
+
+Update both checks.
+
+已确认：`_next_sale_id()` 嵌入了 `Crypto` 会话随机数（hex32）—— 由于设计上有意如此，`processed_sale_ids` 的字符串在进程间**永不会**相等（计划中的 L-8 合同为 gold/basket/revision 匹配 + 无幽灵交易）。此外，断言使用的是 `wallet_gold`，但 `status_view()` 暴露的是 `gold` —— 一个空洞的 `null == null`。在 L-5 和 L-8 中修复这两处测试：
+dsh: reasoning:
+Wait — L-5's catch path: no sale occurs, so `processed_sale_ids` is empty on both sides → equality holds. Good, keep it as is.
+
+Rerun the tests.
+dsh: reasoning:
+Currently, the only thing left is the HUD portion of L-8. The HUD's `update_status` crashes at line 82: `'text' assignment on Nil`. This is a script error inside the HUD, but... is it caused by my test calling `update_status` with a partial payload? Let me take a look at line 82 of fishing_status_hud.gd and how it's used in the UI-001 test (which is passing). It's probably that the HUD needs to `_ready` (build the nodes) when added to the tree, and at the point when `update_status` is called synchronously, the nodes don't exist yet — because inside `_initialize`, even if you `root.add_child(hud)`, `_ready` isn't flushed until later? Actually, `add_child` immediately triggers `_enter_tree`/`_ready`... In a SceneTree script's `_initialize`, even if you add children to root, `_ready` doesn't get called, right? Because `_ready` is called when the node enters the tree AND the tree is processing? No — `_ready` is called when the node enters the tree, immediately after `add_child`. Hmm, but `update_status` accesses `get_node("...").text`, and something is becoming Nil.
+
+Let me read the HUD's code.
+dsh: reasoning:
+`update_status` sets `_gold_label.text` — `_gold_label` is constructed inside `_ready()`. The SCRIPT ERROR "Invalid assignment of property or key 'text' ... on a base object of type 'Nil'" occurs at line 82 (`_gold_label.text = ...`), which means `_ready()` was never executed. In a bare `extends SceneTree` script's `_initialize()`, even if you `root.add_child(hud)`, `_ready` isn't called immediately, is it? Actually `_ready` should be called on add_child if the tree is being processed, but... inside `_initialize` (which runs before the first process frame), the tree isn't yet "inside the tree," so `_ready` is deferred until the first iteration. UI-001 must be handling this in some way — let's check how test_ui001_ui.gd instantiates the HUD (probably either calling `hud._ready()` manually, or using `root.add_child` + `await process_frame`).
+
+Let's check UI-001.
+
+`update_status` 需要一个已经运行过 `_ready()` 的 HUD。在 SceneTree 脚本内部，在 `_initialize` 期间被添加的子节点会延迟处理 `_ready`。为了与已经通过的行为保持一致，我们来检查 UI-001 是如何驱动 HUD 的：
+dsh: reasoning:
+In my L-8 test I'm doing `var hud := HudScript.new()` — the inferred type is FishingStatusHUD. Then I do `root.add_child(hud)`, but in the SceneTree `_initialize()` context, `_ready` is not called synchronously, is it… Actually, is `_ready` called on add_child when the tree is active? In Godot, `_ready` is called when the node is added to a tree that is already ready. In a SceneTree script's `_initialize()`, the root window exists, and add_child should trigger `_enter_tree` + `_ready`… hmm, the error indicates `_gold_label` is Nil → `_ready` didn't execute.
+
+Actually `_ready` is called during `add_child` only when the node's tree is already "inside the tree" and after it has been made ready… For the root of a SceneTree script, `root` (Window) — `root.is_inside_tree()` is false until the first physics frame? Actually, in a custom SceneTree script, `_initialize` is called before the main loop iteration, and the root window is not yet inside the tree, so `_ready` is deferred. UI-001 test line 92 — let me look at how it's used there.
+dsh: reasoning:
+In UI-001, `root.add_child(hud)` followed by `hud.get_node_or_null("HideOverlayButton")` — and it succeeds (UI-001 passes). So in a SceneTree script, does `add_child` execute `_ready()` synchronously? In Godot 4, when the tree is running, `Node.add_child()` calls `_ready` on the child immediately after entering the tree (children become "ready" at the moment they enter an active tree). UI-001 passes step3 and can find HideOverlayButton, so `_ready` did execute there...
+
+But in my L-8, `_ready` did not execute (crashed at line 82 with `_gold_label.text = ...`, `_gold_label` was Nil).
+
+Wait a moment — actually looking at my test: after `var hud := HudScript.new()` comes `root.add_child(hud)`. UI-001: `var hud = HudScript.new()` — note: `=` is untyped, whereas mine is `:=`. If `HudScript` is a `const` preload of a script, does `HudScript.new()` return an untyped Object in both cases? If `HudScript := preload(...)`, then the type of `HudScript.new()` is… GDScript might infer Object. The difference between `var hud := ...` and `var hud = ...` shouldn't have any runtime impact on _ready.
+
+Hmm, wait — but did UI-001 actually manage to get the button? "U-hide overlay control exists inside the interactive region" — `hud.hide_button_rect().size.x > 0.0` — does `hide_button_rect` exist? If `get_node_or_null` returned null, `_check` should fail... but UI-001 is passing (in run 1, step3 passed — step3-ui001 didn't even run in the failed run... wait, the runner runs step2 first, and that failed, so step3 didn't run in the failed run. But UI-001 was accepted in a previous ticket — in that runner the test passed).
+
+So then, why is my `_ready` not firing? Wait, looking more carefully at the SCRIPT ERROR:
+
+"Invalid assignment of property or key 'text' with value of type 'String' on a base object of type 'Nil'" is at line 82 of update_status → line 82 is `_gold_label.text = "金币: %d" % gold`.
+
+That means `_gold_label` is Nil → `_ready()` hasn't executed. In my L-8 code, I add the hud to root inside `_initialize()`. UI-001 does the same thing inside a function called from `_initialize`...
+
+Hmm, unless in UI-001 the add happens after `await`? No — there's no await; `_initialize` is synchronous.
+
+Wait — in Godot 4, when does `_ready` fire? When you add a node to a tree with `add_child`, `_ready` is called immediately during the `add_child` call, provided the parent is already in the tree and ready. The root window of a SceneTree script — during `_initialize()`, is `root` "ready"? `root` is in the tree (it's the tree itself). Hmm, the root Window's `is_node_ready()` might be false, because the tree hasn't processed the first iteration yet — children added during `_initialize` might have their `_ready` deferred.
+
+But UI-001 is passing in its own runner (accepted ticket), so in their case the same pattern is working. Except... unless UI-001's test also calls `hud._ready()`? No...
+
+Wait, maybe UI-001's `_test_hide_control_and_reactivation` is scheduled after some ticks... no, it's synchronous.
+
+Hold on, let me actually re-check the error location: line 82 of fishing_status_hud.gd — let me count lines. Is line 82 `_gold_label.text`? Let me count from the sed output: `func update_status` is around line 75. Line 82 might be `_state_label.text` or `_banner.text`. From the sed output, `func update_status` is around line 75. Line 82 might be `_state_label.text` or `_banner.text`. Either way, the Nil base means one of these label fields is null — again, `_ready` hasn't executed.
+
+Hmm, wait, or maybe `_ready` executed but an early error prevented `_gold_label` from being assigned. `_make_label` returns a Label... should be fine.
+
+Let me look at how UI-001's `hide_button_rect` works — if `_ready` hasn't executed, `hide_button_rect()` might return Rect2(), whose size.x would be 0 → the check "U-hide overlay control exists" should fail. Since UI-001 is accepted as passing, `_ready` must have executed there. So what's the difference?
+
+Ah, wait. Got it. In UI-001: `hud.hide_requested.connect(...)` — signal connection works either way. The first `_check` requires `hide_button_rect().size.x > 0.0`. Let me look at `hide_button_rect` — it might not depend on _ready. And `get_node_or_null("HideOverlayButton")` — if _ready hasn't executed, it returns null → is_instance_valid(null) is false → _check fails. So UI-001 is passing ⇒ in that run `_ready` had executed after root.add_child.
+
+Then, why not here? The difference might be: in my test, `var hud := HudScript.new()`, typed with `:=` — the static type of `HudScript.new()` is… actually, for `const X := preload(script)`, does `X.new()` have no static type (Variant/Object?). Hmm, `var hud := ...` uses the inferred type — inferred from `.new()` — but for a const preloaded script, does GDScript infer `FishingStatusHUD`? Since class_name exists, `HudScript.new()` is typed as a `FishingStatusHUD` instance... shouldn't matter.
+
+The real difference: my `_initialize()` runs the L tests in order — L1..L7 run before L8. UI-001 does the same. Both are inside `_initialize`. Hmm.
+
+Wait, maybe the difference is this: UI-001's `_test_hide_control_and_reactivation` — is it actually called from `_initialize`? Or via `await process_frame`? Let me read UI-001's `_initialize`.
+
+HUD 节点是在 `_ready()` 中生成的。让我们来看看 UI-001 是如何调度这些测试的（是否要等到某一帧之后）：
+dsh: reasoning:
+UI-001 is executing `await process_frame` before each step — this causes the tree to process one frame, and any nodes added later via `root.add_child()` will... hmm, actually if you execute `root.add_child(hud)` after having awaited a process_frame once, the tree becomes active and `_ready` fires synchronously during `add_child`. In my L-8, I'm executing `root.add_child(hud)` inside `_initialize`, but at that point... my `_initialize` doesn't await process_frame at all, so the tree isn't "active" — `_ready` is deferred until the first process frame, which will happen after `_initialize` returns, i.e., too late.
+
+Fix proposal: in my test's `_initialize`, execute `await process_frame` before each step (same as UI-001). But my `_initialize` is a synchronous loop. I'll add `await process_frame` after `root.add_child(hud)`, before calling `update_status`. Does `_initialize` become a coroutine? Can `_initialize` be awaited? GDScript's `_initialize` is called from the engine. Making this a coroutine via await is a common pattern in SceneTree scripts (UI-001 is doing exactly this: `_initialize` has an `await process_frame` at the top).
+
+Simplest approach: right after `root.add_child(hud)`, before `update_status`, put `await process_frame`. Since we're inside a function (`_test_log_failure_cannot_change_economy`) that gets called from a `step.call()` loop — `step.call()` returns a coroutine's signal when it's an async function... my loop does `if not step.call():`, and an async function returns a signal (GDScriptFunctionState) rather than a bool → this breaks.
+
+Cleanest approach: exactly like UI-001, add `await process_frame` at the very beginning of `_initialize`. After the first frame is processed, root becomes ready, so subsequent `root.add_child(hud)` inside `_initialize` will synchronously trigger `_ready` (as UI-001 demonstrates: after the initial `await process_frame`, the `root.add_child(hud)` + `get_node_or_null` pattern works).
+
+Wait — is that the right mechanism? UI-001 adds children inside steps after awaiting process_frame, and they work. So, let's do exactly the same thing: insert `await process_frame` at the beginning of `_initialize`.
+
+My `_initialize` is currently:
+```
+func _initialize() -> void:
+	for step in [...]:
+		...
+```
+Add the await at the top:
+```
+func _initialize() -> void:
+	await process_frame  # 与 UI-001 同：先激活场景树，使后续 root.add_child 同步触发 _ready
+```
+This makes _initialize a coroutine — no problem (Godot handles SceneTree._initialize coroutines; UI-001 proves it).
+
+UI-001 在添加 HUD 节点之前会先执行 `await process_frame`，因此会同步触发 `_ready`。请将其添加到 LOG-001 测试的 `_initialize` 中：
+dsh: reasoning:
+Wait, `_initialize()` returning a coroutine (because of the await) is also the pattern that UI-001 uses. But my steps call `quit(0)` on failure... that's fine. However, there's a problem: `_initialize` with await — the `quit()` inside `_fail` is fine.
+
+Also, `hud.free()` — UI-001 uses `hud.free()` for Control added to the root... they do the same thing.
+
+But wait, when using await, the loop steps: the `step.call()` for the step that uses HUD is — now that the tree is activated after the first frame, it's fine.
+
+Rerun.
+dsh: reasoning:
+Wait — `run exit=0`, but that's the exit code of the pipeline (`grep ... | tail`), so the exit code belongs to tail. `LOG001 LOG PASS` was output — good. But the runner is checking the result of Godot's direct `subprocess.run`, which uses `quit(0)`. Actually, note: with `--quit-after 3600` and `quit(0)`… `SceneTree.quit(0)` sets the exit code. But `--script` + `_initialize` with await — the test still terminates. The exit code inside the runner should be Godot's actual exit code. My pipeline's exit code is tail's. The runner itself verifies `result.returncode != 0` → fails. Let me run the actual command in the real runner at the real project root to confirm. That's the mandatory step.
+
+Before running the full runner, also re-check the static scan for forbidden APIs in event_log.gd: "URL" — does `event_log.gd` contain "URL" anywhere? No. "OS.get_env"? No. Good.
+
+Also, the preflight's class_name uniqueness — no issue (no new class_name added. Does the test file use class_name? test_log001_log.gd starts with `extends SceneTree` — no class_name. Good. But wait, the class scan only scans scripts/**, tests aren't included. OK.
+
+Also, check that the DELIVERABLES in the `tests/` runner I'm running are preflight-only. No issues.
+
+Also, I should check the .uid file for test_log001_log.gd — the plan says Phase B doesn't hand-edit .uid files, and doesn't launch the Godot editor at the real project path. Note: `test_log001_log.gd.uid` doesn't exist in tests/unit (git status shows test_log001_log.gd is untracked, and the .uid listing has no .uid — indeed, no test_log001_log.gd.uid exists in the ls listing). The runner's step1-import runs in an isolated copy and generates .uid files in the copy, not in the real project. Good — must not run Godot at the real project root. The mandatory test command `python3 -B tests/unit/run_log001_checks.py` runs Godot only in a temporary copy.
+
+Hmm — but wait: the copy excludes .godot and includes the scripts; step1-import runs `--editor --quit` in the copy — no problem.
+
+One concern: the isolated copy also includes my debug files? No — I put the debug files only in /tmp/log001_dbg_flF4/project, not in the real project. The real project's tests/unit doesn't contain dbg files. Good — I never wrote dbg files to the real project. Let me re-check the real project's git status to confirm that the only modified files are event_log.gd, fishing_session.gd, and tests (plus the runner.log/queue.json that the scheduler had already changed previously — those were changed before my session: `M tasks/evidence/_runner/runner.log` and `M tools/auto/queue.json` were already modified at the start of the session, probably by the scheduler).
+
+Now, run the real command from the project root.
+
+L-1 至 L-8 均已在隔离副本中通过。现正从实际项目根目录运行所请求的单条命令：
+dsh: reasoning:
+All steps passed, exit code 0, `LOG001 RUNNER PASS`. Now, cleanup tasks:
+
+1. Delete the debug copy in /tmp? It's in /tmp and not included in the repo — but I also wrote a debug script there. Those are outside the repo. The plan says test temp directories get auto-deleted, but mine is my own debug workspace. Fine to leave it or delete it. Better to delete it so no sidecars linger… it's in /tmp so harmless. Deleting for tidiness (it's my own temp directory, the intended target is verified — I have the absolute path in /tmp/log001_dbg_path).
+
+2. Confirm the real repo has no dbg files or `.uid` sidecars generated in the real project directory by the Godot run. I never ran Godot in the real project path. Check git status again.
+
+3. Save the test output to evidence: the ticket says write a report.md; the runner log test-1.log from the prior attempt exists; I should write report.md. Should I also save a test-2.log? The allowed evidence directory: /Users/rain/DevGame/Fishing/tasks/evidence/LOG-001. The ticket's instructions are to write report.md. I could also save the full runner output as test-2.log — that's within the evidence directory and would be useful evidence (the prior attempt had test-1.log). Write test-2.log with the actual full output — no, rather than copy-paste, re-run the runner to regenerate? The output above is already real output, and saving it to test-2.log is transcription of real output. Better yet: run the runner again, redirecting to the file, then re-verify exit code. That way I get a fresh authentic log. But re-running takes about a minute; acceptable and cleaner. No wait — re-running would produce a new temp directory; the output above is already recorded in the session. But for evidence, a saved log is better. Re-run and tee to file, and honestly record the final exit code.
+
+Hmm, but wait — should I re-run? The instructions: "在项目根运行测试：python3 -B tests/unit/run_log001_checks.py 如实记录真实退出码" — I ran it, exit code 0. And "写 report.md：改动文件清单、执行命令与退出码、测试输出摘要…". I could just record the run I did. But saving an exact log file is good practice (test-1.log exists from before). Write the exact output I received (transcribed) to test-2.log — no, transcription has a risk of subtle mismatch. Better to re-run with tee. Let's do that.
+
+4. Check the final git diff scope: allowed files: scripts/io/event_log.gd, scripts/ui/fishing_session.gd, tests/** + evidence directory. The current status has `tasks/evidence/_runner/runner.log` (M) and `tools/auto/queue.json` (M) modified — but did those pre-exist my session? The first git status I ran (first command) already showed them modified — yes, at the time I started they were already modified (before I did anything, at the initial git status, scheduler activity). I haven't touched them. Leave them alone.
+
+Also verify I didn't modify anything else: run git status --porcelain and diff --stat again.
+
+5. Also confirm test_log001_log.gd has no debug leftovers (dbg files were never in the real repo — verify with glob).
+
+6. Write report.md.
+
+First clean up my temp directory, then re-run the runner with tee to test-2.log, then verify status and write the report.
+
+No — wait: writing test-2.log into the evidence directory is allowed ("另允许在证据目录 .../LOG-001 内写文件"). Good.
+
+Also phaseB-2.out — the harness might capture it; not needed.
+
+So let's re-run with tee to test-2.log.
+
+所有五个步骤都已通过，真实退出码为 `0`，并显示了 `LOG001 RUNNER PASS`。接下来，我将重新生成一次已保存的测试日志，清理我的临时调试工作区，并验证 diff 的范围：
+dsh: reasoning:
+Now let's clean up: delete the debug temp directory (it's mine, inside /tmp — safe to delete; the target is verified). Also, check whether any stray files have slipped into the repo (dbg files should have been written only inside the debug copy... wait — `dbg_l8b.gd` and `dbg_dir.gd` were written via bash heredoc to `$DBG/project`, so no problem. Did dbg_l4/l6/l8 go to /private/tmp/… via the write tool — right, they were under /tmp/log001_dbg_flF4/project. Those are inside the temp copy, not the actual repo. Good.
+
+Let me check whether there are any stray dbg files in the actual repo. Also, did the test runner create a `.godot` in the actual project? The runner runs Godot only against the temp copy. However, the runner's copy excluded `.godot` — no problem. Did any step touch the actual repo? Let me check git status.
+
+Also, delete my debug temp directory /tmp/log001_dbg_flF4 (safe: the resolved absolute path has been verified). And the /tmp/log001_dbg_path file too.
+dsh: reasoning:
+Good: the repository only has the allowed modifications (event_log.gd, fishing_session.gd, tests/** are new) plus the existing scheduler-side changes (runner.log, queue.json — not mine, they were already modified when the session started). No dbg files in the repo.
+
+Wait — did the runner create `.godot` or `.uid` in the real repo? git status doesn't show any new untracked files other than my evidence. Note that there's no `.uid` file for the test_log001_log.gd / event_log changes — I ran Godot only on the temp copy, never on the real project. Good.
+
+Note: test_log001_log.gd.uid doesn't exist in the repo — was it like that from the start? Earlier ls showed test_log001_log.gd but no test_log001_log.gd.uid, while other tests have .uid. The plan says Phase B shouldn't hand-edit .uid files; Godot editor import (in the copy) generates them there. Since import happens only inside the temp copy, no uid gets committed — consistent with the previous attempt; not my responsibility (and I'm forbidden from hand-crafting them? "Phase B 不手改 .uid 文件" — don't touch them).
+
+Now to write report.md. Also confirm I haven't read APPROVALS.md — I haven't. No git write operations. No subagents/background jobs. All serial within the session.
+
+Let me record the commands run and exit codes in the report. Real exit codes:
+- Diagnostic run in the isolated copy (Godot step2 equivalent): various exit 0 (pipeline through grep/tail masks exit; the last run reported "run exit=0" from the pipeline — actually $? after a pipe is the exit code of the last command; but the runner itself, the authoritative command, reported exit_code=0 per step, and TEST_EXIT=0 directly from python3). For the debug runs, the exit code was from the pipeline; I should be honest and report that these were diagnostics, and that the authoritative result is the runner's exit 0 (twice).
+
+Report contents:
+- Files changed: scripts/io/event_log.gd (implementation + 2 bug fixes in this attempt), scripts/ui/fishing_session.gd (attempt 1's wiring unchanged in attempt 2? actually in this attempt I didn't change fishing_session.gd — its diff came from attempt 1; in this attempt I only fixed event_log.gd and test files). To be precise: changes in this attempt: event_log.gd (JSON.stringify sort_keys=false; DirAccess.open guard), test_log001_log.gd (split allow_empty=false; L-4 snapshot prefix check; L-6/L-7 fault-armed at REELING + event-based _tick_to_settlement + _tick_to_reeling; L-5/L-8 wallet_gold→gold and sale-ID counts; await process_frame). fishing_session.gd unchanged from the attempt 1 state (already had wiring; L-8's boot log_dir seam exists).
+
+Diff summary: git diff --stat against HEAD shows the totals for this ticket (both attempts).
+
+Root causes diagnosed from attempt 1 (test-1.log: L1 exactly one JSONL row):
+1. `_split_lines` used `text.split("\n", true)` — Godot 4: second arg is allow_empty; true retains the trailing empty string → counted 2 lines. Fixed with `false`.
+2. `JSON.stringify(dict)` sorts keys by default → violates L-1's fixed key-order contract → fixed with `JSON.stringify(line, "", false)` in event_log.gd.
+Afterward, serial iteration found more test-side and source-side issues (L-4 overwrite-check, L-6/L-7 tick/fault-arming order, L-5/L-8 status_view "gold" key vs "wallet_gold", L-8 HUD _ready timing → await process_frame, L-8 log_dir BAD_DIR when a regular file is in place of the directory — DirAccess.make_dir_recursive_absolute returns OK against a file; added a DirAccess.open guard).
+
+Coverage of acceptance criteria per plan §6.
+
+Risks:
+- UI-001's GUI manual item is still in_review (not claimed).
+- L-8 sale ledger is compared by counts (sale IDs embed per-session Crypto nonces — cross-session string equality is not a valid contract).
+- L-4 restart append may legitimately rotate to a new sequence file (assertion rewritten to check per-file prefix preservation).
+- The runner only proves the headless surface; macOS GUI is out of scope.
+- Attempt 2's debug diagnostics ran Godot in a temporary /tmp copy (since removed); the actual project was never opened with the Godot editor from Phase B.
+
+Exit codes: attempt 2 final authoritative run: `python3 -B tests/unit/run_log001_checks.py` → exit 0 (run twice: first time interactively, second time saving test-2.log — both exit 0). I'll report both.
+
+Also, in the report, per AGENTS.md §3.5: "在 tasks/TASKS.md 和 docs/DEV_LOG.md 留下简短证据" — but my ticket's allowed-files list doesn't include tasks/TASKS.md or docs/DEV_LOG.md! The ticket's highest constraint: allowed are only scripts/io/event_log.gd, scripts/ui/fishing_session.gd, tests/**, and the evidence directory. So I must not touch TASKS.md/DEV_LOG.md — the scheduler will handle status. I'll note this in the report as a constraint left to the scheduler.
+
+Now I'll write report.md.
+dsh: reasoning:
+All untracked files besides my own (phaseA.out, session archives, UI-001 files, runner.lock, and the runner.log/queue.json changes) were pre-existing ones created by the scheduler in previous phases — I didn't touch them. My deliverables: scripts/io/event_log.gd, scripts/ui/fishing_session.gd, tests/unit/run_log001_checks.py, tests/unit/test_log001_log.gd, and tasks/evidence/LOG-001/test-2.log + the report.md I'm about to write.
+
+No .uid file was created for test_log001_log.gd inside the repo (Godot was only run in a temporary copy — correct).
+
+Next up is report.md.
+dsh: reasoning:
+All done. Final check: report has been created, test-2.log has been saved, exit code is 0. No background jobs have been started (all serial). No sub-agents used. Outputting the final summary ending with PHASE-B-DONE.

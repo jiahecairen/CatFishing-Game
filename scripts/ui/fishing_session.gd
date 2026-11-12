@@ -24,6 +24,12 @@ extends RefCounted
 #   runtime_path / rng_seed / manual_settlement；save_fault()、commit_pending_catch() 与只读
 #   服务访问器。IO 一律经 AtomicSaveService.configure_dir 显式注入临时目录，绝不触碰真实
 #   user://（测试内）。
+# - LOG-001 日志接入（仅追加）：start options 新增可选 log_dir（缺省 "user://logs/"，无禁用
+#   开关）。EventLog 在配置校验前装配，使 config_invalid / save_load_failed /
+#   save_checkpoint_failed 与 catch/sale 成败均可留痕；所有记录点忽略 EventLog 返回值，日志
+#   任何故障都不改变 _save_error/_input_open/持久化门/FSM/经济语义，也不改 status_view() 键集
+#   （HUD 零改动复用「存档失败」横幅）。永不记录 reason/path/金币数额/鱼种价格/按键/屏幕信息
+#   （EventLog 字段白名单从结构上排除）。
 
 const CODE_NOT_READY := "NOT_READY"
 const CODE_SAVE_ERROR := "SAVE_ERROR"
@@ -68,6 +74,10 @@ var _settlement: Dictionary = {}
 var _active_sale: Dictionary = {}
 var _sale_counter := 0
 var _last_wait_checkpoint_clock := 0.0
+# LOG-001 日志装配（仅追加；记录点只读事务结果，绝不回写业务状态）。
+var _log: EventLog = null
+var _log_config_code := ""  # ""=日志配置成功；否则为 EventLog 稳定失败码（仅经 log_health() 暴露）
+var _settlement_start_ms := -1  # 结算起点（Time.get_ticks_msec），供 catch 事件 elapsed_ms
 
 
 ## 装配启动（plan §2）。options（测试 seam）：save_dir / catalog_path / runtime_path /
@@ -84,11 +94,20 @@ func start(options: Dictionary = {}) -> Dictionary:
 	if seed_option != null and not (seed_option is int):
 		return _boot_fail(CODE_BAD_PAYLOAD, "rng_seed must be an int when supplied")
 
+	# LOG-001：日志门在配置门之前装配，使配置失败也可留痕。装配/配置失败只改变
+	# log_health() 的 code，boot 结果与 _input_open 完全不受影响（L-8）。
+	var log_dir := String(options.get("log_dir", "user://logs/"))
+	_log = EventLog.new()
+	var log_config := _log.configure_dir(log_dir)
+	_log_config_code = "" if log_config.get("ok") == true else String(log_config.get("code", "NOT_CONFIGURED"))
+
 	# 1) 配置门先过（T-CONF-01）：任一非法 → fail closed，零文件动作。
 	_catalog = FishSpeciesCatalog.load_catalog(catalog_path)
 	_runtime = RuntimeConfig.load_config(runtime_path)
 	if _catalog.get("ok") != true or _runtime.get("ok") != true:
 		var reasons := ConfigGate.blocked_reasons(_catalog, _runtime)
+		_log_event({"severity": EventLog.SEVERITY_ERROR, "event": EventLog.EVENT_CONFIG_INVALID,
+				"result": EventLog.RESULT_ERROR, "error_code": "CONFIG_INVALID"})  # 不记录 reason 文本
 		return _boot_fail("CONFIG_INVALID:" + ";".join(reasons), "config validation failed; no writes")
 
 	# 2) valid_species_by_id（id -> 目录条目深拷贝，SaveValidate.catalog_valid 合同形状）。
@@ -105,6 +124,8 @@ func start(options: Dictionary = {}) -> Dictionary:
 	_save = AtomicSaveService.new()
 	var dir_result := _save.configure_dir(save_dir)
 	if dir_result.get("ok") != true:
+		_log_event({"severity": EventLog.SEVERITY_ERROR, "event": EventLog.EVENT_SAVE_CHECKPOINT_FAILED,
+				"result": EventLog.RESULT_ERROR, "error_code": CODE_PERSIST_FAILED})
 		return _boot_fail(String(dir_result.get("code", "DIR_FAILED")), String(dir_result.get("reason", "")))
 
 	# 4) fresh_seed：Crypto 随机 nonce 派生的非身份随机值；不读取设备 ID。
@@ -120,6 +141,11 @@ func start(options: Dictionary = {}) -> Dictionary:
 	if load_code == "NO_VALID_SAVE" and String(report.get("main_status", "")) == "missing" \
 			and String(report.get("backup_status", "")) == "missing":
 		return _boot_fresh(fresh_seed)
+	# 不可用/损坏存档（非「主备皆缺的合法新档」）→ save_load_failed；稳定码来自 loader，
+	# 不记录 reason/path。合法新档双缺失在上一分支返回，不记失败。
+	_log_event({"severity": EventLog.SEVERITY_ERROR, "event": EventLog.EVENT_SAVE_LOAD_FAILED,
+			"result": EventLog.RESULT_ERROR,
+			"error_code": load_code if not load_code.is_empty() else "SAVE_LOAD_FAILED"})
 	return _boot_fail(load_code, String(report.get("reason", "no usable save; originals retained")))
 
 
@@ -222,6 +248,7 @@ func sell_selected(instance_ids: Variant) -> Dictionary:
 		_active_sale = {"sale_id": _next_sale_id(), "instance_ids": sorted_ids, "phase": "in_flight"}
 	var sale_id := String(_active_sale["sale_id"])
 	var result := _economy.sell_fish(_state, sale_id, ids)
+	_log_sale_result(result, sale_id)  # LOG-001：售鱼事务结果（成功不记金额；失败记稳定码）
 	var code := String(result.get("code", ""))
 	if result.get("ok") == true:
 		_active_sale["phase"] = "done"
@@ -341,6 +368,7 @@ func retry_persist() -> Dictionary:
 		var sale_id := String(_active_sale["sale_id"])
 		var ids: Array = (_active_sale["instance_ids"] as Array).duplicate(true)
 		var result := _economy.sell_fish(_state, sale_id, ids)  # 同 ID 重试（幂等合同）
+		_log_sale_result(result, sale_id)  # LOG-001：重试序列逐条留痕（含再次 PERSIST_FAILED）
 		if result.get("ok") == true:
 			_active_sale["phase"] = "done"
 		elif String(result.get("code", "")) != CODE_PERSIST_FAILED:
@@ -380,6 +408,18 @@ func save_service() -> AtomicSaveService:
 	return _save
 
 
+## LOG-001 只读日志健康度（L-8 断言用）：日志配置失败只反映在此码上，boot/input/经济不受影响。
+func log_health() -> Dictionary:
+	if _log == null:
+		return {"ok": false, "code": "NOT_CONFIGURED", "lines_written": 0, "lines_dropped": 0,
+				"io_errors": 0, "files_pruned": 0, "max_bytes": 0, "max_files": 0}
+	var health: Dictionary = _log.health()
+	if not _log_config_code.is_empty():
+		health["ok"] = false
+		health["code"] = _log_config_code
+	return health
+
+
 func species_name(species_id: String) -> String:
 	var entry: Dictionary = _species_by_id.get(species_id, {})
 	return String(entry.get("name_zh", species_id))
@@ -415,6 +455,9 @@ func _boot_fresh(fresh_seed: int) -> Dictionary:
 	var first := _save.persist_runtime_checkpoint()
 	if first.get("ok") != true:
 		_save_error = true
+		_log_event({"severity": EventLog.SEVERITY_ERROR, "event": EventLog.EVENT_SAVE_CHECKPOINT_FAILED,
+				"result": EventLog.RESULT_ERROR, "error_code": CODE_PERSIST_FAILED,
+				"event_id": null, "save_version": int(_state.save_version)})
 		return _boot_fail(CODE_FRESH_CHECKPOINT_FAILED, "fresh checkpoint not durable; input stays closed")
 	_booted = true
 	_input_open = true
@@ -480,6 +523,7 @@ func _replay_pending_candidate(candidate: Dictionary) -> Dictionary:
 		return staged
 	var commit := _economy.commit_catch(_state, candidate["catch_event_id"],
 			candidate["species_id"], caught_at_utc)
+	_log_commit_result(commit, String(candidate["catch_event_id"]), null)  # 重启重放无结算起点 → null
 	var ok: bool = commit.get("ok") == true \
 			and (String(commit.get("code", "")) == "" or String(commit.get("code", "")) == CODE_ALREADY_APPLIED)
 	if not ok:
@@ -494,6 +538,7 @@ func _replay_pending_candidate(candidate: Dictionary) -> Dictionary:
 ## SETTLEMENT 到达：候选产生 → UTC 仅一次 → set_pending_candidate → checkpoint（候选产生
 ## 后立即）→（非手动模式）立即结算落账。
 func _begin_settlement() -> void:
+	_settlement_start_ms = Time.get_ticks_msec()  # LOG-001：elapsed_ms 起点（结算开始）
 	var candidate := _fsm.produce_catch_candidate()
 	var utc := _sample_utc_once()
 	if candidate.get("ok") != true or utc.is_empty():
@@ -527,6 +572,9 @@ func _finish_settlement(keep_pending := false) -> Dictionary:
 			return staged
 	var commit := _economy.commit_catch(_state, _settlement["catch_event_id"],
 			_settlement["species_id"], _settlement["caught_at_utc"])
+	# LOG-001：commit 结果唯一记录点（成功/幂等/失败各一条；失败不改变任何返回形状）。
+	_log_commit_result(commit, String(_settlement["catch_event_id"]),
+			Time.get_ticks_msec() - _settlement_start_ms if _settlement_start_ms >= 0 else null)
 	var ok: bool = commit.get("ok") == true \
 			and (String(commit.get("code", "")) == "" or String(commit.get("code", "")) == CODE_ALREADY_APPLIED)
 	if not ok:
@@ -563,6 +611,11 @@ func _persist_checked() -> Dictionary:
 	var result := _save.persist_runtime_checkpoint()
 	if result.get("ok") != true:
 		_save_error = true
+		# LOG-001：checkpoint 未落盘 → 稳定码 PERSIST_FAILED（事件 ID 为 null：checkpoint 无
+		# 事务 ID；save_version 取当前权威；不记录内部 stage/reason/path）。
+		_log_event({"severity": EventLog.SEVERITY_ERROR, "event": EventLog.EVENT_SAVE_CHECKPOINT_FAILED,
+				"result": EventLog.RESULT_ERROR, "error_code": CODE_PERSIST_FAILED, "event_id": null,
+				"save_version": int(_state.save_version) if _state != null else null})
 	return result
 
 
@@ -609,3 +662,44 @@ func _boot_fail(code: String, reason: String) -> Dictionary:
 	_boot_reason = reason
 	_input_open = false
 	return {"ok": false, "code": code, "reason": reason, "input_open": false, "save_error": _save_error}
+
+
+# ---- 内部：LOG-001 日志记录（返回值一律忽略；日志故障绝不改变业务/经济状态）----
+
+## 唯一日志出口：EventLog 校验失败/IO 失败都被静默忽略（fail-closed 由 EventLog 自身计数），
+## 不置位 _save_error、不阻断调用方（LOG-001 铁律；L-5/L-8 同 seed 对照断言零影响）。
+func _log_event(rec: Dictionary) -> void:
+	if _log == null:
+		return
+	_log.record(rec)
+
+
+## 捕获 commit 结果记录（_finish_settlement / _replay_pending_candidate 共用）：
+## ok+空码 → catch_committed/info/ok；ALREADY_APPLIED → catch_committed/warn/already_applied；
+## 其余失败码 → catch_failed/error/error（error_code=稳定码）。
+func _log_commit_result(commit: Dictionary, catch_event_id: String, elapsed_ms: Variant) -> void:
+	var code := String(commit.get("code", ""))
+	if commit.get("ok") == true and code.is_empty():
+		_log_event({"severity": EventLog.SEVERITY_INFO, "event": EventLog.EVENT_CATCH_COMMITTED,
+				"event_id": catch_event_id, "result": EventLog.RESULT_OK, "elapsed_ms": elapsed_ms})
+	elif commit.get("ok") == true and code == CODE_ALREADY_APPLIED:
+		_log_event({"severity": EventLog.SEVERITY_WARN, "event": EventLog.EVENT_CATCH_COMMITTED,
+				"event_id": catch_event_id, "result": EventLog.RESULT_ALREADY_APPLIED,
+				"elapsed_ms": elapsed_ms})
+	else:
+		_log_event({"severity": EventLog.SEVERITY_ERROR, "event": EventLog.EVENT_CATCH_FAILED,
+				"event_id": catch_event_id, "result": EventLog.RESULT_ERROR,
+				"error_code": code if not code.is_empty() else "CATCH_FAILED", "elapsed_ms": elapsed_ms})
+
+
+## 售鱼结果记录（sell_selected / retry_persist 共用）：成功 → sale_committed/info/ok（不记金币
+## 数额）；失败（含 PERSIST_FAILED、CONFLICT_SALE_PARAMS 等）→ sale_failed/error/error。
+func _log_sale_result(result: Dictionary, sale_id: String) -> void:
+	if result.get("ok") == true:
+		_log_event({"severity": EventLog.SEVERITY_INFO, "event": EventLog.EVENT_SALE_COMMITTED,
+				"event_id": sale_id, "result": EventLog.RESULT_OK})
+	else:
+		var code := String(result.get("code", ""))
+		_log_event({"severity": EventLog.SEVERITY_ERROR, "event": EventLog.EVENT_SALE_FAILED,
+				"event_id": sale_id, "result": EventLog.RESULT_ERROR,
+				"error_code": code if not code.is_empty() else "SALE_FAILED"})
