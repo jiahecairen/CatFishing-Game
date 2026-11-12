@@ -21,6 +21,7 @@ const DEFAULT_MAX_BYTES := 262144
 const MIN_MAX_BYTES := 512
 const DEFAULT_MAX_FILES := 5
 const MIN_MAX_FILES := 1
+const MAX_FILE_SEQUENCE := 999999
 const FILE_PREFIX := "event_log-"
 const FILE_SUFFIX := ".jsonl"
 
@@ -221,6 +222,8 @@ func _advance_file(date8: String, line_bytes: int) -> String:
 	var path := _dir + FILE_PREFIX + _cur_date + "-%06d" % _cur_seq + FILE_SUFFIX
 	var size := _size_of(path)
 	while size >= 0 and size + line_bytes > _max_bytes:
+		if _cur_seq >= MAX_FILE_SEQUENCE:
+			return ""  # 固定六位序号耗尽时 fail-closed，绝不生成不可轮换的七位文件
 		_cur_seq += 1
 		path = _dir + FILE_PREFIX + _cur_date + "-%06d" % _cur_seq + FILE_SUFFIX
 		size = _size_of(path)

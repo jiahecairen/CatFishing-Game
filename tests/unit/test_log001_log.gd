@@ -17,7 +17,7 @@ var _dir_seq := 0
 func _initialize() -> void:
 	await process_frame  # 与 UI-001 同：先激活场景树，令后续 root.add_child(HUD) 同步执行 _ready
 	for step in [_test_line_shape_and_generated_timestamp, _test_rejections_are_zero_write,
-			_test_utc_day_rotation, _test_size_rotation_and_bounded_retention,
+			_test_utc_day_rotation, _test_size_rotation_and_bounded_retention, _test_sequence_limit,
 			_test_checkpoint_failure_trace_without_economy_change,
 			_test_catch_and_sale_events, _test_privacy_surface,
 			_test_log_failure_cannot_change_economy]:
@@ -218,6 +218,32 @@ func _test_size_rotation_and_bounded_retention() -> bool:
 	return _check(int(health.get("lines_written", -1)) == 30 and int(health.get("files_pruned", 0)) >= 1
 			and int(health.get("max_bytes", 0)) == 512 and int(health.get("max_files", 0)) == 3,
 			"L4 health counters (no content, no paths)")
+
+
+# ---- L-4b: six-digit sequence exhaustion fails closed ----
+func _test_sequence_limit() -> bool:
+	var dir := _fresh_dir("sequence-limit")
+	var existing_name := "event_log-20261114-999999.jsonl"
+	var existing_text := ""
+	for index in 512:
+		existing_text += "x"
+	if not _write_text(dir + existing_name, existing_text):
+		return _fail("L4b create full max-sequence file")
+	var log := LogScript.new()
+	if not _check(log.configure_dir(dir, {"max_bytes": 512, "max_files": 3}).get("ok") == true,
+			"L4b configure"):
+		return false
+	log.set_utc_override("2026-11-14T05:00:00Z")
+	var result: Dictionary = log.record({"severity": "info", "event": "catch_committed", "result": "ok"})
+	if not _check(result.get("ok") == false and String(result.get("code", "")) == "IO_FAILED",
+			"L4b exhausted six-digit sequence refuses append"):
+		return false
+	if not _check(_log_files(dir) == [existing_name], "L4b no seven-digit filename created"):
+		return false
+	var health: Dictionary = log.health()
+	return _check(int(health.get("lines_written", -1)) == 0 and int(health.get("io_errors", -1)) == 1
+			and _read_text(dir + existing_name) == existing_text,
+			"L4b fail-closed preserves existing bytes and counts IO error")
 
 
 # ---- L-5: checkpoint failure leaves a trace; economy identical to same-seed control ----
