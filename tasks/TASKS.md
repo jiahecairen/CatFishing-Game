@@ -302,3 +302,13 @@ Test result & evidence: tasks/evidence/SIM-001/ (会话归档+日志+diff)
 Risks & unresolved decisions: 见 tasks/evidence/SIM-001/phaseA.out 与 report.md
 Recorded by AUTO-001 at 2026-11-11T21:14:13+00:00
 ```
+
+```text
+ID: UI-001
+Status: In Review（AUTO-001 自动通过测试/范围/批准检查，待人工验收）
+Owner: AUTO-001 scheduler + headless Qwen Flash (serial)
+Executed commands + exit codes: test_cmd=python3 -B tests/unit/run_ui001_checks.py -> 0; attempt=4
+Test result & evidence: tasks/evidence/UI-001/ (会话归档+日志+diff)
+Risks & unresolved decisions: 见 tasks/evidence/UI-001/phaseA.out 与 report.md
+Recorded by AUTO-001 at 2026-11-12T02:27:22+00:00
+```
