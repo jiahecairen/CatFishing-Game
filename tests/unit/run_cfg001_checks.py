@@ -4,9 +4,10 @@
 用法（项目根）：python3 -B tests/unit/run_cfg001_checks.py
 
 按 tasks/evidence/CFG-001/plan.md §5 与 review.md 的契约串行执行：
-  step1  Godot --headless --path <repo> --editor --quit      （导入/刷新全局类缓存）
-  step2  Godot --headless --path <repo> --script res://tests/unit/test_cfg001_config.gd
-  step3  Godot --headless --path <repo> --script res://tests/unit/test_core001_smoke.gd （CORE-001 回归）
+  先复制工程到系统临时目录，再对副本运行以下步骤：
+  step1  Godot --headless --path <isolated-project> --editor --quit （导入/刷新全局类缓存）
+  step2  Godot --headless --path <isolated-project> --script res://tests/unit/test_cfg001_config.gd
+  step3  Godot --headless --path <isolated-project> --script res://tests/unit/test_core001_smoke.gd （CORE-001 回归）
 
 判定（全部满足才退出 0，否则退出 1；不伪造退出码）：
   - 每步退出码为 0；
@@ -15,9 +16,9 @@
   - 任一步 stdout/stderr 出现 "SCRIPT ERROR" 即判失败（拒绝对应 FAIL 标记与脚本错误）；
   - 前置：data/ 两份配置与 examples/ 逐值一致（R-4 经济参数防误改，Python 独立复核）。
 
-按 queue 要求把 HOME 指向本票 evidence 目录内的临时目录，隔离 Godot 编辑器用户态
-（编辑器锁/设置缓存写到临时 HOME，避免触碰常驻编辑器与真实用户目录）；结束后删除该临时目录。
-本 runner 对项目树零写入。GODOT_BIN 环境变量可覆盖引擎路径（默认标准安装位置）。
+每步都强制校验 `--path` 与 `cwd` 指向同一隔离副本；若目标是主工程或其他路径，执行前即失败。
+临时 HOME 与副本放在同一系统临时目录，排除 `.git`、`.godot` 和滚动写入中的 `tasks/evidence`。
+结束后删除该临时目录。本 runner 不会在主工程导入 Godot 资源。GODOT_BIN 环境变量可覆盖引擎路径。
 """
 
 import json
@@ -29,7 +30,6 @@ import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 GODOT = os.environ.get("GODOT_BIN", "/Applications/Godot.app/Contents/MacOS/Godot")
-EVIDENCE = os.path.join(ROOT, "tasks", "evidence", "CFG-001")
 TIMEOUT_SEC = 600
 TAIL_LINES = 40
 
@@ -83,13 +83,33 @@ def check_fixtures(problems):
                 problems.append("fixture %s is not valid JSON: %s" % (name, exc))
 
 
-def run_step(step_name, cmd, env, want_marker=None, forbid_markers=()):
+def ignore_copy_artifacts(directory, names):
+    ignored = {name for name in names if name in {".git", ".godot"}}
+    if os.path.realpath(directory) == os.path.join(os.path.realpath(ROOT), "tasks"):
+        if "evidence" in names:
+            ignored.add("evidence")
+    return ignored
+
+
+def run_step(step_name, cmd, env, project_root, want_marker=None, forbid_markers=()):
     print("=" * 72)
     print("[%s] $ %s" % (step_name, " ".join(cmd)))
     sys.stdout.flush()
     try:
+        path_index = cmd.index("--path")
+        command_project = os.path.realpath(cmd[path_index + 1])
+    except (ValueError, IndexError):
+        print("[%s] FAILED: Godot command has no valid --path" % step_name)
+        return False
+    expected_project = os.path.realpath(project_root)
+    if expected_project == os.path.realpath(ROOT) or command_project != expected_project:
+        print("[%s] FAILED: refusing non-isolated Godot project path %s" % (
+            step_name, command_project
+        ))
+        return False
+    try:
         proc = subprocess.run(
-            cmd, cwd=ROOT, env=env, capture_output=True, text=True, timeout=TIMEOUT_SEC
+            cmd, cwd=project_root, env=env, capture_output=True, text=True, timeout=TIMEOUT_SEC
         )
     except subprocess.TimeoutExpired:
         print("[%s] TIMEOUT after %ds" % (step_name, TIMEOUT_SEC))
@@ -133,21 +153,30 @@ def main():
         return 1
     print("pre-flight: data==examples (value-identical), 12 fixtures present")
 
-    home_dir = tempfile.mkdtemp(prefix="run_cfg001_home_", dir=EVIDENCE)
-    env = dict(os.environ)
-    env["HOME"] = home_dir
-    env["XDG_CONFIG_HOME"] = os.path.join(home_dir, ".config")
-    env["XDG_CACHE_HOME"] = os.path.join(home_dir, ".cache")
-    print("isolated HOME (ticket-local temp): %s" % home_dir)
-
-    godot_base = [GODOT, "--headless", "--path", ROOT]
+    run_dir = tempfile.mkdtemp(prefix="run_cfg001_")
+    project_dir = os.path.join(run_dir, "project")
+    home_dir = os.path.join(run_dir, "home")
     try:
+        shutil.copytree(ROOT, project_dir, ignore=ignore_copy_artifacts)
+        if os.path.realpath(project_dir) == os.path.realpath(ROOT):
+            print("CFG001 RUNNER FAIL: isolated project aliases the source root")
+            return 1
+        os.makedirs(home_dir)
+        env = dict(os.environ)
+        env["HOME"] = home_dir
+        env["XDG_CONFIG_HOME"] = os.path.join(home_dir, ".config")
+        env["XDG_CACHE_HOME"] = os.path.join(home_dir, ".cache")
+        print("isolated project copy: %s" % project_dir)
+        print("isolated HOME: %s" % home_dir)
+
+        godot_base = [GODOT, "--headless", "--path", project_dir]
         ok = True
-        ok = run_step("step1-import", godot_base + ["--editor", "--quit"], env) and ok
+        ok = run_step("step1-import", godot_base + ["--editor", "--quit"], env, project_dir) and ok
         ok = run_step(
             "step2-cfg001",
             godot_base + ["--script", "res://tests/unit/test_cfg001_config.gd"],
             env,
+            project_dir,
             want_marker="CFG001 CONFIG PASS",
             forbid_markers=("CFG001 CONFIG FAIL",),
         ) and ok
@@ -155,12 +184,13 @@ def main():
             "step3-core001-regression",
             godot_base + ["--script", "res://tests/unit/test_core001_smoke.gd"],
             env,
+            project_dir,
             want_marker="CORE001 SMOKE PASS",
             forbid_markers=("CORE001 SMOKE FAIL",),
         ) and ok
     finally:
-        shutil.rmtree(home_dir, ignore_errors=True)
-        print("cleaned isolated HOME: %s" % home_dir)
+        shutil.rmtree(run_dir, ignore_errors=True)
+        print("cleaned isolated project and HOME: %s" % run_dir)
 
     if ok:
         print("CFG001 RUNNER PASS")

@@ -30,3 +30,7 @@ Keep 20–60 second waiting, 30 FPS idle, basket capacity 10, species/price weig
 The only planned code artifact is a test orchestrator. Its child runners already passed individually in the current checkout; the aggregate will be run before it is enabled in the queue and again through the queue's normal scope/test gate. The eight-hour GUI candidate is independent and must finish before final release acceptance.
 
 PHASE-A-DONE
+
+## Approved safety amendment — 2026-11-12
+
+The first post-approval aggregate rerun exposed that `tests/unit/run_cfg001_checks.py` launched its import step with `--path` set to the main checkout despite using a temporary HOME. This contradicted the isolation claim above and could write Godot import state into the checkout. Under the appended REL-001 Phase B approval in `tasks/APPROVALS.md`, amend the test-only scope to harden that runner: copy the current project into a system temporary directory (excluding `.git`, `.godot`, and rolling runtime evidence), run all Godot steps with both `cwd` and `--path` pinned to the copy, and reject any other target before launch. This does not alter product code, values, release criteria, queue state, or the separate eight-hour candidate process.

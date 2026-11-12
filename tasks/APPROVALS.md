@@ -129,3 +129,11 @@ date: 2026-11-12
 scope: tests/**
 notes: 项目所有者持续执行授权并要求自动完成本地 v0.1。批准仅新增 tests/unit/run_rel001_checks.py 串行调用既有隔离回归器并校验已完成的 SIM-001 报告；不得改产品代码/参数。最终接受仍必须等真实可见 Mac 8 小时候选运行、GUI 证据与全部回归完成；队列冻结/暂停和审批账本保持有效。
 END-APPROVAL
+
+BEGIN-APPROVAL ID=REL-001 PHASE=B
+APPROVED
+by: Codex delegated reviewer
+date: 2026-11-12
+scope: tests/unit/run_cfg001_checks.py
+notes: REL-001 复跑发现 CFG-001 的 step1-import 将 Godot --path 指向主工程，违反计划中的隔离导入要求。按项目所有者持续执行授权，批准仅修正该测试 runner：先复制测试所需工程到临时目录、在该副本中导入/运行，并增加每步拒绝主工程路径的安全断言；不得改产品代码、数据或参数。REL-001 全量回归需重新验证，8 小时隔离候选保持原进程继续运行。
+END-APPROVAL
