@@ -1,2 +1,3 @@
 timestamp_utc,energy_impact_score,app_nap,preventing_sleep,battery_charge_percent,power_source,source
 2026-11-12T04:21:00Z,0.0,No,Yes,100,AC,Activity Monitor > All Processes; Godot row
+2026-11-12T06:44:00Z,11.0,No,Yes,100,AC,Activity Monitor > All Processes; Godot row
